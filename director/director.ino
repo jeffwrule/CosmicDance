@@ -4,8 +4,8 @@
 /*
  * transmit and recieve pins for the xbee
  */
-const unsigned int RxD = 4;
-const unsigned int TxD = 5;
+const unsigned int RxD = 11;
+const unsigned int TxD = 12;
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 
 /*
@@ -29,8 +29,6 @@ const unsigned char dancing = 'd';        // dancing
 const unsigned char empty_response = '\0'; // no response expected marker
 
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
-
-int statusLED = 13;                // our output for now
 
 unsigned long start;             // the milliseconds when the program started
 unsigned long last_response;      // millis at time of last response
@@ -64,19 +62,6 @@ TxStatusResponse txStatus = TxStatusResponse();
 // software serial port
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 
-
-// Flash the pumpkin the given number of times with specified delay
-void flashLed(int times, int wait) {
-    for (int i = 0; i < times; i++) {
-      digitalWrite(statusLED, HIGH);
-      delay(wait);
-      digitalWrite(statusLED, LOW);      
-      //if (i + 1 < times) {
-        delay(wait);
-      //}
-    }
-}
-
 // switch to the next dancer 
 void queue_next_dance() {
   current_dancer_position = current_dancer_position + 1;
@@ -99,10 +84,10 @@ uint16_t now_dancing() {
 // or there are no reply with in the given timeout
 boolean get_response(char expected, unsigned int timeout) {
   // read until we get what we want or noting left to read
-  Serial.print("get_repsonse starting: expect=");
-  Serial.print(expected);
-  Serial.print(" timeout=");
-  Serial.println(timeout);
+  // Serial.print("get_repsonse starting: expect=");
+  // Serial.print(expected);
+  // Serial.print(" timeout=");
+  // Serial.println(timeout);
   while (true) {
     xbee.readPacket(timeout);
     if (xbee.getResponse().isAvailable()) {
@@ -112,20 +97,22 @@ boolean get_response(char expected, unsigned int timeout) {
         answer = rx16.getData(0);
         Serial.print("get_response:Got something: ");
         Serial.println((char) answer);
-        if (answer == expected) {
+        // we are hear to just remove any values from the RX buffer
+        if (expected == empty_response) {
+          Serial.print("Clearing unwanted value: ");
+          Serial.println((char)answer);
+          } 
+        else if ( answer == expected) {
           Serial.println("Got expected");
           return true;
-        } else if ( expected == empty_response) {
-          Serial.print("Clearing unwanted value: ");
-          Serial.println(answer);
-        }
+          } 
         else {
           Serial.print("Got unexpected: ");
-          Serial.println(answer);
+          Serial.println((char)answer);           
         }
       }
     } else {
-      Serial.println("get_repsonse:Read timeout");
+      // Serial.println("get_repsonse:Read timeout");
       // no data available after timeout seconds, so sorry la
       return false;
     }
@@ -135,7 +122,7 @@ boolean get_response(char expected, unsigned int timeout) {
 // read all the current packets that are available...
 void flush_buffer() {
   Serial.println("Flush start...");
-  get_response(empty_response, 10);
+  get_response(empty_response, 200);
   Serial.println("Flush end...");
 }
 
@@ -168,7 +155,6 @@ boolean send_command(uint16_t addr, char command, char expect) {
 
 void setup() {
   start = millis();            // when the program first started
-  pinMode(statusLED, OUTPUT);  // setup the pumpkin for flashing
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
   
@@ -215,7 +201,7 @@ void loop() {
     unsigned long now = millis();
     
     // check to see if we have finished....
-    if (get_response(finished, 100)) {
+    if (get_response(finished, 200)) {
       Serial.println("Dancer finished!");
       is_dancing = false;
       // wait 3 minutes between sessions...

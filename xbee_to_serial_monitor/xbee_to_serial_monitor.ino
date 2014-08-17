@@ -1,7 +1,10 @@
 
 #include <SoftwareSerial.h>
-#define RxD 4
-#define TxD 5
+//#define RxD 4
+//#define TxD 5
+
+#define RxD 11
+#define TxD 12
 
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 

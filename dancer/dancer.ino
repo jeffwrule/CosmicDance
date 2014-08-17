@@ -1,87 +1,151 @@
+#include <XBee.h>
+#include <SoftwareSerial.h>
 
-const int statusLED = 13;
+/*
+ * transmit and recieve pins for the xbee
+ */
+const unsigned int RxD = 11;
+const unsigned int TxD = 12;
+const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 
-// incomming commands
-const unsigned char marco = 'M';    // marco 
-const unsigned char queue = 'Q';    // start dancing
-const unsigned char halt  = 'H';    // stop dancing
+/*
+This example is for Series 1 XBee
+Sends a TX16 or TX64 request with the value of analogRead(pin5) and checks the status response for success
+Note: In my testing it took about 15 seconds for the XBee to start reporting success, so I've added a startup delay
+*/
 
-// outgoing commands
-const unsigned char polo = 'P';     // polo
-const unsigned char solo = 'S';     // performing solo
-const unsigned char fine = 'F';     // finished dancing
-const unsigned char resting = 'R';  // I am resting
+// director commands  
+const unsigned char solo = 's';         // dance a solo
+const unsigned char ensembl = 'e';      // everyone dance
+const unsigned char halt = 'h';         // everyone stop what they are doing
+const unsigned char whatchadoing = 'w';  // are you dancing or not?
 
-const unsigned long SONG_LENGTH = 15000;  // simulate a 15 second song
-const unsigned long CHECKIN_PERIOD = 3000 // check in every 3 seconds during playback
+// dancer responses 
+const unsigned char finished = 'f';       // peice has been completed
+const unsigned char acknowledge = 'a';    // I head you!
+const unsigned char dancing = 'd';        // dancing
 
-boolean performing = false;
-unsigned long time_started = 0;  // when music was queueud
-unsigned long last_checkin = 0;  // last checing during performance
+const unsigned char empty_request = '\0';  // not a request
+
+boolean is_dancing = false;       // is someone currently dancing
+unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
+unsigned long dance_started;      // what time the dance started
+
+// 1 byte to hold transmit messages
+uint8_t payload[] = { 0 };
+// 1 byte to hold receive messages
+unsigned char new_direction;
+
+// create an Xbee object to communite with the XBee card
+XBee xbee = XBee();             
+// 16-bit transmit request
+Tx16Request tx = Tx16Request(0xFFFE, payload, sizeof(payload));
+// 16-bit recieve frame
+Rx16Response rx16 = Rx16Response();
+// 16-bit status response
+TxStatusResponse txStatus = TxStatusResponse();
+// software serial port
+SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
+
 
 void setup() {
-  Serial.begin(9600);    	//initialize serial
-  pinMode(13, OUTPUT);   	//set pin 13 as output
-  delay(15000);  // delay 15 seconds to let things settle down
+  // start = millis();            // when the program first started
+  Serial.begin(9600);          // setup the interal serial port for debug messages
+  Serial.println("Start setup");
+  
+  // setup the soft serial port for xbee reads and writes
+  pinMode(RxD, INPUT);
+  pinMode(TxD, OUTPUT);
+  xbeeSerial.begin(9600);
+  xbee.setSerial(xbeeSerial);
+  
+  is_dancing = false;
+  new_direction = empty_request;
+  
+  // just let it settle for a bit
+  delay(10000);  // delay 15 seconds to let things settle down
+  Serial.println("End setup");
 }
 
-void flashLed(int pin, int times, int wait) {
-    
-    for (int i = 0; i < times; i++) {
-      digitalWrite(pin, HIGH);
-      delay(wait);
-      digitalWrite(pin, LOW);
-      
-      if (i + 1 < times) {
-        delay(wait);
-      }
-    }
+
+
+/*
+ * check the network to see if we any new directions 
+ * from the director
+ */
+void check_for_direction() {
+  // read until we get what we want or noting left to read
+  if (xbeeSerial.available() > 0) {
+    new_direction = xbeeSerial.read();
+    Serial.print("check_for_direction:Got something: ");
+    Serial.println((char) new_direction);
+  }
 }
 
+// stop the music and motor
+void stop_all() {
+  Serial.println("stop_all begin...");
+  is_dancing = false;
+  Serial.println("stop_all end...");
+}
 
+// start playing the solo or the ensembl
+void start_dancing(unsigned char dance_piece) {
+  Serial.print("start_dancing start: ");
+  Serial.println((char)dance_piece);
+  xbeeSerial.write(acknowledge);
+  is_dancing = true;
+  dance_type = dance_piece;
+  dance_started = millis();
+  Serial.println("start_dancing end");
+}
+
+// are we currently dancing?
+void reply_status() {
+  Serial.print("sending status: ");
+  if (is_dancing) {
+    xbeeSerial.write(dancing);
+    Serial.println("dancing");
+  } else {
+    xbeeSerial.write(finished); 
+    Serial.println("finished");
+  }
+}
+
+// is the finished playing?
+boolean track_is_complete() {
+  return millis() - dance_started >= 13000;
+}
+
+// are we done?
+void signal_if_done() {
+  // simulate the MP3 stopping after 13 seconds
+  // Serial.print("signal_if_done track status: ");
+  if (track_is_complete()) {
+    Serial.println("signal_if_done track status: complete");
+    xbeeSerial.write(finished);
+    stop_all();
+  }
+  // Serial.println("playing"); 
+}
+
+// start and stop dancers, keep the show moving along....
 void loop() {
   
-  while(Serial.available()){  //is there anything to read?
-	char getData = Serial.read();  //if yes, read it
-
-	if(getData == marco) {
-          serial.write(polo);
-          serial.flush();
-          flashLed(statusLED, 3, 100);  	 
-  	  digitalWrite(13, HIGH);
-	}else if(getData == queue ) {
-          // start music
-          // start motor
-          performing = true;
-          time_started = millis();
-          last_checkin  = millis();
-          serial.write(solo);
-          flashLed(statusLED, 4, 100);
-       } else if (getData == halt) {
-         // stop music
-         // stop motor
-         serial.write('F');
-         flastLed(statusLED, 5, 100);
-       }
+  check_for_direction();
+  switch (new_direction) {
+    case halt: 
+              stop_all(); break;
+    case solo: 
+    case ensembl: 
+              start_dancing(new_direction); break;
+    case whatchadoing: 
+              reply_status(); break;
   }
-  
-  // check in from time to time
-  if (millis() - last_checkin > CHECKIN_PERIOD) {
-    if (performing) {
-      serial.write(solo);
-    } else {
-      serial.write(resting);
-    }
-    serial.flush();
+  new_direction = empty_request;
+  // has the music stopped?
+  if (is_dancing) {
+    signal_if_done();
   }
-      
-  // some house keeping during playback mode
-  if (performing) {
-    if (millis() - time_started > SONG_LENGTH) {
-      // stop montor
-      serial.write(fine);
-      flash(statusLED, 5, 100);
-    }
-  }
-   
 }
+

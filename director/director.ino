@@ -1,25 +1,12 @@
-/**
- * Copyright (c) 2009 Andrew Rapp. All rights reserved.
- *
- * This file is part of XBee-Arduino.
- *
- * XBee-Arduino is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * XBee-Arduino is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with XBee-Arduino.  If not, see <http://www.gnu.org/licenses/>.
- */
- 
-
 #include <XBee.h>
+#include <SoftwareSerial.h>
 
+/*
+ * transmit and recieve pins for the xbee
+ */
+const unsigned int RxD = 4;
+const unsigned int TxD = 5;
+const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 
 /*
 This example is for Series 1 XBee
@@ -27,34 +14,56 @@ Sends a TX16 or TX64 request with the value of analogRead(pin5) and checks the s
 Note: In my testing it took about 15 seconds for the XBee to start reporting success, so I've added a startup delay
 */
 
-const unsigned int maxDancers = 10;
-const unsigned char call = 'C';           // call for dancers in attendance 
-const unsigned char present = 'P';        // I am here response
-const unsigned char solo = 'S';           // dance a solo
-const unsigned char ensembl = 'E';        // everyone dance
-const unsigned char finished = 'F';       // peice has been completed
+// director commands  
+const unsigned char solo = 's';         // dance a solo
+const unsigned char ensembl = 'e';      // everyone dance
+const unsigned char halt = 'h';         // everyone stop what they are doing
+const unsigned char whatchadoing = 'w';  // are you dancing or not?
 
-int statusLED = 13;              // our output for now
-unsigned long last_marco = 0;    // the last time we sent out a marco call
+// dancer responses 
+const unsigned char finished = 'f';       // peice has been completed
+const unsigned char acknowledge = 'a';    // I head you!
+const unsigned char dancing = 'd';        // dancing
+
+// when passed as expect, no response is waited for
+const unsigned char empty_response = '\0'; // no response expected marker
+
+const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
+
+int statusLED = 13;                // our output for now
+
 unsigned long start;             // the milliseconds when the program started
-unsigned int num_dancers = 0;    // number of dancers that responded to marco call
-uint16_t dancers_present[maxDancers];    // array of responding dancers
+unsigned long last_response;      // millis at time of last response
+
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
-// any dancer that has not chekced in during a curtin call
-unsigned int dance_order[maxDancers]  = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };  // order to quey the dancers
+// if a dancer does not respond back, the next dancer will be queued
+unsigned int dance_order[]  = { 1, 5, 7, all_dancers };  // order to queue the dancers
+unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
-XBee xbee = XBee();              // create an Xbee object to communite with the XBee card
+unsigned int current_dancer_position;      // which dancer is in the array is dancing
+boolean is_dancing = false;       // is someone currently dancing
+unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
 
 
-// 1 byte to hold transmit and receive messages
+// 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
+// 1 byte to hold receive messages
+unsigned char answer;
 
-// 16-bit addressing: Enter address of remote XBee, typically the coordinator
+// create an Xbee object to communite with the XBee card
+XBee xbee = XBee();             
+
+// 16-bit transmit request
 Tx16Request tx = Tx16Request(0xFFFE, payload, sizeof(payload));
-
-// our response packet
+// 16-bit recieve frame
+Rx16Response rx16 = Rx16Response();
+// 16-bit status response
 TxStatusResponse txStatus = TxStatusResponse();
+
+// software serial port
+SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
+
 
 // Flash the pumpkin the given number of times with specified delay
 void flashLed(int times, int wait) {
@@ -68,56 +77,169 @@ void flashLed(int times, int wait) {
     }
 }
 
-void roll_call() {
-  uint16_t dancer;
-//  for (int dancer = 0x0001; dancer < 0x0009; dancer += 1)
-//    tx.  
+// switch to the next dancer 
+void queue_next_dance() {
+  current_dancer_position = current_dancer_position + 1;
+  if (current_dancer_position >= num_dancers ) { 
+    current_dancer_position = 0;
+  }
+  if (now_dancing() == all_dancers) {
+    dance_type = ensembl;
+  } else {
+    dance_type = solo;
+  }
+}
+      
+// return network address of the current dancer
+uint16_t now_dancing() {
+    return dance_order[current_dancer_position];
 }
 
+// read responses until we get the one we are looking for
+// or there are no reply with in the given timeout
+boolean get_response(char expected, unsigned int timeout) {
+  // read until we get what we want or noting left to read
+  Serial.print("get_repsonse starting: expect=");
+  Serial.print(expected);
+  Serial.print(" timeout=");
+  Serial.println(timeout);
+  while (true) {
+    xbee.readPacket(timeout);
+    if (xbee.getResponse().isAvailable()) {
+      // got something
+      if (xbee.getResponse().getApiId() == RX_16_RESPONSE) {
+        xbee.getResponse().getRx16Response(rx16);
+        answer = rx16.getData(0);
+        Serial.print("get_response:Got something: ");
+        Serial.println((char) answer);
+        if (answer == expected) {
+          Serial.println("Got expected");
+          return true;
+        } else if ( expected == empty_response) {
+          Serial.print("Clearing unwanted value: ");
+          Serial.println(answer);
+        }
+        else {
+          Serial.print("Got unexpected: ");
+          Serial.println(answer);
+        }
+      }
+    } else {
+      Serial.println("get_repsonse:Read timeout");
+      // no data available after timeout seconds, so sorry la
+      return false;
+    }
+  }
+}
+
+// read all the current packets that are available...
+void flush_buffer() {
+  Serial.println("Flush start...");
+  get_response(empty_response, 10);
+  Serial.println("Flush end...");
+}
+
+/*
+ * send a command out and wait for the specified response, if not '\0'
+ *   timeout is .5 seconds waiting for response
+ */
+boolean send_command(uint16_t addr, char command, char expect) {
+  
+  Serial.print("send_command: Starting command=");
+  Serial.print(command);
+  Serial.print(" who=");
+  Serial.print(addr);
+  Serial.print(" expect=");
+  Serial.println(expect);
+  
+  // before sending a command clear the input buffer of any old junk 
+  flush_buffer();
+  // send the command out
+  payload[0] = command;
+  tx.setAddress16 (addr);
+  xbee.send(tx);
+  
+  if (expect == empty_response) { 
+    return true; 
+  }
+  // wait for the response 
+  return get_response(expect, 4000);  // wait up to 0.5 seconds for a response  
+}
 
 void setup() {
-  start = millis();
-  pinMode(statusLED, OUTPUT);
-  Serial.begin(9600);
-  xbee.setSerial(Serial);
+  start = millis();            // when the program first started
+  pinMode(statusLED, OUTPUT);  // setup the pumpkin for flashing
+  Serial.begin(9600);          // setup the interal serial port for debug messages
+  Serial.println("Start setup");
   
-  delay(15000);  // delay 15 seconds to let things settle down
-  // roll_call()
+  // setup the soft serial port for xbee reads and writes
+  pinMode(RxD, INPUT);
+  pinMode(TxD, OUTPUT);
+  xbeeSerial.begin(9600);
+  xbee.setSerial(xbeeSerial);
+  
+  current_dancer_position = -1;
+  is_dancing = false;
+  
+  // just let it settle for a bit
+  delay(10000);  // delay 15 seconds to let things settle down
+  send_command(all_dancers, halt, empty_response);
+  Serial.println("End setup");
 }
 
+// start and stop dancers, keep the show moving along....
 void loop() {
-  
-    if (millis() - last_marco > 15000) {
-      payload[0] = call;
-      xbee.send(tx);
-      flashLed(3, 500);
-    }
-   
-  
-    // after sending a tx request, we expect a status response
-    // wait up to 5 seconds for the status response
-    if (xbee.readPacket(5000)) {
-        // got a response!
-
-        // should be a znet tx status            	
-    	if (xbee.getResponse().getApiId() == TX_STATUS_RESPONSE) {
-    	   xbee.getResponse().getZBTxStatusResponse(txStatus);
-    		
-    	   // get the delivery status, the fifth byte
-           if (txStatus.getStatus() == SUCCESS) {
-            	// success.  time to celebrate
-             	flashLed(4, 500);
-           } else {
-            	// the remote XBee did not receive our packet. is it powered on?
-             	flashLed(5, 500);
-           }
-        }      
-    } else if (xbee.getResponse().isError()) {
-      flashLed(6, 500);
-    } else {
-      // remote XBee did not provide a timely TX Status Response.  Radio is not configured properly or connected
-      flashLed(7, 500);
-    }
+    // protect against millis rollover
+    if (start > millis()) {start = millis(); last_response = start; }
     
-    delay(1000);
+  /*
+   * start the next dancer 
+   */
+  if (is_dancing == false ) {
+    queue_next_dance();
+    Serial.print("Starting dancer: ");
+    Serial.print(now_dancing());
+    Serial.print(", Dance Type: ");
+    Serial.print((char) dance_type);
+    Serial.println();
+    
+    if (send_command(now_dancing(), dance_type, acknowledge)) {
+      is_dancing = true;
+      last_response = millis();
+    }
+    return;
+  }
+    
+  // waiting for this dance to end....
+  if (is_dancing == true ) {
+    unsigned long now = millis();
+    
+    // check to see if we have finished....
+    if (get_response(finished, 100)) {
+      Serial.println("Dancer finished!");
+      is_dancing = false;
+      // wait 3 minutes between sessions...
+      if (now_dancing() == all_dancers) {
+        Serial.print("Ensembl just finished, waiting ");
+        Serial.print(delay_seconds);
+        Serial.println(" seconds to restart...");
+        delay(1000 * delay_seconds);
+      }
+      return;
+    }
+    // check in every 10 seconds to see if our dancer is still performing
+    if ( now - last_response > 10000) {
+      Serial.println("last_response timeout, whatchadoing time...");
+      if (send_command(now_dancing(), whatchadoing, dancing) == false) {
+        Serial.println("Not dancing, halt and next...");
+        send_command(now_dancing(), halt, empty_response);
+        is_dancing = false;
+        return;
+      }
+      // we got a response from someone, we are still dancing....
+      last_response = now;
+      return;
+    }
+  }
 }
+

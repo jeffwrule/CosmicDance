@@ -2,10 +2,12 @@
 #include <SoftwareSerial.h>
 
 /*
- * transmit and recieve pins for the xbee
+ * transmit and recieve pins for the xbee.
+ * Note the pins jumpers on the xbee shield are configured just the opposite
+ * Tx=5, Rx=10
  */
-const unsigned int RxD = 11;
-const unsigned int TxD = 12;
+const unsigned int RxD = 5;
+const unsigned int TxD = 10;
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 
 /*
@@ -36,7 +38,7 @@ unsigned long last_response;      // millis at time of last response
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = { 1, 5, 7, all_dancers };  // order to queue the dancers
+unsigned int dance_order[]  = { 1, 7, all_dancers };  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
 unsigned int current_dancer_position;      // which dancer is in the array is dancing

@@ -1,11 +1,24 @@
 #include <XBee.h>
 #include <SoftwareSerial.h>
 
+
+#include <SPI.h>
+
+//Add the SdFat Libraries
+#include <SdFat.h>
+#include <SdFatUtil.h>
+
+//and the MP3 Shield Library
+#include <SFEMP3Shield.h>
+
+
 /*
- * transmit and recieve pins for the xbee
+ * transmit and recieve pins for the xbee.
+ * Note the pins jumpers on the xbee shield are configured just the opposite
+ * Tx=5, Rx=10
  */
-const unsigned int RxD = 11;
-const unsigned int TxD = 12;
+const unsigned int RxD = 5;
+const unsigned int TxD = 10;
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 
 /*
@@ -47,8 +60,41 @@ TxStatusResponse txStatus = TxStatusResponse();
 // software serial port
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 
+/**
+ * \brief Object instancing the SdFat library.
+ *
+ * principal object for handling all SdCard functions.
+ */
+SdFat sd;
+
+/**
+ * \brief Object instancing the SFEMP3Shield library.
+ *
+ * principal object for handling all the attributes, members and functions for the library.
+ */
+SFEMP3Shield MP3player;
+int16_t last_ms_char; // milliseconds of last recieved character from Serial port.
+int8_t buffer_pos; // next position to recieve character from Serial port.
+
+//------------------------------------------------------------------------------
+/**
+ * \brief Setup the Arduino Chip's feature for our use.
+ *
+ * After Arduino's kernel has booted initialize basic features for this
+ * application, such as Serial port and MP3player objects with .begin.
+ * Along with displaying the Help Menu.
+ *
+ * \note returned Error codes are typically passed up from MP3player.
+ * Whicn in turns creates and initializes the SdCard objects.
+ *
+ * \see
+ * \ref Error_Codes
+ */
+  char buffer[6]; // 0-35K+null
 
 void setup() {
+  uint8_t result; //result code from some function as to be tested at later time.
+
   // start = millis();            // when the program first started
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
@@ -61,6 +107,24 @@ void setup() {
   
   is_dancing = false;
   new_direction = empty_request;
+  
+  //Initialize the SdCard.
+  if(!sd.begin(SD_SEL, SPI_FULL_SPEED)) sd.initErrorHalt();
+  // depending upon your SdCard environment, SPI_HAVE_SPEED may work better.
+  if(!sd.chdir("/")) sd.errorHalt("sd.chdir");
+  
+  //Initialize the MP3 Player Shield
+  result = MP3player.begin();
+  //check result, see readme for error codes.
+  if(result != 0) {
+    Serial.print(F("Error code: "));
+    Serial.print(result);
+    Serial.println(F(" when trying to start MP3 player"));
+    if( result == 6 ) {
+      Serial.println(F("Warning: patch file not found, skipping.")); // can be removed for space, if needed.
+      Serial.println(F("Use the \"d\" command to verify SdCard can be read")); // can be removed for space, if needed.
+    }
+  }
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
@@ -91,7 +155,7 @@ void stop_all() {
 
 // start playing the solo or the ensembl
 void start_dancing(unsigned char dance_piece) {
-  Serial.print("start_dancing start: ");
+  Serial.print("start_dancing starting: ");
   Serial.println((char)dance_piece);
   xbeeSerial.write(acknowledge);
   is_dancing = true;

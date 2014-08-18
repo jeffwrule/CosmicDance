@@ -8,7 +8,8 @@
  */
 const unsigned int RxD = 5;
 const unsigned int TxD = 10;
-const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
+const int solo_delay_seconds = 5;        // number of seconds to delay for a solo
+const int ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play
 
 /*
 This example is for Series 1 XBee
@@ -38,18 +39,21 @@ unsigned long last_response;      // millis at time of last response
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = { 1, 7, all_dancers };  // order to queue the dancers
+unsigned int dance_order[]  = { 1, 3, all_dancers };  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
 unsigned int current_dancer_position;      // which dancer is in the array is dancing
-boolean is_dancing = false;       // is someone currently dancing
-unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
+boolean is_dancing = false;                // is someone currently dancing
+unsigned char dance_type;                  // which dance type to performe (solo or ensembl) 
+unsigned int delay_after_dance_seconds;    // number of seconds to delay after this diance
 
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
 // 1 byte to hold receive messages
 unsigned char answer;
+
+byte  whatchadoing_misses;
 
 // create an Xbee object to communite with the XBee card
 XBee xbee = XBee();             
@@ -84,7 +88,7 @@ uint16_t now_dancing() {
 
 // read responses until we get the one we are looking for
 // or there are no reply with in the given timeout
-boolean get_response(char expected, unsigned int timeout) {
+boolean get_response(char expected, unsigned int timeout, char expected_alt='\0') {
   // read until we get what we want or noting left to read
   // Serial.print("get_repsonse starting: expect=");
   // Serial.print(expected);
@@ -104,8 +108,9 @@ boolean get_response(char expected, unsigned int timeout) {
           Serial.print("Clearing unwanted value: ");
           Serial.println((char)answer);
           } 
-        else if ( answer == expected) {
-          Serial.println("Got expected");
+        else if ( answer == expected || answer == expected_alt) {
+          Serial.print("Got expected: ");
+          Serial.println((char)answer);
           return true;
           } 
         else {
@@ -116,7 +121,7 @@ boolean get_response(char expected, unsigned int timeout) {
     } else {
       // Serial.println("get_repsonse:Read timeout");
       // no data available after timeout seconds, so sorry la
-      return false;
+      return NULL;
     }
   }
 }
@@ -124,7 +129,7 @@ boolean get_response(char expected, unsigned int timeout) {
 // read all the current packets that are available...
 void flush_buffer() {
   Serial.println("Flush start...");
-  get_response(empty_response, 200);
+  get_response(empty_response, 400);
   Serial.println("Flush end...");
 }
 
@@ -134,6 +139,12 @@ void flush_buffer() {
  */
 boolean send_command(uint16_t addr, char command, char expect) {
   
+  Serial.println("send_command starting...");
+  
+  // before sending a command clear the input buffer of any old junk 
+  flush_buffer();
+  
+  // what is the command we are about to send.
   Serial.print("send_command: Starting command=");
   Serial.print(command);
   Serial.print(" who=");
@@ -141,8 +152,6 @@ boolean send_command(uint16_t addr, char command, char expect) {
   Serial.print(" expect=");
   Serial.println(expect);
   
-  // before sending a command clear the input buffer of any old junk 
-  flush_buffer();
   // send the command out
   payload[0] = command;
   tx.setAddress16 (addr);
@@ -152,7 +161,23 @@ boolean send_command(uint16_t addr, char command, char expect) {
     return true; 
   }
   // wait for the response 
-  return get_response(expect, 4000);  // wait up to 0.5 seconds for a response  
+  return get_response(expect, 4000);  // wait up to 4 seconds for a response  
+}
+
+void delay_next_dance() {
+  
+  if (delay_after_dance_seconds > 0) {
+    if (dance_type == solo) {
+      Serial.print("Solo");
+    } else {
+      Serial.print("Ensembl");
+    }
+    Serial.print(" dance just finished, waiting ");
+    Serial.print(delay_after_dance_seconds);
+    Serial.println(" seconds to restart...");
+    delay(1000 * delay_after_dance_seconds); 
+    delay_after_dance_seconds = 0;
+  } 
 }
 
 void setup() {
@@ -168,6 +193,8 @@ void setup() {
   
   current_dancer_position = -1;
   is_dancing = false;
+  whatchadoing_misses = 0;
+  delay_after_dance_seconds = 0;
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
@@ -184,6 +211,9 @@ void loop() {
    * start the next dancer 
    */
   if (is_dancing == false ) {
+    // delay the next dance if we have not done that yet...
+    delay_next_dance();
+    
     queue_next_dance();
     Serial.print("Starting dancer: ");
     Serial.print(now_dancing());
@@ -191,9 +221,13 @@ void loop() {
     Serial.print((char) dance_type);
     Serial.println();
     
-    if (send_command(now_dancing(), dance_type, acknowledge)) {
+    if (send_command(now_dancing(), dance_type, empty_response)) {
       is_dancing = true;
       last_response = millis();
+      switch(dance_type) {
+        case ensembl: delay_after_dance_seconds = ensembl_delay_seconds; break;
+        case solo: delay_after_dance_seconds = solo_delay_seconds; break;
+      }
     }
     return;
   }
@@ -203,29 +237,36 @@ void loop() {
     unsigned long now = millis();
     
     // check to see if we have finished....
-    if (get_response(finished, 200)) {
-      Serial.println("Dancer finished!");
-      is_dancing = false;
-      // wait 3 minutes between sessions...
-      if (now_dancing() == all_dancers) {
-        Serial.print("Ensembl just finished, waiting ");
-        Serial.print(delay_seconds);
-        Serial.println(" seconds to restart...");
-        delay(1000 * delay_seconds);
-      }
-      return;
-    }
-    // check in every 10 seconds to see if our dancer is still performing
-    if ( now - last_response > 10000) {
-      Serial.println("last_response timeout, whatchadoing time...");
-      if (send_command(now_dancing(), whatchadoing, dancing) == false) {
-        Serial.println("Not dancing, halt and next...");
-        send_command(now_dancing(), halt, empty_response);
+    if (get_response(finished, 200, dancing)) {
+      if (answer == finished) {
+        Serial.println("Dancer finished!");
         is_dancing = false;
         return;
       }
+      if (answer == dancing) {
+        Serial.println("Updated last_repsonse, to now");
+        last_response = now;
+      }
+    }
+    // poke the dancer(s) after 15 seconds if it has been longer then that since anyone checked in...
+    if ( now - last_response >= 15000) {
+      Serial.println("15 seconds have passed, whatchadoing time...");
+      if (send_command(now_dancing(), whatchadoing, dancing) == false) {
+        whatchadoing_misses++;
+        if (whatchadoing_misses > 1) {
+          Serial.println("Not dancing, halt and next...");
+          send_command(now_dancing(), halt, empty_response);
+          is_dancing = false;
+        }
+        else {
+          Serial.print("No response, but letting it go for now num_misses: ");
+          Serial.println(whatchadoing_misses);
+        }
+        return;
+      } 
       // we got a response from someone, we are still dancing....
       last_response = now;
+      whatchadoing_misses = 0;
       return;
     }
   }

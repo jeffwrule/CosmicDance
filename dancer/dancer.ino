@@ -11,7 +11,6 @@
 //and the MP3 Shield Library
 #include <SFEMP3Shield.h>
 
-
 /*
  * transmit and recieve pins for the xbee.
  * Note the pins jumpers on the xbee shield are configured just the opposite
@@ -20,6 +19,9 @@
 const unsigned int RxD = 5;
 const unsigned int TxD = 10;
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
+const int v12Switch = A0;                 // pin to turn the electronics on and off
+const int v5Switch = A1;                  // in to turn on/off
+const int fobA = A5;                      // input pin that the fobA button is hooked up too
 
 /*
 This example is for Series 1 XBee
@@ -43,6 +45,9 @@ const unsigned char empty_request = '\0';  // not a request
 boolean is_dancing = false;       // is someone currently dancing
 unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
 unsigned long dance_started;      // what time the dance started
+unsigned long last_checkin;      // when did we last send our status to the director.
+int fobA_status;                 // the last read status of the keyfob
+int solo_delay_seconds = 30;     // number of seconds to delay between plays
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
@@ -73,8 +78,7 @@ SdFat sd;
  * principal object for handling all the attributes, members and functions for the library.
  */
 SFEMP3Shield MP3player;
-int16_t last_ms_char; // milliseconds of last recieved character from Serial port.
-int8_t buffer_pos; // next position to recieve character from Serial port.
+
 
 //------------------------------------------------------------------------------
 /**
@@ -93,7 +97,6 @@ int8_t buffer_pos; // next position to recieve character from Serial port.
   char buffer[6]; // 0-35K+null
 
 void setup() {
-  uint8_t result; //result code from some function as to be tested at later time.
 
   // start = millis();            // when the program first started
   Serial.begin(9600);          // setup the interal serial port for debug messages
@@ -102,36 +105,27 @@ void setup() {
   // setup the soft serial port for xbee reads and writes
   pinMode(RxD, INPUT);
   pinMode(TxD, OUTPUT);
+  pinMode(v12Switch, OUTPUT);
+  digitalWrite(v12Switch, LOW);
+  pinMode(v5Switch, OUTPUT);
+  digitalWrite(v5Switch, LOW);
+  pinMode(fobA, INPUT);
   xbeeSerial.begin(9600);
   xbee.setSerial(xbeeSerial);
   
   is_dancing = false;
   new_direction = empty_request;
   
-  //Initialize the SdCard.
-  if(!sd.begin(SD_SEL, SPI_FULL_SPEED)) sd.initErrorHalt();
-  // depending upon your SdCard environment, SPI_HAVE_SPEED may work better.
-  if(!sd.chdir("/")) sd.errorHalt("sd.chdir");
+  if(!sd.begin(9, SPI_HALF_SPEED)) sd.initErrorHalt();
+  if (!sd.chdir("/")) sd.errorHalt("sd.chdir");  
   
-  //Initialize the MP3 Player Shield
-  result = MP3player.begin();
-  //check result, see readme for error codes.
-  if(result != 0) {
-    Serial.print(F("Error code: "));
-    Serial.print(result);
-    Serial.println(F(" when trying to start MP3 player"));
-    if( result == 6 ) {
-      Serial.println(F("Warning: patch file not found, skipping.")); // can be removed for space, if needed.
-      Serial.println(F("Use the \"d\" command to verify SdCard can be read")); // can be removed for space, if needed.
-    }
-  }
+  MP3player.begin();
+  MP3player.setVolume(30,30);
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
   Serial.println("End setup");
 }
-
-
 
 /*
  * check the network to see if we any new directions 
@@ -150,17 +144,34 @@ void check_for_direction() {
 void stop_all() {
   Serial.println("stop_all begin...");
   is_dancing = false;
+  MP3player.stopTrack();
+  digitalWrite(v12Switch, LOW);
+  digitalWrite(v5Switch, LOW);
   Serial.println("stop_all end...");
+}
+
+boolean director_heard_me() {
+  if (xbeeSerial.available() > 0) {
+    return xbeeSerial.read() == acknowledge;
+  }
+  return false;
 }
 
 // start playing the solo or the ensembl
 void start_dancing(unsigned char dance_piece) {
   Serial.print("start_dancing starting: ");
   Serial.println((char)dance_piece);
-  xbeeSerial.write(acknowledge);
+  xbeeSerial.write(dancing);
+  switch (dance_piece) {
+    case solo:     MP3player.playTrack(1); break;
+    case ensembl:  MP3player.playTrack(2); break;
+  }
+  digitalWrite(v12Switch, HIGH);
+  digitalWrite(v5Switch, HIGH);
   is_dancing = true;
   dance_type = dance_piece;
   dance_started = millis();
+  last_checkin = dance_started;
   Serial.println("start_dancing end");
 }
 
@@ -178,7 +189,7 @@ void reply_status() {
 
 // is the finished playing?
 boolean track_is_complete() {
-  return millis() - dance_started >= 13000;
+  return MP3player.isPlaying() == 0;
 }
 
 // are we done?
@@ -186,17 +197,68 @@ void signal_if_done() {
   // simulate the MP3 stopping after 13 seconds
   // Serial.print("signal_if_done track status: ");
   if (track_is_complete()) {
-    Serial.println("signal_if_done track status: complete");
-    xbeeSerial.write(finished);
+      Serial.println("signal_if_done track status: complete");
+    if (fobA == 0) {
+      Serial.println("Fob is off, sending message to director");
+      xbeeSerial.write(finished);
+    }
     stop_all();
+    if (fobA == 1) {
+      // simulate the sleep between tracks
+      Serial.print("Fob is on, pausing for ");
+      Serial.print(solo_delay_seconds);
+      Serial.println(" between plays");
+      delay(1000 * solo_delay_seconds);
+    }
+  }
+}
+
+// are we done?
+void signal_every_so_often() {
+
+  // no need to send out a signe we are on our own here
+  if (fobA_status == 1) {
+    return;
+  }
+  
+  if (millis() - last_checkin > 4000) {
+    Serial.println("signal_every_so_often checking in...");
+    xbeeSerial.write(dancing);
+    last_checkin = millis();
   }
   // Serial.println("playing"); 
+}
+
+void check_for_fob() {
+  
+  int cur_status = digitalRead(fobA);
+  
+  // detect going from on to off 
+  if (cur_status != fobA_status) {
+    Serial.print("FobA status changed to: ");
+    Serial.println(cur_status);
+    fobA_status = cur_status;
+    // immediately stop everything when the fob goes dark
+    if (cur_status == 0) {
+      stop_all();
+    }
+  }
+
+  // fob is pushed override the enviornment  
+  if (cur_status == 1) {
+    new_direction = empty_request;  // default to no incomming command
+    // always be dancing...
+    if (is_dancing == false) {
+      new_direction = solo;  // simulate a new request to do a solo 
+    }
+  }
 }
 
 // start and stop dancers, keep the show moving along....
 void loop() {
   
   check_for_direction();
+  check_for_fob();
   switch (new_direction) {
     case halt: 
               stop_all(); break;
@@ -210,6 +272,7 @@ void loop() {
   // has the music stopped?
   if (is_dancing) {
     signal_if_done();
+    signal_every_so_often();
   }
 }
 

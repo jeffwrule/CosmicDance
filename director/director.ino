@@ -9,7 +9,7 @@
 const unsigned int RxD = 5;
 const unsigned int TxD = 10;
 const int solo_delay_seconds = 5;        // number of seconds to delay for a solo
-const int ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play
+const int ensembl_delay_seconds = 10;    // number of seconds to wait between ensemble play
 
 /*
 This example is for Series 1 XBee
@@ -224,6 +224,7 @@ void loop() {
     if (send_command(now_dancing(), dance_type, empty_response)) {
       is_dancing = true;
       last_response = millis();
+      whatchadoing_misses = 0;
       switch(dance_type) {
         case ensembl: delay_after_dance_seconds = ensembl_delay_seconds; break;
         case solo: delay_after_dance_seconds = solo_delay_seconds; break;
@@ -246,15 +247,17 @@ void loop() {
       if (answer == dancing) {
         Serial.println("Updated last_repsonse, to now");
         last_response = now;
+        whatchadoing_misses = 0;       
       }
     }
     // poke the dancer(s) after 15 seconds if it has been longer then that since anyone checked in...
     if ( now - last_response >= 15000) {
-      Serial.println("15 seconds have passed, whatchadoing time...");
+      Serial.print("15 seconds have passed, whatchadoing time, number of misses: ");
+      Serial.println(whatchadoing_misses);
       if (send_command(now_dancing(), whatchadoing, dancing) == false) {
         whatchadoing_misses++;
         if (whatchadoing_misses > 1) {
-          Serial.println("Not dancing, halt and next...");
+          Serial.println("Too many misses, looks like noboday dancing, halt and next...");
           send_command(now_dancing(), halt, empty_response);
           is_dancing = false;
         }

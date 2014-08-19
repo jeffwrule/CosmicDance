@@ -45,9 +45,9 @@ const unsigned char empty_request = '\0';  // not a request
 boolean is_dancing = false;       // is someone currently dancing
 unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
 unsigned long dance_started;      // what time the dance started
-unsigned long last_checkin;      // when did we last send our status to the director.
-int fobA_status;                 // the last read status of the keyfob
-int solo_delay_seconds = 30;     // number of seconds to delay between plays
+unsigned long last_checkin;       // when did we last send our status to the director.
+int fobA_status;                  // the last read status of the keyfob
+int solo_delay_seconds = 5;       // number of seconds to delay between plays
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
@@ -110,6 +110,7 @@ void setup() {
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
   pinMode(fobA, INPUT);
+  
   xbeeSerial.begin(9600);
   xbee.setSerial(xbeeSerial);
   
@@ -124,6 +125,8 @@ void setup() {
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
+  Serial.print("FobA status=");
+  Serial.println(digitalRead(fobA));
   Serial.println("End setup");
 }
 
@@ -150,18 +153,16 @@ void stop_all() {
   Serial.println("stop_all end...");
 }
 
-boolean director_heard_me() {
-  if (xbeeSerial.available() > 0) {
-    return xbeeSerial.read() == acknowledge;
-  }
-  return false;
-}
-
 // start playing the solo or the ensembl
 void start_dancing(unsigned char dance_piece) {
   Serial.print("start_dancing starting: ");
   Serial.println((char)dance_piece);
-  xbeeSerial.write(dancing);
+  // don't write a response about starting file fobA is on
+  if (fobA_status == 1 ) {
+    Serial.println("fobA is on, skip sending dancing status to director");
+  } else {
+    xbeeSerial.write(dancing);
+  }
   switch (dance_piece) {
     case solo:     MP3player.playTrack(1); break;
     case ensembl:  MP3player.playTrack(2); break;
@@ -198,14 +199,16 @@ void signal_if_done() {
   // Serial.print("signal_if_done track status: ");
   if (track_is_complete()) {
       Serial.println("signal_if_done track status: complete");
-    if (fobA == 0) {
-      Serial.println("Fob is off, sending message to director");
+    if (fobA_status == 0) {
+      Serial.println("Fob is off, sending finished message to director");
       xbeeSerial.write(finished);
+    } else {
+      Serial.println("Fob is on, skipping 'finished' message to director");
     }
     stop_all();
-    if (fobA == 1) {
+    if (fobA_status == 1) {
       // simulate the sleep between tracks
-      Serial.print("Fob is on, pausing for ");
+      Serial.print("FobA is on, pausing for ");
       Serial.print(solo_delay_seconds);
       Serial.println(" between plays");
       delay(1000 * solo_delay_seconds);
@@ -233,22 +236,24 @@ void check_for_fob() {
   
   int cur_status = digitalRead(fobA);
   
-  // detect going from on to off 
+  // detect a fob state, if we get one reset everything 
   if (cur_status != fobA_status) {
     Serial.print("FobA status changed to: ");
     Serial.println(cur_status);
     fobA_status = cur_status;
-    // immediately stop everything when the fob goes dark
-    if (cur_status == 0) {
-      stop_all();
-    }
+    stop_all();
   }
 
-  // fob is pushed override the enviornment  
+  // fob is pushed override any incomming direction  
   if (cur_status == 1) {
+    if (new_direction != empty_request) {
+      Serial.print("fobA is on, ignoring direction: ");
+      Serial.println((char)new_direction);
+    }
     new_direction = empty_request;  // default to no incomming command
     // always be dancing...
     if (is_dancing == false) {
+      Serial.println("fobA is on and not dancing, restarting dance");
       new_direction = solo;  // simulate a new request to do a solo 
     }
   }

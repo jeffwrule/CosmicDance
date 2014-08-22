@@ -21,7 +21,7 @@ const unsigned int TxD = 10;
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // in to turn on/off
-const int fobA = A5;                      // input pin that the fobA button is hooked up too
+const int fobA = A3;                      // input pin that the fobA button is hooked up too
 
 /*
 This example is for Series 1 XBee

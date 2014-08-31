@@ -1,6 +1,14 @@
 #include <XBee.h>
 #include <SoftwareSerial.h>
 
+const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
+
+// order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
+// The network cards will be called in this order.
+// if a dancer does not respond back, the next dancer will be queued
+unsigned int dance_order[]  = { 9 , all_dancers};  // order to queue the dancers
+unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
+
 /*
  * transmit and recieve pins for the xbee.
  * Note the pins jumpers on the xbee shield are configured just the opposite
@@ -18,10 +26,11 @@ Note: In my testing it took about 15 seconds for the XBee to start reporting suc
 */
 
 // director commands  
-const unsigned char solo = 's';         // dance a solo
-const unsigned char ensembl = 'e';      // everyone dance
-const unsigned char halt = 'h';         // everyone stop what they are doing
-const unsigned char whatchadoing = 'w';  // are you dancing or not?
+const unsigned char solo = 's';            // dance a solo
+const unsigned char ensembl = 'e';         // everyone dance
+const unsigned char halt = 'h';            // everyone stop what they are doing
+const unsigned char whatchadoing = 'w';    // are you dancing or not?
+const unsigned char mini_or_long = 'l';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
 
 // dancer responses 
 const unsigned char finished = 'f';       // peice has been completed
@@ -31,16 +40,9 @@ const unsigned char dancing = 'd';        // dancing
 // when passed as expect, no response is waited for
 const unsigned char empty_response = '\0'; // no response expected marker
 
-const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
 unsigned long start;             // the milliseconds when the program started
 unsigned long last_response;      // millis at time of last response
-
-// order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
-// The network cards will be called in this order.
-// if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = { 1, 3, all_dancers };  // order to queue the dancers
-unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
 unsigned int current_dancer_position;      // which dancer is in the array is dancing
 boolean is_dancing = false;                // is someone currently dancing
@@ -221,6 +223,8 @@ void loop() {
     Serial.print((char) dance_type);
     Serial.println();
     
+    send_command(now_dancing(), mini_or_long, empty_response);
+    delay(1000); // sleep for 1 second
     if (send_command(now_dancing(), dance_type, empty_response)) {
       is_dancing = true;
       last_response = millis();

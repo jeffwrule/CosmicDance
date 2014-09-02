@@ -6,7 +6,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = { 9 , all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = { 1, 5 , all_dancers};  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
 /*
@@ -16,8 +16,11 @@ unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
  */
 const unsigned int RxD = 5;
 const unsigned int TxD = 10;
-const int solo_delay_seconds = 5;        // number of seconds to delay for a solo
-const int ensembl_delay_seconds = 10;    // number of seconds to wait between ensemble play
+
+const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
+const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
+const int l_solo_delay_seconds = 15;        // number of seconds to delay for a solo in long mode
+const int l_ensembl_delay_seconds = 180;    // number of seconds to wait between ensemble play long mode
 
 /*
 This example is for Series 1 XBee
@@ -30,7 +33,7 @@ const unsigned char solo = 's';            // dance a solo
 const unsigned char ensembl = 'e';         // everyone dance
 const unsigned char halt = 'h';            // everyone stop what they are doing
 const unsigned char whatchadoing = 'w';    // are you dancing or not?
-const unsigned char mini_or_long = 'l';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
+const unsigned char mini_or_long = 'm';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
 
 // dancer responses 
 const unsigned char finished = 'f';       // peice has been completed
@@ -48,7 +51,8 @@ unsigned int current_dancer_position;      // which dancer is in the array is da
 boolean is_dancing = false;                // is someone currently dancing
 unsigned char dance_type;                  // which dance type to performe (solo or ensembl) 
 unsigned int delay_after_dance_seconds;    // number of seconds to delay after this diance
-
+unsigned int solo_delay_seconds;           // number of seconds a solo waits for next dance
+unsigned int ensembl_delay_seconds;        // number of seconds an ensembl waits for next dance
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
@@ -198,6 +202,13 @@ void setup() {
   whatchadoing_misses = 0;
   delay_after_dance_seconds = 0;
   
+  if (mini_or_long == 'm') {
+    solo_delay_seconds = m_solo_delay_seconds;
+    ensembl_delay_seconds = m_ensembl_delay_seconds;
+  } else {
+    solo_delay_seconds = l_solo_delay_seconds;
+    ensembl_delay_seconds = l_ensembl_delay_seconds;    
+  }
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
   send_command(all_dancers, halt, empty_response);

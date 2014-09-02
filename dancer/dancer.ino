@@ -132,7 +132,7 @@ void setup() {
   if (!sd.chdir("/")) sd.errorHalt("sd.chdir");  
   
   MP3player.begin();
-  MP3player.setVolume(20,20);
+  MP3player.setVolume(12,12);
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
@@ -189,7 +189,7 @@ void start_dancing(unsigned char dance_piece) {
   }
   switch (dance_piece) {
     case solo:     MP3player.playTrack(1 * play_mode); break;
-    case ensembl:  MP3player.playTrack(2); break;
+    case ensembl:  MP3player.playTrack(2 * play_mode); break;
   }
   delay(100); // this seems to stick sometimes when we start dancing
   digitalWrite(v12Switch, HIGH);

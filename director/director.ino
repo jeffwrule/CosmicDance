@@ -6,7 +6,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = { 1, 5 , all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {1, 3, 5, 9, all_dancers};  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 
 /*
@@ -33,7 +33,7 @@ const unsigned char solo = 's';            // dance a solo
 const unsigned char ensembl = 'e';         // everyone dance
 const unsigned char halt = 'h';            // everyone stop what they are doing
 const unsigned char whatchadoing = 'w';    // are you dancing or not?
-const unsigned char mini_or_long = 'm';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
+const unsigned char mini_or_long = 'l';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
 
 // dancer responses 
 const unsigned char finished = 'f';       // peice has been completed

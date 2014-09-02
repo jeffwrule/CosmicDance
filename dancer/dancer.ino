@@ -172,6 +172,8 @@ void stop_all() {
 
 // start playing the solo or the ensembl
 void start_dancing(unsigned char dance_piece) {
+  int my_track;
+  
   #if defined IS_BRIEF
     Serial.print("start_dancing starting: ");
     Serial.print((char)dance_piece);
@@ -188,9 +190,14 @@ void start_dancing(unsigned char dance_piece) {
     xbeeSerial.write(dancing);
   }
   switch (dance_piece) {
-    case solo:     MP3player.playTrack(1 * play_mode); break;
-    case ensembl:  MP3player.playTrack(2 * play_mode); break;
+    case solo:     my_track = 1 * play_mode; break;
+    case ensembl:  my_track = 2 * play_mode; break;
   }
+  #if defined IS_BRIEF
+    Serial.print("Starting Track:");
+    Serial.println(my_track);
+  #endif
+  MP3player.playTrack(my_track);
   delay(100); // this seems to stick sometimes when we start dancing
   digitalWrite(v12Switch, HIGH);
   digitalWrite(v5Switch, HIGH);

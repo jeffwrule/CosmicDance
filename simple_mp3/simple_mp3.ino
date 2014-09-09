@@ -40,11 +40,13 @@ void loop() {
     switch (command) {
       case '1': 
                 Serial.println("Starting Track 1");
-                MP3player.playTrack(1);
+                delay(100);
+                //MP3player.playTrack(1);
+                MP3player.playMP3("track001.mp3");
                 break;
       case '2':
                 Serial.println("Starting Track 2");
-                MP3player.playTrack(2);
+                MP3player.playMP3("track020.acc");
                 break;
       case 's':
                 Serial.println("Stopping playback");

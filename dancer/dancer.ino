@@ -1,7 +1,5 @@
 #include <XBee.h>
 #include <SoftwareSerial.h>
-
-
 #include <SPI.h>
 
 //Add the SdFat Libraries
@@ -60,6 +58,7 @@ int fobA_status;                  // the last read status of the keyfob
 int solo_delay_seconds = 5;       // number of seconds to delay between plays
 int play_mode = PM_LONG;          // default to long dance pieces, can be changed by director
 int num_dances = 0;               // how many times have we danced
+char track_name[] = "track000.aac"; // place holder for track...
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
@@ -192,13 +191,20 @@ void start_dancing(unsigned char dance_piece) {
   switch (dance_piece) {
     case solo:     my_track = 1 * play_mode; break;
     case ensembl:  my_track = 2 * play_mode; break;
+    default: my_track = 0;
   }
+  sprintf(track_name, "track%03d.wav", my_track);
   #if defined IS_BRIEF
     Serial.print("Starting Track:");
-    Serial.println(my_track);
+    Serial.println(track_name);
   #endif
-  MP3player.playTrack(my_track);
-  delay(100); // this seems to stick sometimes when we start dancing
+  int result = MP3player.playMP3(track_name, 0);
+  if(result != 0) {
+    Serial.print("Error code: ");
+    Serial.print(result);
+    Serial.println(" when trying to play track");
+  }
+  delay(300); // this seems to stick sometimes when we start dancing
   digitalWrite(v12Switch, HIGH);
   digitalWrite(v5Switch, HIGH);
   is_dancing = true;
@@ -238,7 +244,7 @@ void signal_if_done() {
   // simulate the MP3 stopping after 13 seconds
   // Serial.print("signal_if_done track status: ");
   if (track_is_complete()) {
-    #if defined ISCHATTY
+    #if defined IS_CHATTY
       Serial.println("signal_if_done track status: complete");
     #endif
     if (fobA_status != FOB_ON) {
@@ -267,13 +273,13 @@ void signal_if_done() {
 // are we done?
 void signal_every_so_often() {
 
-  // no need to send out a signe we are on our own here
+  // no need to send out a signal we are on our own here
   if (fobA_status == FOB_ON) {
     return;
   }
   
   if (millis() - last_checkin > 4000) {
-    #if defined IS_CHATT
+    #if defined IS_CHATTY
       Serial.println("signal_every_so_often checking in...");
     #endif
     xbeeSerial.write(dancing);
@@ -284,10 +290,13 @@ void signal_every_so_often() {
 void drain_serial() {
   // drain any outstanding input queries....
   while (xbeeSerial.available() > 0) {
-    char x = xbeeSerial.read();
     # if defined IS_CHATTY
+      char x = xbeeSerial.read();
       Serial.print("Draining Serial got: ");
       Serial.println(x);
+    #else
+      Serial.println("draining...");
+      xbeeSerial.read();
     #endif  
   }
 }
@@ -330,6 +339,8 @@ void check_for_fob() {
 
 // start and stop dancers, keep the show moving along....
 void loop() {
+  
+  // MP3player.available();  // fill the buffer if we are polling or simpleTimer
   
   check_for_fob();
   if (fobA_status != FOB_ON) {

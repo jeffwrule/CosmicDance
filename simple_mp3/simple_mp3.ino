@@ -42,7 +42,7 @@ void loop() {
                 Serial.println("Starting Track 1");
                 delay(100);
                 //MP3player.playTrack(1);
-                MP3player.playMP3("track001.mp3");
+                MP3player.playMP3("track001.aac");
                 break;
       case '2':
                 Serial.println("Starting Track 2");

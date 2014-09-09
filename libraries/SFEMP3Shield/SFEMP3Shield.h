@@ -24,6 +24,7 @@
 #include <SdFat.h>
 #include <SdFatUtil.h>
 
+extern volatile boolean report_loaded;
 
 /** \brief State of the SFEMP3Shield device
  *
@@ -760,6 +761,7 @@ class SFEMP3Shield {
 
 /** \brief contains a local value of the VSdsp's master volume Right channels*/
     uint8_t VolR;
+
 
 /**
  * \brief A handler for accessing nibbles of the SCI_BASS word.

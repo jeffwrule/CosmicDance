@@ -12,6 +12,8 @@
 //avr pgmspace library for storing the LUT in program flash instead of sram
 #include <avr/pgmspace.h>
 
+volatile boolean report_loaded;
+
 /**
  * \brief bitrate lookup table
  *
@@ -1026,7 +1028,6 @@ uint8_t SFEMP3Shield::playTrack(uint8_t trackNo){
 
   //a storage place for track names
   char trackName[] = "track001.mp3";
-  uint8_t trackNumber = 1;
 
   //tack the number onto the rest of the filename
   sprintf(trackName, "track%03d.mp3", trackNo);
@@ -1067,14 +1068,21 @@ uint8_t SFEMP3Shield::playMP3(char* fileName, uint32_t timecode) {
 
   if(isPlaying()) return 1;
   if(!digitalRead(MP3_RESET)) return 3;
+//    Serial.println("MP3 reset");
+//    Serial.flush();
 
   //Open the file in read mode.
   if(!track.open(fileName, O_READ)) return 2;
+//    Serial.println("File opened");
+//    Serial.flush();
 
   // find length of arrary at pointer
   int fileNamefileName_length = 0;
   while(*(fileName + fileNamefileName_length))
     fileNamefileName_length++;
+//    Serial.print("File name length ");
+//    Serial.println(fileNamefileName_length);
+//    Serial.flush();
 
   // Only know how to read bitrate from MP3 file. ignore the rest.
   // Note bitrate may get updated later by getAudioInfo()
@@ -1084,17 +1092,42 @@ uint8_t SFEMP3Shield::playMP3(char* fileName, uint32_t timecode) {
       track.seekSet(timecode * bitrate + start_of_music); // skip to X ms.
     }
   }
+//    Serial.print("timecode: ");
+//    Serial.print(timecode);
+//    Serial.print("bitrate: ");
+//    Serial.print(bitrate);
+//    Serial.print("start_of_music: ");
+//    Serial.println(start_of_music);
+//    delay(100);
 
-  playing_state = playback;
+    
+    report_loaded = true;
 
   Mp3WriteRegister(SCI_DECODE_TIME, 0); // Reset the Decode and bitrate from previous play back.
   delay(100); // experimentally found that we need to let this settle before sending data.
+    Serial.println("SCI_DECODE_TIME complete");
+    delay(100);
+    
+    report_loaded = false;
 
+    playing_state = playback;
+
+    Serial.println("register set");
+    delay(100);
   //gotta start feeding that hungry mp3 chip
+  disableRefill();
+    Serial.println("refill disabled");
+    delay(100);
+    report_loaded = true;
   refill();
+    Serial.println("Refill complete");
+    delay(100);
+
 
   //attach refill interrupt off DREQ line, pin 2
   enableRefill();
+    Serial.println("interrupt enabled");
+    delay(100);
 
   return 0;
 }
@@ -1811,17 +1844,45 @@ void SFEMP3Shield::Mp3WriteRegister(uint8_t addressbyte, uint16_t data) {
  * to the VSdsp's registers. Where the value write is Big Endian (MSB first).
  */
 void SFEMP3Shield::Mp3WriteRegister(uint8_t addressbyte, uint8_t highbyte, uint8_t lowbyte) {
+    
+    if (report_loaded) {
+        Serial.print("Mp3WriteRegister: ");
+        Serial.println(addressbyte, HEX);
+        delay(100);
+    }
 
   // skip if the chip is in reset.
   if(!digitalRead(MP3_RESET)) return;
+    if (report_loaded) {
+        Serial.println("Digital Read complete");
+        delay(100);
+    }
 
   //cancel interrupt if playing
-  if(playing_state == playback)
+    if(playing_state == playback) {
     disableRefill();
+        if (report_loaded) {
+            Serial.println("disableRefill complete");
+            delay(100);
+        }
+    }
 
+    if (report_loaded) {
+        Serial.println("Waiting for MP3_DREQ LOW");
+        delay(100);
+    }
   //Wait for DREQ to go high indicating IC is available
   while(!digitalRead(MP3_DREQ)) ;
+    if (report_loaded) {
+        Serial.println("Got MP2_DREQ");
+        delay(100);
+    }
+    
 
+    if (report_loaded) {
+        Serial.println("Starting data transfer");
+        delay(100);
+    }
   cs_low(); //Select control
 
   //SCI consists of instruction byte, address byte, and 16-bit data word.
@@ -1831,16 +1892,27 @@ void SFEMP3Shield::Mp3WriteRegister(uint8_t addressbyte, uint8_t highbyte, uint8
   SPI.transfer(lowbyte);
   while(!digitalRead(MP3_DREQ)) ; //Wait for DREQ to go high indicating command is complete
   cs_high(); //Deselect Control
+    if (report_loaded) {
+        Serial.println("Data transfer complete");
+        delay(100);
+    }
 
   //resume interrupt if playing.
   if(playing_state == playback) {
+      if (report_loaded) {
+          Serial.println("restarting refill b/c playback is already enabled");
+          delay(100);
+      }
     //see if it is already ready for more
     refill();
 
     //attach refill interrupt off DREQ line, pin 2
     enableRefill();
   }
-
+    if (report_loaded) {
+        Serial.println("Write Register Complete");
+        delay(100);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1984,6 +2056,8 @@ void SFEMP3Shield::refill() {
   sei();
 #endif
 
+  volatile uint32_t total_refill_bytes_read = 0;
+    
   while(digitalRead(MP3_DREQ)) {
 
     if(!track.read(mp3DataBuffer, sizeof(mp3DataBuffer))) { //Go out to SD card and try reading 32 new bytes of the song
@@ -1999,7 +2073,7 @@ void SFEMP3Shield::refill() {
       //Time to exit
       break;
     }
-
+    total_refill_bytes_read += sizeof(mp3DataBuffer);
 
     //Once DREQ is released (high) we now feed 32 bytes of data to the VS1053 from our SD read buffer
 #if !defined(USE_MP3_REFILL_MEANS) || USE_MP3_REFILL_MEANS == USE_MP3_INTx
@@ -2017,6 +2091,11 @@ void SFEMP3Shield::refill() {
     sei();
 #endif
   }
+    if (report_loaded) {
+        report_loaded = false;
+        Serial.print("refill: Total bytes loaded: ");
+        Serial.println(total_refill_bytes_read);
+    }
 
 #if PERF_MON_PIN != -1
   digitalWrite(PERF_MON_PIN,HIGH);
@@ -2100,7 +2179,7 @@ void SFEMP3Shield::enableRefill() {
  */
 void SFEMP3Shield::disableRefill() {
 #if defined(USE_MP3_REFILL_MEANS) && USE_MP3_REFILL_MEANS == USE_MP3_Timer1
-  Timer1.detachInterrupt();
+    Timer1.detachInterrupt();
 #elif defined(USE_MP3_REFILL_MEANS) && USE_MP3_REFILL_MEANS == USE_MP3_SimpleTimer
   timer.disable(timerId_mp3);
 #elif !defined(USE_MP3_REFILL_MEANS) || USE_MP3_REFILL_MEANS == USE_MP3_INTx

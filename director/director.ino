@@ -19,8 +19,8 @@ const unsigned int TxD = 10;
 
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
-const int l_solo_delay_seconds = 15;        // number of seconds to delay for a solo in long mode
-const int l_ensembl_delay_seconds = 180;    // number of seconds to wait between ensemble play long mode
+const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
+const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
 
 /*
 This example is for Series 1 XBee
@@ -266,7 +266,7 @@ void loop() {
       }
     }
     // poke the dancer(s) after 15 seconds if it has been longer then that since anyone checked in...
-    if ( now - last_response >= 15000) {
+    if ( now - last_response >= 40000) {
       Serial.print("15 seconds have passed, whatchadoing time, number of misses: ");
       Serial.println(whatchadoing_misses);
       if (send_command(now_dancing(), whatchadoing, dancing) == false) {

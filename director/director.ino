@@ -6,8 +6,10 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = {1, 3, 5, 9, all_dancers};  // order to queue the dancers
+//unsigned int dance_order[]  = {1, 3, 5, 9, all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {1, all_dancers};  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
+unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
 
 /*
  * transmit and recieve pins for the xbee.
@@ -266,8 +268,9 @@ void loop() {
       }
     }
     // poke the dancer(s) after 15 seconds if it has been longer then that since anyone checked in...
-    if ( now - last_response >= 40000) {
-      Serial.print("15 seconds have passed, whatchadoing time, number of misses: ");
+    if ( now - last_response >= 1000 * timeout_seconds) {
+      Serial.print((now - last_response)/1000);
+      Serial.print(" seconds have passed, whatchadoing time, number of misses: ");
       Serial.println(whatchadoing_misses);
       if (send_command(now_dancing(), whatchadoing, dancing) == false) {
         whatchadoing_misses++;
@@ -275,11 +278,15 @@ void loop() {
           Serial.println("Too many misses, looks like noboday dancing, halt and next...");
           send_command(now_dancing(), halt, empty_response);
           is_dancing = false;
+          return;
         }
         else {
           Serial.print("No response, but letting it go for now num_misses: ");
           Serial.println(whatchadoing_misses);
         }
+        // we had a miss, give them 10 more seconds to get back to us...
+        last_response = last_response + 10000;  // give them another 10 seconds to answer...
+        Serial.println("Added an extra 10 seconds before full timeout");
         return;
       } 
       // we got a response from someone, we are still dancing....

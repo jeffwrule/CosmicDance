@@ -193,7 +193,7 @@ void start_dancing(unsigned char dance_piece) {
     case ensembl:  my_track = 2 * play_mode; break;
     default: my_track = 0;
   }
-  sprintf(track_name, "track%03d.wav", my_track);
+  sprintf(track_name, "track%03d.aac", my_track);
   #if defined IS_BRIEF
     Serial.print("Starting Track:");
     Serial.println(track_name);

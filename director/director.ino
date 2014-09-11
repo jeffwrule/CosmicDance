@@ -6,7 +6,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = {1, 3, 5, 9, all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
 

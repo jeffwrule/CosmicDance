@@ -1,4 +1,3 @@
-#include <XBee.h>
 #include <SoftwareSerial.h>
 #include <SPI.h>
 
@@ -12,16 +11,17 @@
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
-const int PM_MINI = 1;      // play mode mini
-const int PM_LONG = 10;     // play mode long
+const int PM_MINI = 1;            // play mode mini track001.xxx
+const int PM_LONG = 10;           // play mode long track010.xxx
+const char file_type[] = "mp3";   // mp3, m4a, acc etc....
 
 /*
  * transmit and recieve pins for the xbee.
  * Note the pins jumpers on the xbee shield are configured just the opposite
  * Tx=5, Rx=10
  */
-const unsigned int RxD = 5;
-const unsigned int TxD = 10;
+const unsigned int RxD = 5;               // softserial read
+const unsigned int TxD = 10;              // softserial transmit
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // in to turn on/off
@@ -58,21 +58,13 @@ int fobA_status;                  // the last read status of the keyfob
 int solo_delay_seconds = 5;       // number of seconds to delay between plays
 int play_mode = PM_LONG;          // default to long dance pieces, can be changed by director
 int num_dances = 0;               // how many times have we danced
-char track_name[] = "track000.aac"; // place holder for track...
+char track_name[] = "trackNNN.ttt"; // place holder for track...
 
 // 1 byte to hold transmit messages
 uint8_t payload[] = { 0 };
 // 1 byte to hold receive messages
 unsigned char new_direction;
 
-// create an Xbee object to communite with the XBee card
-XBee xbee = XBee();             
-// 16-bit transmit request
-Tx16Request tx = Tx16Request(0xFFFE, payload, sizeof(payload));
-// 16-bit recieve frame
-Rx16Response rx16 = Rx16Response();
-// 16-bit status response
-TxStatusResponse txStatus = TxStatusResponse();
 // software serial port
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 
@@ -119,10 +111,9 @@ void setup() {
   digitalWrite(v12Switch, LOW);
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
-  pinMode(fobA, INPUT);
+  pinMode(fobA, INPUT_PULLUP);
   
   xbeeSerial.begin(9600);
-  xbee.setSerial(xbeeSerial);
   
   is_dancing = false;
   new_direction = empty_request;
@@ -146,6 +137,9 @@ void setup() {
  */
 void check_for_direction() {
   // read until we get what we want or noting left to read
+  #if defined IS_CHATTY
+    Serial.println(F("checking for direction..."));
+  #endif
   if (xbeeSerial.available() > 0) {
     new_direction = xbeeSerial.read();
     #if defined IS_BRIEF
@@ -165,7 +159,7 @@ void stop_all() {
   digitalWrite(v12Switch, LOW);
   digitalWrite(v5Switch, LOW);
   #if defined IS_CHATTY
-    Serial.println("stop_all end...");
+    Serial.println(F("stop_all end..."));
   #endif
 }
 
@@ -183,7 +177,7 @@ void start_dancing(unsigned char dance_piece) {
   // don't write a response about starting file fobA is on
   if (fobA_status == FOB_ON) {
     #if defined IS_CHATTY
-      Serial.println("fobA is on, skip sending dancing status to director");
+      Serial.println(F("fobA is on, skip sending dancing status to director"));
     #endif
   } else {
     xbeeSerial.write(dancing);
@@ -193,7 +187,7 @@ void start_dancing(unsigned char dance_piece) {
     case ensembl:  my_track = 2 * play_mode; break;
     default: my_track = 0;
   }
-  sprintf(track_name, "track%03d.aac", my_track);
+  sprintf(track_name, "track%03d.%s", my_track, file_type);
   #if defined IS_BRIEF
     Serial.print("Starting Track:");
     Serial.println(track_name);
@@ -212,7 +206,7 @@ void start_dancing(unsigned char dance_piece) {
   dance_started = millis();
   last_checkin = dance_started;
   #if defined IS_CHATTY
-    Serial.println("start_dancing end");
+    Serial.println(F("start_dancing end"));
   #endif
 }
 
@@ -245,25 +239,25 @@ void signal_if_done() {
   // Serial.print("signal_if_done track status: ");
   if (track_is_complete()) {
     #if defined IS_CHATTY
-      Serial.println("signal_if_done track status: complete");
+      Serial.println(F("signal_if_done track status: complete"));
     #endif
     if (fobA_status != FOB_ON) {
       #if defined IS_CHATTY
-        Serial.println("Fob is off, sending finished message to director");
+        Serial.println(F("Fob is off, sending finished message to director"));
       #endif
       xbeeSerial.write(finished);
     } else {
       #if defined IS_CHATTY
-        Serial.println("Fob is on, skipping 'finished' message to director");
+        Serial.println(F("Fob is on, skipping 'finished' message to director"));
       #endif
     }
     stop_all();
     if (fobA_status == FOB_ON) {
       // simulate the sleep between tracks
       #if defined IS_CHATTY
-        Serial.print("FobA is on, pausing for ");
+        Serial.print(F("FobA is on, pausing for "));
         Serial.print(solo_delay_seconds);
-        Serial.println(" between plays");
+        Serial.println(F(" between plays"));
       #endif
       delay(1000 * solo_delay_seconds);
     }
@@ -280,7 +274,7 @@ void signal_every_so_often() {
   
   if (millis() - last_checkin > 4000) {
     #if defined IS_CHATTY
-      Serial.println("signal_every_so_often checking in...");
+      Serial.println(F("signal_every_so_often checking in..."));
     #endif
     xbeeSerial.write(dancing);
     last_checkin = millis();
@@ -292,7 +286,7 @@ void drain_serial() {
   while (xbeeSerial.available() > 0) {
     # if defined IS_CHATTY
       char x = xbeeSerial.read();
-      Serial.print("Draining Serial got: ");
+      Serial.print(F("Draining Serial got: "));
       Serial.println(x);
     #else
       Serial.println("draining...");
@@ -322,7 +316,7 @@ void check_for_fob() {
     drain_serial();        // don't let this build up too much...
     if (new_direction != empty_request) {
       #if defined IS_CHATTY
-        Serial.print("fobA is on, ignoring direction: ");
+        Serial.print(F("fobA is on, ignoring direction: "));
         Serial.println((char)new_direction);
       #endif
     }
@@ -330,7 +324,7 @@ void check_for_fob() {
     // always be dancing...
     if (is_dancing == false) {
       #if defined IS_CHATTY
-        Serial.println("fobA is on and not dancing, restarting dance");
+        Serial.println(F("fobA is on and not dancing, restarting dance"));
       #endif
       new_direction = solo;  // simulate a new request to do a solo 
     }

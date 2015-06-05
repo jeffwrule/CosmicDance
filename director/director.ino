@@ -3,10 +3,16 @@
 
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
 // The network cards will be called in this order.
 // if a dancer does not respond back, the next dancer will be queued
-unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {0x0019};  // order to queue the dancers
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
 
@@ -34,7 +40,7 @@ const unsigned char solo = 's';            // dance a solo
 const unsigned char ensembl = 'e';         // everyone dance
 const unsigned char halt = 'h';            // everyone stop what they are doing
 const unsigned char whatchadoing = 'w';    // are you dancing or not?
-const unsigned char mini_or_long = 'l';    // mini or long; change this to play short tracks 1/2 or long trancs 10/20  
+const unsigned char mini_or_long = 'm';    // mini (m) or long (l); change this to play short tracks 1/2 or long trancs 10/20  
 
 // dancer responses 
 const unsigned char finished = 'f';       // peice has been completed
@@ -44,14 +50,13 @@ const unsigned char dancing = 'd';        // dancing
 // when passed as expect, no response is waited for
 const unsigned char empty_response = '\0'; // no response expected marker
 
-
 unsigned long start;             // the milliseconds when the program started
 unsigned long last_response;      // millis at time of last response
 
 unsigned int current_dancer_position;      // which dancer is in the array is dancing
 boolean is_dancing = false;                // is someone currently dancing
 unsigned char dance_type;                  // which dance type to performe (solo or ensembl) 
-unsigned int delay_after_dance_seconds;    // number of seconds to delay after this diance
+unsigned int delay_after_dance_seconds;    // number of seconds to delay after this dance
 unsigned int solo_delay_seconds;           // number of seconds a solo waits for next dance
 unsigned int ensembl_delay_seconds;        // number of seconds an ensembl waits for next dance
 
@@ -60,7 +65,7 @@ uint8_t payload[] = { 0 };
 // 1 byte to hold receive messages
 unsigned char answer;
 
-byte  whatchadoing_misses;
+byte  whatchadoing_misses;                // number of times no responce from a watchadoing request
 
 // create an Xbee object to communite with the XBee card
 XBee xbee = XBee();             
@@ -154,8 +159,8 @@ boolean send_command(uint16_t addr, char command, char expect) {
   // what is the command we are about to send.
   Serial.print("send_command: Starting command=");
   Serial.print(command);
-  Serial.print(" who=");
-  Serial.print(addr);
+  Serial.print(" who=x");
+  Serial.print(addr, HEX);
   Serial.print(" expect=");
   Serial.println(expect);
   
@@ -229,15 +234,17 @@ void loop() {
     delay_next_dance();
     
     queue_next_dance();
-    Serial.print("Starting dancer: ");
-    Serial.print(now_dancing());
+    Serial.print("Starting dancer: x");
+    Serial.print(now_dancing(), HEX);
+    Serial.print(", Mini or long: ");
+    Serial.print((char) mini_or_long);
     Serial.print(", Dance Type: ");
     Serial.print((char) dance_type);
     Serial.println();
     
-    send_command(now_dancing(), mini_or_long, empty_response);
+    send_command(now_dancing(), mini_or_long, empty_response);   // send the length of the dance
     delay(1000); // sleep for 1 second
-    if (send_command(now_dancing(), dance_type, empty_response)) {
+    if (send_command(now_dancing(), dance_type, empty_response)) {  // send solo or ensembl
       is_dancing = true;
       last_response = millis();
       whatchadoing_misses = 0;

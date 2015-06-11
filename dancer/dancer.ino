@@ -11,9 +11,14 @@
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
+#define NORMAL_VOLUME 12
+#define BEEP_VOLUME  100
+
 const int PM_MINI = 1;            // play mode mini track001.xxx
 const int PM_LONG = 10;           // play mode long track010.xxx
 const char file_type[] = "mp3";   // mp3, m4a, acc etc....
+
+
 
 /*
  * transmit and recieve pins for the xbee.
@@ -26,7 +31,9 @@ const unsigned int delay_seconds = 20;    // number of seconds to wait to restar
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // in to turn on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
-const int FOB_ON = 1;                     // the FOB is on.
+const int FOB_PIN_ON = 1;                 // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
+                                          // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0
+boolean fob_is_dancing;                   // true of the fob has been pushed so we are dancing, false otherwise
 
 /*
 This example is for Series 1 XBee
@@ -54,7 +61,7 @@ boolean is_dancing = false;       // is someone currently dancing
 unsigned char dance_type;         // which dance type to performe (solo or ensembl) 
 unsigned long dance_started;      // what time the dance started
 unsigned long last_checkin;       // when did we last send our status to the director.
-int fobA_status;                  // the last read status of the keyfob
+//int fobA_status;                  // the last read status of the keyfob
 int solo_delay_seconds = 5;       // number of seconds to delay between plays
 int play_mode = PM_LONG;          // default to long dance pieces, can be changed by director
 int num_dances = 0;               // how many times have we danced
@@ -122,13 +129,14 @@ void setup() {
   if (!sd.chdir("/")) sd.errorHalt("sd.chdir");  
   
   MP3player.begin();
-  MP3player.setVolume(12,12);
+  MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
-  Serial.print("FobA status=");
-  Serial.println(digitalRead(fobA));
-  Serial.println("End setup");
+  
+  // default to fob mode off when we start
+  fob_is_dancing = false;  
+  Serial.println(F("End setup"));
 }
 
 /*
@@ -175,7 +183,7 @@ void start_dancing(unsigned char dance_piece) {
     Serial.println(num_dances);
   #endif
   // don't write a response about starting file fobA is on
-  if (fobA_status == FOB_ON) {
+  if (fob_is_dancing) {
     #if defined IS_CHATTY
       Serial.println(F("fobA is on, skip sending dancing status to director"));
     #endif
@@ -241,7 +249,7 @@ void signal_if_done() {
     #if defined IS_CHATTY
       Serial.println(F("signal_if_done track status: complete"));
     #endif
-    if (fobA_status != FOB_ON) {
+    if (fob_is_dancing == false) {
       #if defined IS_CHATTY
         Serial.println(F("Fob is off, sending finished message to director"));
       #endif
@@ -252,7 +260,7 @@ void signal_if_done() {
       #endif
     }
     stop_all();
-    if (fobA_status == FOB_ON) {
+    if (fob_is_dancing) {
       // simulate the sleep between tracks
       #if defined IS_CHATTY
         Serial.print(F("FobA is on, pausing for "));
@@ -268,7 +276,7 @@ void signal_if_done() {
 void signal_every_so_often() {
 
   // no need to send out a signal we are on our own here
-  if (fobA_status == FOB_ON) {
+  if (fob_is_dancing) {
     return;
   }
   
@@ -295,31 +303,49 @@ void drain_serial() {
   }
 }
 
+// make a beeping sound
+void do_beep(int num_millis, int delay_after) {
+  Serial.println("Making a beep...");
+  MP3player.setVolume(BEEP_VOLUME,BEEP_VOLUME);
+  MP3player.enableTestSineWave(14);
+  delay(num_millis);
+  MP3player.disableTestSineWave();
+  MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+  if (delay_after > 0) {
+    delay(delay_after);
+  }
+}
+
 void check_for_fob() {
   
   int cur_status = digitalRead(fobA);
   delay(30);    // add a short delay here, checking this seems to tweek the whole system.
   
-  // detect a fob state, if we get one reset everything 
-  if (cur_status != fobA_status) {
+  if (cur_status == FOB_PIN_ON) { // we have a switch request....
+    // fob button has been pushed, reset everyting and switch mode
     #if defined IS_BRIEF
-      Serial.print("FobA status changed to: ");
-      Serial.println(cur_status);
+      Serial.println(F("Fob Pin Pushed, switching status..."));
     #endif
-    fobA_status = cur_status;
     play_mode = PM_LONG;
     stop_all();
+    delay(30);
+
+    if (fob_is_dancing) {
+      fob_is_dancing = false;
+      do_beep(200, 50);
+      do_beep(200, 30);      
+      Serial.println(F("FOB is now off..."));
+    } else {
+      fob_is_dancing = true;
+      do_beep(200, 30);
+      Serial.println(F("FOB is now on..."));
+    }
+    delay(2000);  // this keeps us from getting bouncy pin signal 
   }
 
   // fob is pushed override any incomming direction  
-  if (cur_status == FOB_ON) {
+  if (fob_is_dancing) {
     drain_serial();        // don't let this build up too much...
-    if (new_direction != empty_request) {
-      #if defined IS_CHATTY
-        Serial.print(F("fobA is on, ignoring direction: "));
-        Serial.println((char)new_direction);
-      #endif
-    }
     new_direction = empty_request;  // default to no incomming command
     // always be dancing...
     if (is_dancing == false) {
@@ -337,7 +363,7 @@ void loop() {
   // MP3player.available();  // fill the buffer if we are polling or simpleTimer
   
   check_for_fob();
-  if (fobA_status != FOB_ON) {
+  if (fob_is_dancing == false) {
     check_for_direction();
   }
   switch (new_direction) {

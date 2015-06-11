@@ -3,6 +3,7 @@ using namespace std;
 
 #define DEBUG = true
 #define PRINT_EVER_NTH_ITTER 15000
+// #define PRINT_EVER_NTH_ITTER 1
 
 #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on)
 #define MOTOR_START_SPEED 30  // low values don't produce movement must be lower then MOTOR_SPEED
@@ -191,16 +192,12 @@ void HBridgeMotor::start() {
 void HBridgeMotor::go_left() {
   int orig_speed = speed;
   if (current_direction() != 'l') {
+    Serial.println("HBridgeMotor::go_left: reversing direction");
     stop();
     move_left = 1;
     move_right = 0;
-    if (orig_speed > 0) {
-      #ifdef DEBUG
-        Serial.print("Delaying...");
-        Serial.println(REVERSE_DELAY);
-      #endif
+    if (orig_speed != 0) {
       delay(REVERSE_DELAY);
-//      start();   
     }
   }
 }
@@ -209,17 +206,13 @@ void HBridgeMotor::go_left() {
 void HBridgeMotor::go_right() {
   int orig_speed = speed;
   if (current_direction() != 'r') {
+    Serial.println("HBridgeMotor::go_right: reversing direction");
     stop();
     move_left = 0;
     move_right = 1;
-    if (orig_speed > 0) {
-      #ifdef DEBUG
-        Serial.print("Delaying...");
-        Serial.println(REVERSE_DELAY);
-      #endif
-      delay(REVERSE_DELAY);      
-//      start();   
-    }
+    if (orig_speed != 0) {
+      delay(REVERSE_DELAY);
+    }  
   }
 }
 
@@ -395,21 +388,20 @@ void loop() {
   }
 
   // stop dancing at the top and stay there, until remote is dancing again
-  if (my_dancer->remote_is_dancing == false && current_limits->isMaxRight()) {
+  if (my_dancer->remote_is_dancing == false && current_limits->isMaxRight() && my_dancer->i_am_dancing) {
     if (do_print) { 
       Serial.println("Not dancing and at top, stop...");
     }
     my_dancer->stop_dancing();
-    do_print=true;
   }  
   
   // react to status of limit switches, reverse motor if necessary
   if (current_limits->isMaxLeft() && current_limits->isMaxRight()) {
     // something is very wrong stop the motor....
-    my_dancer->stop_dancing();
     if (do_print) {
       Serial.println("ERROR: both limts are active at the same time, motor is stopped...");
-    }
+    }    
+    my_dancer->stop_dancing();
     return;
   } else if (current_limits->isMaxLeft()) {
     my_motor->go_right();

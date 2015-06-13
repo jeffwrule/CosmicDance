@@ -3,6 +3,15 @@
 
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
+#define SINGULARITY 0x01
+#define LEPTON      0x03
+#define PARTICLELF  0x07
+#define GRAVITY     0x19
+#define SPACE       0x07
+#define WHITEHOLE   0x09
+#define DVNMOMENT   0x11
+#define TIME        0x13
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // order to queue the dancers in, each dancer has a network card with an integer id in the 'MY' field 1-N
@@ -11,8 +20,19 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 // unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
-unsigned int dance_order[]  = {0x0019};  // order to queue the dancers
+unsigned int dance_order[]  = {SINGULARITY, 
+                               LEPTON,
+                               PARTICLELF,
+                               GRAVITY,
+                               SPACE,
+                               WHITEHOLE,
+                               DVNMOMENT,
+                               all_dancers };  // order to queue the dancers
+
+//unsigned int dance_order[]  = {TIME, all_dancers};  // order to queue the dancers
+                               
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
 
@@ -27,7 +47,8 @@ const unsigned int TxD = 10;
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
 const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
-const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
+//const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
+const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
 
 /*
 This example is for Series 1 XBee
@@ -40,7 +61,7 @@ const unsigned char solo = 's';            // dance a solo
 const unsigned char ensembl = 'e';         // everyone dance
 const unsigned char halt = 'h';            // everyone stop what they are doing
 const unsigned char whatchadoing = 'w';    // are you dancing or not?
-const unsigned char mini_or_long = 'm';    // mini (m) or long (l); change this to play short tracks 1/2 or long trancs 10/20  
+const unsigned char mini_or_long = 'l';    // mini (m) or long (l); change this to play short tracks 1/2 or long trancs 10/20  
 
 // dancer responses 
 const unsigned char finished = 'f';       // peice has been completed

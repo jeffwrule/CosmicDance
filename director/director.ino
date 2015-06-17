@@ -5,7 +5,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 #define SINGULARITY 0x01
 #define LEPTON      0x03
-#define PARTICLELF  0x07
+#define PARTICLELF  0x05
 #define GRAVITY     0x19
 #define SPACE       0x07
 #define WHITEHOLE   0x09

@@ -43,9 +43,13 @@ unsigned long rock_interval_length;      // time to wait for the next rock inter
 #define  ROCK_OFF_INTERVAL  500          // time to wait for rocker to pull back when magnets are off
 
 boolean is_rocking;                      // we flip this on for random periods of time to create the illusions of a random cycle
-unsigned long rocking_started;             // time when we last stop/started rocking
+unsigned long rocking_started;           // time when we last stop/started rocking
 unsigned long rocking_length;            // how long will we rock on wait.
 
+#define START_ROCKING_MIN 1              // min seconds to rock
+#define START_ROCKING_MAX 6              // max seconds to rock
+#define STOP_ROCKING_MIN 10              // min seconds to not-rock
+#define STOP_ROCKING_MAX 20              // max seconds to rock
 
 /*
 This example is for Series 1 XBee
@@ -134,7 +138,7 @@ void setup() {
   
    is_rocking = false;
    rocking_started = millis();
-   rocking_length = 15000;
+   rocking_length = 3000;
    rock_interval_active = false;
    rock_interval_started = millis();
    rock_interval_length = ROCK_ON_INTERVAL;
@@ -183,7 +187,7 @@ void stop_all() {
     Serial.println("stop_all begin...");
   #endif
   is_dancing = false;
-  is_rocking = false;
+  stop_rocking();
   MP3player.stopTrack();
   digitalWrite(v12Switch, LOW);
   digitalWrite(v5Switch, LOW);
@@ -228,9 +232,8 @@ void start_dancing(unsigned char dance_piece) {
     Serial.println(" when trying to play track");
   }
   delay(300); // this seems to stick sometimes when we start dancing
-  is_rocking = true;
-  rock_interval_started = millis();
   rocking_started = millis();
+  start_rocking();
   is_dancing = true;
   dance_type = dance_piece;
   dance_started = millis();
@@ -379,6 +382,23 @@ void check_for_fob() {
   }
 }
 
+void start_rocking() {
+  // start rocking
+  rocking_length = random(START_ROCKING_MIN, START_ROCKING_MAX) * 1000;  // rock at least 10 seconds, but no more then 20
+  is_rocking = true;
+  Serial.print("start rocking: ");
+  Serial.println(rocking_length);
+}
+
+void stop_rocking() {
+  // stop rocking 
+  digitalWrite(v12Switch, LOW);
+  rocking_length = random(STOP_ROCKING_MIN, STOP_ROCKING_MAX) * 1000;  // stop rocking for 5 seconds, but no more then 10 seconds
+  is_rocking = false;
+  Serial.print("stop rocking: ");
+  Serial.println(rocking_length);
+}
+
 // turn the change on and off at the pre-determined intervals
 void rock_chair() {
   
@@ -420,18 +440,9 @@ void rock_chair() {
     if (cur_diff > rocking_length) {
       rocking_started = cur_time;
       if (is_rocking) {
-        // stop rocking for bit..
-        digitalWrite(v12Switch, LOW);
-        rocking_length = random(2, 10) * 1000;  // stop rocking for 5 seconds, but no more then 10 seconds
-        is_rocking = false;
-        Serial.print("stop rocking: ");
-        Serial.println(rocking_length);
+        stop_rocking();
       } else {
-        // start rocking
-        rocking_length = random(4, 15) * 1000;  // rock at least 10 seconds, but no more then 20
-        is_rocking = true;
-        Serial.print("start rocking: ");
-        Serial.println(rocking_length);
+        start_rocking();
       }
     }
   }

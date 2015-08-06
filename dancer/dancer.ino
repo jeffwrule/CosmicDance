@@ -11,7 +11,12 @@
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
-#define NORMAL_VOLUME 12
+//non-amplified star, time etc
+//#define NORMAL_VOLUME 0          
+// amplified most pieces
+#define NORMAL_VOLUME 12          
+
+
 #define BEEP_VOLUME  100
 
 const int PM_MINI = 1;            // play mode mini track001.xxx

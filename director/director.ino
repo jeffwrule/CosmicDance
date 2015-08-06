@@ -9,8 +9,10 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define GRAVITY     0x19
 #define SPACE       0x07
 #define WHITEHOLE   0x09
-#define DVNMOMENT   0x11
-#define TIME        0x13
+#define DVNMOMENT   0x11                      // rocking chair
+#define TIME        0x13                      // hour glass
+#define STAR        0x15
+#define LIVEDIE     0x17                      // wall clock
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -25,9 +27,12 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 unsigned int dance_order[]  = {SINGULARITY, 
                                LEPTON,
                                PARTICLELF,
-                               GRAVITY,
                                SPACE,
+                               GRAVITY,
+                               STAR,
                                WHITEHOLE,
+                               TIME,
+                               LIVEDIE, 
                                DVNMOMENT,
                                all_dancers };  // order to queue the dancers
 

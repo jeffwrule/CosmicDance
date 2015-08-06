@@ -11,7 +11,7 @@
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
-#define NORMAL_VOLUME 12
+#define NORMAL_VOLUME 0
 #define BEEP_VOLUME  100
 
 const int PM_MINI = 1;            // play mode mini track001.xxx

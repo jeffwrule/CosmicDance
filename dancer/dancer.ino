@@ -39,7 +39,12 @@ const int fobA = A3;                      // input pin that the fobA button is h
 const int FOB_PIN_ON = 1;                 // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
                                           // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0
                                           // we want to connect this pin to ground throught momentary switch
-boolean fob_is_dancing;                   // true of the fob has been pushed so we are dancing, false otherwise
+                                          // The fob switch is a momentary off switch, so normally on but off when pushed.
+                                          // The fob pin is also configured with an internal pull_up resistor
+                                          // so it is normally closed and being pulled down to ground so it reads as 0 normally.
+                                          // When the switch is pushed, ground is disconnected and it floats high to 1.
+                                          // the fob toggles always dancing or network/director mode.
+boolean fob_is_dancing;                   // true if the fob has been pushed so we are dancing, false otherwise
 
 /*
 This example is for Series 1 XBee

@@ -14,10 +14,13 @@
 //non-amplified star, time etc
 //#define NORMAL_VOLUME 0          
 // amplified most pieces
-#define NORMAL_VOLUME 12          
-
+#define NORMAL_VOLUME 12 
+#define FOB_QUIET_VOLUME 40
 
 #define BEEP_VOLUME  100
+
+#define ENHANCED_STANDALONE true
+int fob_next_volume;
 
 const int PM_MINI = 1;            // play mode mini track001.xxx
 const int PM_LONG = 10;           // play mode long track010.xxx
@@ -147,6 +150,8 @@ void setup() {
   
   // default to fob mode off when we start
   fob_is_dancing = false;  
+  fob_next_volume = NORMAL_VOLUME;
+  if (ENHANCED_STANDALONE == true) solo_delay_seconds = 0;
   Serial.println(F("End setup"));
 }
 
@@ -198,6 +203,9 @@ void start_dancing(unsigned char dance_piece) {
     #if defined IS_CHATTY
       Serial.println(F("fobA is on, skip sending dancing status to director"));
     #endif
+    if (ENHANCED_STANDALONE == true) {
+        MP3player.setVolume(fob_next_volume,fob_next_volume);
+    }
   } else {
     xbeeSerial.write(dancing);
   }
@@ -218,8 +226,12 @@ void start_dancing(unsigned char dance_piece) {
     Serial.println(" when trying to play track");
   }
   delay(300); // this seems to stick sometimes when we start dancing
-  digitalWrite(v12Switch, HIGH);
-  digitalWrite(v5Switch, HIGH);
+  if (fob_is_dancing && ENHANCED_STANDALONE && fob_next_volume == FOB_QUIET_VOLUME) {
+    // do nothing we don't want to start motors when fob mode and the quite play
+  } else {
+    digitalWrite(v12Switch, HIGH);
+    digitalWrite(v5Switch, HIGH);
+  }
   is_dancing = true;
   dance_type = dance_piece;
   dance_started = millis();
@@ -279,6 +291,14 @@ void signal_if_done() {
         Serial.println(F(" between plays"));
       #endif
       delay(1000 * solo_delay_seconds);
+      // if enhanced_mode, switch volume for next play
+      if (ENHANCED_STANDALONE == true ) {
+        if (fob_next_volume == NORMAL_VOLUME) {
+          fob_next_volume = FOB_QUIET_VOLUME;
+        } else {
+          fob_next_volume = NORMAL_VOLUME;
+        }
+      }
     }
   }
 }
@@ -344,10 +364,11 @@ void check_for_fob() {
     if (fob_is_dancing) {
       fob_is_dancing = false;
       do_beep(200, 50);
-      do_beep(200, 30);      
+      do_beep(200, 30);    
       Serial.println(F("FOB is now off..."));
     } else {
       fob_is_dancing = true;
+      fob_next_volume = NORMAL_VOLUME;
       do_beep(200, 30);
       Serial.println(F("FOB is now on..."));
     }

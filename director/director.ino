@@ -13,6 +13,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define TIME        0x13                      // hour glass
 #define STAR        0x15
 #define LIVEDIE     0x17                      // wall clock
+#define LEPTON2     0x19                      // new lepton build
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -24,17 +25,17 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 
 // unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
-unsigned int dance_order[]  = {SINGULARITY, 
-                               LEPTON,
-                               PARTICLELF,
-                               SPACE,
-                               GRAVITY,
-                               STAR,
-                               WHITEHOLE,
-                               TIME,
-                               LIVEDIE, 
-                               DVNMOMENT,
-                               all_dancers };  // order to queue the dancers
+-unsigned int dance_order[]  = {SINGULARITY, 
+-                               LEPTON,
+-                               PARTICLELF,
+-                               SPACE,
+-                               GRAVITY,
+-                               STAR,
+-                               WHITEHOLE,
+-                               TIME,
+-                               LIVEDIE, 
+-                               DVNMOMENT,
+                                all_dancers };  // order to queue the dancers
 
 //unsigned int dance_order[]  = {TIME, all_dancers};  // order to queue the dancers
                                

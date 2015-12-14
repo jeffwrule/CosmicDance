@@ -1,4 +1,6 @@
 #include <SoftwareSerial.h>
+
+#include <SoftwareSerial.h>
 #include <SPI.h>
 
 //Add the SdFat Libraries
@@ -19,7 +21,9 @@
 
 #define BEEP_VOLUME  100
 
-#define ENHANCED_STANDALONE true
+#define ENHANCED_STANDALONE false  // in FOB (standalone mode), plays once loud with motors and once quite w/o montors 0 delay
+                                  // if false Plays with normal volume, then waits solo_delay_seconds (usualy 5) and starts it all again
+                                  // normal volumn and motors on.
 int fob_next_volume;
 
 const int PM_MINI = 1;            // play mode mini track001.xxx
@@ -227,6 +231,9 @@ void start_dancing(unsigned char dance_piece) {
   }
   delay(300); // this seems to stick sometimes when we start dancing
   if (fob_is_dancing && ENHANCED_STANDALONE && fob_next_volume == FOB_QUIET_VOLUME) {
+    #if defined IS_BRIEF
+      Serial.print("ENHANCED_STANDALONE=true, quiet and skipping motors this run");
+    #endif
     // do nothing we don't want to start motors when fob mode and the quite play
   } else {
     digitalWrite(v12Switch, HIGH);

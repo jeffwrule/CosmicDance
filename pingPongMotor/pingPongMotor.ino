@@ -6,7 +6,7 @@ using namespace std;
 // #define PRINT_EVER_NTH_ITTER 1
 
 #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on)
-#define MOTOR_START_SPEED 30  // low values don't produce movement must be lower then MOTOR_SPEED
+#define MOTOR_START_SPEED 30   // low values don't produce movement must be lower then MOTOR_SPEED
 
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
 
@@ -104,6 +104,7 @@ class HBridgeMotor {
   public:
     void stop();
     void start();
+    void run();
     void go_left();
     void go_right();
     boolean is_stopped();
@@ -139,7 +140,7 @@ class HBridgeMotor {
 
 // bring the motor down in a controlled manor
 void HBridgeMotor::stop() {
-
+  
   boolean motor_was_running = false;
 
   Serial.println("HBridgeMotor::stop");
@@ -162,8 +163,6 @@ void HBridgeMotor::stop() {
 }
 
 void HBridgeMotor::start() { 
-  
-  if (speed < max_speed) {
     
     Serial.println("HBridgeMotor::start");
     Serial.print("Speed=");
@@ -175,17 +174,22 @@ void HBridgeMotor::start() {
       digitalWrite(pin_speed, max_speed);
     }
     
-    int start_speed = speed;
     if (speed < MOTOR_START_SPEED) {
       speed = MOTOR_START_SPEED;
     }
-    
-    speed += 1;
-    analogWrite(pin_speed, speed);
-    if ((speed % 1) == 0) {
-      delay(50);
+}
+
+// keep increasing the motor speed until max speed
+void HBridgeMotor::run() {
+  if ( ! is_disabled() ) {
+    if (speed < max_speed) {
+      speed += SPEED_INCREMENT;
+      analogWrite(pin_speed, speed);
+      if ((speed % 1) == 0) {
+        delay(50);
+      }
     }
-  } 
+  }
 }
 
 // contines left if alrady going left, else stops and restart left
@@ -198,6 +202,7 @@ void HBridgeMotor::go_left() {
     move_right = 0;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
+      start();
     }
   }
 }
@@ -212,6 +217,7 @@ void HBridgeMotor::go_right() {
     move_right = 1;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
+      start();
     }  
   }
 }
@@ -272,41 +278,62 @@ void HBridgeMotor::print() {
 class Dancer {
 
   public:
-    Dancer( int p_dancer, HBridgeMotor *motor ) : pin_dancer(p_dancer), i_am_dancing(true), _motor(motor) {update(); stop_dancing();}
-    void update( void ) { remote_is_dancing = (digitalRead(pin_dancer) == 1); }
-    boolean remote_is_dancing;
-    boolean i_am_dancing;  // pretend we are dancing, so the init will definately shut the motor off
+    Dancer( int p_dancer, HBridgeMotor *motor ) : pin_dancer(p_dancer), start_again(false), _motor(motor) {update(); stop_dancing();}
+    void update();
+    boolean i_am_dancing;         // the motor should be moving....
+    boolean start_again;          // requeue to our first position
     void stop_dancing();
     void start_dancing();
+    void dance();
     void print();
 
   private:
     int     pin_dancer;
+    boolean remote_is_dancing;
     HBridgeMotor  *_motor;
 };
+
+void Dancer::update() {
+  remote_is_dancing = (digitalRead(pin_dancer) == 1);
+  if (remote_is_dancing || start_again ) {
+      i_am_dancing = true;
+  } else {
+    i_am_dancing = false;
+  }
+}
+
+void Dancer::dance() {
+  
+  if (i_am_dancing && _motor->is_disabled()) {
+    _motor->enable();
+    _motor->start();
+  }
+  _motor->run();
+}
 
 void Dancer::start_dancing() {
   if (i_am_dancing == false) {
     Serial.println("starting to dance");
+    // don't restart motor if already started...
     _motor->enable();
-    i_am_dancing = true;
   }
   _motor->start();  // keep doing this, it will just do nothing when we reach max speed
 }
 
 void Dancer::stop_dancing() {
-  if (i_am_dancing == true) {
+  if (_motor->is_disabled() == false) {
     Serial.println("Stopping dance");
     _motor->disable();
-    i_am_dancing = false;
   }
 }
 
 void Dancer::print() {
-  Serial.print(F("Dancer: remote_is_dancing="));
+  Serial.print(F("Dancer: i_am_dancing="));
+  Serial.print(bool_tostr(i_am_dancing));
+  Serial.print(F(", remote_is_dancing="));
   Serial.print(bool_tostr(remote_is_dancing));
-  Serial.print(F(", i_am_dancing="));
-  Serial.println(bool_tostr(i_am_dancing));
+  Serial.print(F(", start_again="));
+  Serial.println(bool_tostr(start_again));
 }
 
 ////////////////////// end Dancer //////////////////////////
@@ -372,30 +399,14 @@ void slow_down_prints() {
 // watch for limits and request to enable/disable the motor
 void loop() {
   
+  boolean i_was_dancing = false;
+  
   slow_down_prints();
   current_limits->update();
   my_dancer->update();
-//  my_dancer->remote_is_dancing = true; // always on if you uncomment this
   print_status();
-  
-  // if remote is stopped and we are not at the top, return to the top
-  if (my_dancer->remote_is_dancing == false && current_limits->isMaxRight() != true) {
-    if (do_print) {
-      Serial.println("Not dancing, returning to top...");
-    }
-    my_dancer->remote_is_dancing = true;
-    my_motor->go_right();  // return to top/right position
-  }
 
-  // stop dancing at the top and stay there, until remote is dancing again
-  if (my_dancer->remote_is_dancing == false && current_limits->isMaxRight() && my_dancer->i_am_dancing) {
-    if (do_print) { 
-      Serial.println("Not dancing and at top, stop...");
-    }
-    my_dancer->stop_dancing();
-  }  
-  
-  // react to status of limit switches, reverse motor if necessary
+  // check for very strange status first
   if (current_limits->isMaxLeft() && current_limits->isMaxRight()) {
     // something is very wrong stop the motor....
     if (do_print) {
@@ -403,17 +414,39 @@ void loop() {
     }    
     my_dancer->stop_dancing();
     return;
-  } else if (current_limits->isMaxLeft()) {
-    my_motor->go_right();
-  } else if (current_limits->isMaxRight()) {
-    my_motor->go_left();
-  }
+  } 
   
-  // react to input from Dancer and start and stop the motor
-  if (my_dancer->remote_is_dancing) {
-    my_dancer->start_dancing();
+  // if remote is stopped and we are not at start, go back to start
+  if (my_dancer->i_am_dancing == false && current_limits->isMaxRight() != true) {
+    if (do_print) {
+      Serial.println("Not dancing, restarting dance...");
+    }
+    my_dancer->start_again = true;
+    my_motor->go_right();  // return to top/right position
+    my_dancer->update();
+  }
+
+  // if remote is stopped and we are back at start position, stop
+  if (my_dancer->start_again && current_limits->isMaxRight()) {
+    if (do_print) { 
+      Serial.println("restart complete, stopping...");
+    }
+    my_dancer->stop_dancing();
+    my_dancer->start_again = false;
+    my_dancer->update();
+  }  
+  
+  if (my_dancer->i_am_dancing) {
+    if (current_limits->isMaxLeft()) {
+      my_motor->go_right();
+    } else if (current_limits->isMaxRight()) {
+      my_motor->go_left();
+    }
+    
+    my_dancer->dance();
   } else {
     my_dancer->stop_dancing();
   }
+  
 }
 

@@ -14,6 +14,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define STAR        0x15
 #define LIVEDIE     0x17                      // wall clock
 #define LEPTON2     0x19                      // new lepton build
+#define GRAVITY_CG  0x21                      // new gravity build for cloud gate
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -25,19 +26,20 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 
 // unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
--unsigned int dance_order[]  = {SINGULARITY, 
--                               LEPTON,
--                               PARTICLELF,
--                               SPACE,
--                               GRAVITY,
--                               STAR,
--                               WHITEHOLE,
--                               TIME,
--                               LIVEDIE, 
--                               DVNMOMENT,
-                                all_dancers };  // order to queue the dancers
+//unsigned int dance_order[]  = {
+//                               SINGULARITY, 
+//                               LEPTON,
+//                               PARTICLELF,
+//                               SPACE,
+//                               GRAVITY,
+//                               STAR,
+//                               WHITEHOLE,
+//                               TIME,
+//                               LIVEDIE, 
+//                               DVNMOMENT,
+//                               all_dancers };  // order to queue the dancers
 
-//unsigned int dance_order[]  = {TIME, all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {GRAVITY_CG, all_dancers};  // order to queue the dancers
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer

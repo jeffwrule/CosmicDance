@@ -357,6 +357,7 @@ void do_beep(int num_millis, int delay_after) {
 void check_for_fob() {
   
   int cur_status = digitalRead(fobA);
+
   delay(30);    // add a short delay here, checking this seems to tweek the whole system.
   
   if (cur_status == FOB_PIN_ON) { // we have a switch request....

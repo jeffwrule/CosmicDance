@@ -7,8 +7,13 @@ using namespace std;
 #define PRINT_EVER_NTH_ITTER 15000
 //#define PRINT_EVER_NTH_ITTER 1
 
-//#define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on)
-#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)
+// because magnets are impprecise, add specific delays for different directions.
+// final delays for cloud gate build
+#define CENTER_MOVING_LEFT_DELAY 9000
+#define CENTER_MOVING_RIGHT_DELAY 1
+
+#define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
+//#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
 #define MOTOR_START_SPEED 30   // low values don't produce movement must be lower then MOTOR_SPEED
 #define SPEED_INCREMENT 10     //
 
@@ -325,6 +330,11 @@ class Dancer {
 
 void Dancer::update() {
   remote_is_dancing = (digitalRead(pin_dancer) == 1);
+  
+  if (remote_is_dancing) {
+    start_again = false;    // always clear this when remote starts dancing
+  }
+  
   if (remote_is_dancing || start_again ) {
       i_am_dancing = true;
   } else {
@@ -469,6 +479,16 @@ void loop() {
     if (do_print) { 
       Serial.println("restart complete, stopping...");
     }
+    if (my_motor->current_direction() == 'l') {
+      Serial.print("Moving Left delaying: ");
+      Serial.println(CENTER_MOVING_LEFT_DELAY);
+      delay(CENTER_MOVING_LEFT_DELAY);
+    } else { 
+      Serial.print("Moving Right delaying: ");
+      Serial.println(CENTER_MOVING_RIGHT_DELAY);
+      delay(CENTER_MOVING_RIGHT_DELAY);
+    }
+    
     my_dancer->stop_dancing();
     my_dancer->start_again = false;
     my_dancer->update();

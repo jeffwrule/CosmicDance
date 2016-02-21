@@ -17,9 +17,14 @@
 //#define NORMAL_VOLUME 0          
 // amplified most pieces
 #define NORMAL_VOLUME 12 
-#define FOB_QUIET_VOLUME 40
 
-#define BEEP_VOLUME  100
+#define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
+#define BEEP_VOLUME  100    
+
+// if this is defined as true then we just keep 
+// playing the music over and over, for testig when no wires attached
+// to the arduino
+#define FAKE_FOB_IS_DANCING false
 
 #define ENHANCED_STANDALONE false  // in FOB (standalone mode), plays once loud with motors and once quite w/o montors 0 delay
                                   // if false Plays with normal volume, then waits solo_delay_seconds (usualy 5) and starts it all again
@@ -358,6 +363,14 @@ void check_for_fob() {
   
   int cur_status = digitalRead(fobA);
 
+  // for testing when no wires attached to arduino
+  // this line tends to float back and forth so just 
+  // pin it as not pushed and set indicator to say we are dancing...
+  if (FAKE_FOB_IS_DANCING) {
+    cur_status = 0;
+    fob_is_dancing = true;
+  }
+  
   delay(30);    // add a short delay here, checking this seems to tweek the whole system.
   
   if (cur_status == FOB_PIN_ON) { // we have a switch request....

@@ -15,6 +15,9 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define LIVEDIE     0x17                      // wall clock
 #define LEPTON2     0x19                      // new lepton build
 #define GRAVITY_CG  0x21                      // new gravity build for cloud gate
+#define FLOWER      0x23                      
+#define HEXAGONAL   0x25
+#define NEW1        0x27                      // expansion sculpture, not yet defined
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

@@ -4,15 +4,24 @@ using namespace std;
 // PingPong montor that returns to a center switch when switched off
 
 #define DEBUG = true
-#define PRINT_EVER_NTH_ITTER 15000
+//#define PRINT_EVER_NTH_ITTER 15000
+#define PRINT_EVER_NTH_ITTER 30000
+
 //#define PRINT_EVER_NTH_ITTER 1
 
 // because magnets are impprecise, add specific delays for different directions.
 // final delays for cloud gate build
-#define CENTER_MOVING_LEFT_DELAY 9000
+//#define CENTER_MOVING_LEFT_DELAY 9000
+//#define CENTER_MOVING_RIGHT_DELAY 1
+
+// expected delays for normal analog line (white switch) switch Sparkfun QRE1113 (Analog)
+#define CENTER_MOVING_LEFT_DELAY 1
 #define CENTER_MOVING_RIGHT_DELAY 1
 
-#define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
+#define CENTER_READ_CUTOFF 90    // know to work with LIFE piece.
+
+// #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
+#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
 #define MOTOR_START_SPEED 30   // low values don't produce movement must be lower then MOTOR_SPEED
 #define SPEED_INCREMENT 10     //
@@ -22,9 +31,17 @@ using namespace std;
 // limit switch related information...
 #define LEFT_LIMIT_PIN 2        // input from left limit switch
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
-#define CENTER_LIMIT_PIN 4      // input from center limit switch
+
+#define D_CENTER_PIN 4          // digital center pine
+#define A_CENTER_PIN A3         // analog center pin
+#define CENTER_IS_ANALOG true   // are we reading a digital or analog pin for center
+
+//#define CENTER_LIMIT_PIN 4      // input from center limit switch
+//#define CENTER_LIMIT_PIN A0      // input from center limit switch
 #define PULLUP_ON 0             // reverse the logic for pullup pins
 #define PULLUP_OFF 1            // reverse the logic for pullup pins
+
+
 
 // pins to control the motor
 #define MOTOR_PMW_PIN 5     // output speed/on-off must be a PMW pin
@@ -61,17 +78,20 @@ class Limits {
       int sumLimits( void ); 
       void print();
       boolean center_passed;      // have we passed the center since the last reverse
-      Limits(int l_pin, int r_pin, int c_pin) : 
-        left_pin(l_pin), right_pin(r_pin), center_pin(c_pin), center_passed(false)
+      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin) : 
+        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false)
         { update(); }  
  
    private:
       int left_pin;              // the pin number for the left pin
       int right_pin;             // the pin number for the right pin
-      int center_pin;            // center pin
+      int d_center_pin;          // digital center pin
+      int a_center_pin;          // analog center pin
       int last_left_read;        // the value the last time we peaked at the left pin
       int last_right_read;       // the value the last time we peaked at the right pin
-      int last_center_read;      // the value the last time we peaked at the right pin
+      int last_a_center_read;    // the value the last time we peaked at the analong center pin 
+      int last_d_center_read;    // the value the last time we peaked at the analong center pin 
+      int last_center_read;      // normalize the value for the analog and digital center pin here
       boolean left_limit_active;
       boolean right_limit_active;
       boolean center_limit_active;
@@ -80,13 +100,25 @@ class Limits {
 void Limits::update() {
   last_left_read = digitalRead(left_pin);
   last_right_read = digitalRead(right_pin);
-  last_center_read = digitalRead(center_pin);
+  if (CENTER_IS_ANALOG) {
+    last_a_center_read = analogRead(a_center_pin);
+    last_d_center_read = PULLUP_OFF;
+  } else {
+    last_a_center_read = 2000;   // set this to a value out of range for normal analog devices 0-1023
+    last_d_center_read = digitalRead(d_center_pin);    
+  }
+  last_center_read = PULLUP_OFF;  // this will get set later in the routine. Default to not set.
+  
   left_limit_active = false; 
   right_limit_active = false;
   center_limit_active = false;
   if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
   if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (last_center_read == PULLUP_ON) { center_limit_active = true; center_passed = true;}
+  if (CENTER_IS_ANALOG) {
+    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;} 
+  } else {
+    if (last_d_center_read == PULLUP_ON) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;}  
+  }
 }
 
 int  Limits::sumLimits() {
@@ -114,14 +146,20 @@ void Limits::print() {
   Serial.println(bool_tostr(isMaxRight()));
   Serial.print(F("        last_left_read="));
   Serial.print(last_left_read);
-  Serial.print(F(", last_center_read="));
+  Serial.print(F(", last_a_center_read="));
+  Serial.print(last_a_center_read);
+  Serial.print(F(", last_d_center_read="));
+  Serial.print(last_d_center_read);
+  Serial.print(F(", last_center_read(psuedo)="));
   Serial.print(last_center_read);
   Serial.print(F(", last_right_read="));
   Serial.println(last_right_read);
   Serial.print(F("        left_pin="));
   Serial.print(left_pin);
-  Serial.print(F(", center_pin="));
-  Serial.print(center_pin);
+  Serial.print(F(", d_center_pin="));
+  Serial.print(d_center_pin);
+  Serial.print(F(", a_center_pin="));
+  Serial.print(a_center_pin);
   Serial.print(F(", right_pin="));
   Serial.println(right_pin);
   Serial.print(F("        center_passed="));
@@ -391,7 +429,7 @@ void setup() {
   
   pinMode(LEFT_LIMIT_PIN, INPUT_PULLUP);
   pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
-  pinMode(CENTER_LIMIT_PIN, INPUT_PULLUP);
+  pinMode(D_CENTER_PIN, INPUT_PULLUP);
   
   pinMode(MOTOR_LEFT_PIN, OUTPUT);
   digitalWrite(MOTOR_LEFT_PIN, 0);
@@ -404,7 +442,7 @@ void setup() {
   
   pinMode(DANCER_INPUT_PIN, INPUT);
   
-  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, CENTER_LIMIT_PIN);
+  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN);
   
   my_motor = new HBridgeMotor(MOTOR_SPEED, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
 

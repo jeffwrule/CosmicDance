@@ -363,15 +363,21 @@ void check_for_fob() {
   
   int cur_status = digitalRead(fobA);
 
+  delay(30);    // add a short delay here, checking this seems to tweek the whole system.
+
+  #ifdef IS_CHATTY
+    Serial.print(F("Fob read returns: "));
+    Serial.println(cur_status);
+  #endif
+
   // for testing when no wires attached to arduino
   // this line tends to float back and forth so just 
   // pin it as not pushed and set indicator to say we are dancing...
   if (FAKE_FOB_IS_DANCING) {
+    Serial.println(F("Faking FOB"));
     cur_status = 0;
     fob_is_dancing = true;
   }
-  
-  delay(30);    // add a short delay here, checking this seems to tweek the whole system.
   
   if (cur_status == FOB_PIN_ON) { // we have a switch request....
     // fob button has been pushed, reset everyting and switch mode

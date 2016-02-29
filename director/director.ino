@@ -8,6 +8,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define PARTICLELF  0x05
 #define GRAVITY     0x19
 #define SPACE       0x07
+#define SINGULARITY2 0x08                     // wall sconce
 #define WHITEHOLE   0x09
 #define DVNMOMENT   0x11                      // rocking chair
 #define TIME        0x13                      // hour glass
@@ -15,7 +16,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define LIVEDIE     0x17                      // wall clock
 #define LEPTON2     0x19                      // new lepton build
 #define GRAVITY_CG  0x21                      // new gravity build for cloud gate
-#define FLOWER      0x23                      
+#define LIFE        0x23                      // large tile convered scuplture   
 #define HEXAGONAL   0x25
 #define NEW1        0x27                      // expansion sculpture, not yet defined
 
@@ -29,6 +30,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 
 // unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
+// asia modern show
 //unsigned int dance_order[]  = {
 //                               SINGULARITY, 
 //                               LEPTON,
@@ -42,7 +44,9 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //                               DVNMOMENT,
 //                               all_dancers };  // order to queue the dancers
 
-unsigned int dance_order[]  = {GRAVITY_CG, all_dancers};  // order to queue the dancers
+// Mercury20 2016
+unsigned int dance_order[]  = {SINGULARITY2, GRAVITY_CG, LIFE, DVNMOMENT, all_dancers};  // order to queue the dancers
+//unsigned int dance_order[]  = {SINGULARITY2, all_dancers};  // order to queue the dancers
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
@@ -59,7 +63,8 @@ const int m_solo_delay_seconds = 5;        // number of seconds to delay for a s
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
 const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
 //const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
-const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
+//const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
+const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode 
 
 /*
 This example is for Series 1 XBee
@@ -111,6 +116,26 @@ TxStatusResponse txStatus = TxStatusResponse();
 
 // software serial port
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
+
+// wait a specific number of seconds...
+void delay_seconds( int seconds_to_delay) {
+  unsigned long num_passed = 0;
+  unsigned long start_millis;
+  unsigned long cur_millis;
+
+  start_millis = millis();
+  
+  while (seconds_to_delay > (num_passed / 1000)) {
+    cur_millis = millis();
+    
+    // when the millis wrapps around
+    if (cur_millis < start_millis) {
+      start_millis = cur_millis;
+    }
+    
+    num_passed = cur_millis - start_millis;
+  }
+}
 
 // switch to the next dancer 
 void queue_next_dance() {
@@ -219,7 +244,8 @@ void delay_next_dance() {
     Serial.print(" dance just finished, waiting ");
     Serial.print(delay_after_dance_seconds);
     Serial.println(" seconds to restart...");
-    delay(1000 * delay_after_dance_seconds); 
+//    delay((unsigned long) (1000 * delay_after_dance_seconds)); 
+    delay_seconds(delay_after_dance_seconds);
     delay_after_dance_seconds = 0;
   } 
 }

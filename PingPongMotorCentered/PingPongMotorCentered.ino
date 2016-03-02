@@ -18,7 +18,7 @@ using namespace std;
 #define CENTER_MOVING_LEFT_DELAY 1
 #define CENTER_MOVING_RIGHT_DELAY 1
 
-#define CENTER_READ_CUTOFF 90    // know to work with LIFE piece.
+#define CENTER_READ_CUTOFF 250    // know to work with LIFE piece.
 
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 #define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE

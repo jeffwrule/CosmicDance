@@ -63,8 +63,8 @@ const int m_solo_delay_seconds = 5;        // number of seconds to delay for a s
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
 const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
 //const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
-//const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
-const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode 
+const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
+//const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode 
 
 /*
 This example is for Series 1 XBee

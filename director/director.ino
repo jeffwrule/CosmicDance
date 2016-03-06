@@ -46,7 +46,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 // Mercury20 2016
 unsigned int dance_order[]  = {SINGULARITY2, GRAVITY_CG, LIFE, DVNMOMENT, all_dancers};  // order to queue the dancers
-//unsigned int dance_order[]  = {SINGULARITY2, all_dancers};  // order to queue the dancers
+//unsigned int dance_order[]  = {DVNMOMENT};  // order to queue the dancers
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
 unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer

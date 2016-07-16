@@ -6,7 +6,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define SINGULARITY 0x01
 #define LEPTON      0x03
 #define PARTICLELF  0x05
-#define GRAVITY     0x19
+#define GRAVITY     0x19                      // gravity
 #define SPACE       0x07
 #define SINGULARITY2 0x08                     // wall sconce
 #define WHITEHOLE   0x09
@@ -14,11 +14,13 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define TIME        0x13                      // hour glass
 #define STAR        0x15
 #define LIVEDIE     0x17                      // wall clock
-#define LEPTON2     0x19                      // new lepton build
+#define LEPTON2     0x19                      // new lepton collision
 #define GRAVITY_CG  0x21                      // new gravity build for cloud gate
 #define LIFE        0x23                      // large tile convered scuplture   
 #define HEXAGONAL   0x25
 #define NEW1        0x27                      // expansion sculpture, not yet defined
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -30,7 +32,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 
 
 // unsigned int dance_order[]  = {1, 3, 5, 7, 9, all_dancers};  // order to queue the dancers
-// asia modern show
+// asia modern show 
 //unsigned int dance_order[]  = {
 //                               SINGULARITY, 
 //                               LEPTON,
@@ -45,7 +47,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //                               all_dancers };  // order to queue the dancers
 
 // Mercury20 2016
-unsigned int dance_order[]  = {SINGULARITY2, GRAVITY_CG, LIFE, DVNMOMENT, all_dancers};  // order to queue the dancers
+// unsigned int dance_order[]  = {SINGULARITY2, GRAVITY_CG, LIFE, DVNMOMENT, all_dancers};  // order to queue the dancers
+unsigned int dance_order[]  = {GRAVITY_CG, LEPTON2, LIFE, all_dancers};  // order to queue the dancers
 //unsigned int dance_order[]  = {DVNMOMENT};  // order to queue the dancers
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);

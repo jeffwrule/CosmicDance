@@ -18,7 +18,7 @@ using namespace std;
 #define CENTER_MOVING_LEFT_DELAY 1
 #define CENTER_MOVING_RIGHT_DELAY 1
 
-#define CENTER_READ_CUTOFF 250    // know to work with LIFE piece.
+#define CENTER_READ_CUTOFF 250    // known to work with LIFE piece.
 
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 #define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
@@ -32,9 +32,12 @@ using namespace std;
 #define LEFT_LIMIT_PIN 2        // input from left limit switch
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
 
-#define D_CENTER_PIN 4          // digital center pine
+#define LEFT_LIMIT_IS_CENTER true    // use th left limit as home rather then center, converts us back into a simple pingPong
+
+#define D_CENTER_PIN 4          // digital center pin
 #define A_CENTER_PIN A3         // analog center pin
 #define CENTER_IS_ANALOG true   // are we reading a digital or analog pin for center
+
 
 //#define CENTER_LIMIT_PIN 4      // input from center limit switch
 //#define CENTER_LIMIT_PIN A0      // input from center limit switch
@@ -43,11 +46,19 @@ using namespace std;
 
 
 
-// pins to control the motor
+// pins to control the motor TB6612FNG (class HBridgeMotor)
 #define MOTOR_PMW_PIN 5     // output speed/on-off must be a PMW pin
 #define MOTOR_LEFT_PIN 6     // output to move left pin on h-bridge shield
 #define MOTOR_RIGHT_PIN 7    // output to move right pin on h-bridge shield
 #define MOTOR_STDBY_PIN 8   // 0 after we stop the motor, 1 when we are ready to start the motor...
+
+// pins to control the motor IBT_2  (class IBT2Motor)
+#define MOTOR_IBT2_PMWR  5   // PMW pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
+#define MOTOR_IBT2_PMWL  6   // PMW pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
+
+#define MOTOR_CLASS "IBT2Motor"  // A string that is the class name for this break out board.
+                            
+                              
 
 // communicatin pin from the dancer
 #define DANCER_INPUT_PIN 9  // this goes high when the dancer is dancing
@@ -90,7 +101,7 @@ class Limits {
       int last_left_read;        // the value the last time we peaked at the left pin
       int last_right_read;       // the value the last time we peaked at the right pin
       int last_a_center_read;    // the value the last time we peaked at the analong center pin 
-      int last_d_center_read;    // the value the last time we peaked at the analong center pin 
+      int last_d_center_read;    // the value the last time we peaked at the digital center pin 
       int last_center_read;      // normalize the value for the analog and digital center pin here
       boolean left_limit_active;
       boolean right_limit_active;
@@ -114,11 +125,16 @@ void Limits::update() {
   center_limit_active = false;
   if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
   if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (CENTER_IS_ANALOG) {
-    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;} 
+  if (LEFT_LIMIT_IS_CENTER) {
+    center_limit_active = false;
   } else {
-    if (last_d_center_read == PULLUP_ON) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;}  
+    if (CENTER_IS_ANALOG) {
+      if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;} 
+    } else {
+      if (last_d_center_read == PULLUP_ON) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;}  
+    }
   }
+  
 }
 
 int  Limits::sumLimits() {
@@ -134,7 +150,11 @@ boolean Limits::isMaxRight() {
 }
 
 boolean Limits::isCentered() {
-    return center_limit_active;
+    if (LEFT_LIMIT_IS_CENTER) {
+      return left_limit_active;
+    } else {
+      return center_limit_active;
+    }
 }
 
 void Limits::print() {
@@ -169,11 +189,33 @@ void Limits::print() {
 
 ///////////////////////////////////////////////////////////
 //
+// Abstract Class to manage motor half_bridge and full bridge motors
+//
+/////////////////////////////////////////////////////////// 
+class GenericMotor {
+
+  public:
+    virtual void stop() =0;
+    virtual void start() =0;
+    virtual void run() =0;
+    virtual void go_left() =0;
+    virtual void go_right() =0;
+    virtual boolean is_stopped() =0;
+    virtual boolean is_disabled() =0;
+    virtual char current_direction() =0;
+    virtual void enable() =0;
+    virtual void disable() =0;
+    virtual void print() =0;
+    int speed = 0;
+};
+
+///////////////////////////////////////////////////////////
+//
 // Class to manage motor H-BRIDGE break out board 
 // SparkFun Part: TB6612FNG (1A)
 //
 /////////////////////////////////////////////////////////// 
-class HBridgeMotor {
+class HBridgeMotor: public GenericMotor {
   public:
     void stop();
     void start();
@@ -196,7 +238,17 @@ class HBridgeMotor {
       pin_standby(p_standby),
       _is_disabled(false),
       _limits(limits)
-      { disable(); go_left(); }
+      { 
+          pinMode(p_left, OUTPUT);
+          digitalWrite(p_left, 0);
+          pinMode(p_right, OUTPUT);
+          digitalWrite(p_right, 0);
+          pinMode(p_speed, OUTPUT);
+          digitalWrite(p_speed, 0);
+          pinMode(p_standby, OUTPUT);
+          digitalWrite(p_standby, 0);
+          disable(); go_left(); 
+       }
     
   private:
     int pin_speed;
@@ -265,7 +317,7 @@ void HBridgeMotor::run() {
   }
 }
 
-// contines left if alrady going left, else stops and restart left
+// continues left if alrady going left, else stops and restart left
 void HBridgeMotor::go_left() {
   int orig_speed = speed;
   if (current_direction() != 'l') {
@@ -343,6 +395,183 @@ void HBridgeMotor::print() {
 
 ////////////////////// end HBridgeMotor //////////////////////////
 
+
+
+///////////////////////////////////////////////////////////
+//
+// Class to manage motor Half Bridge Motor break out board 
+// IBT_2 motor
+//
+/////////////////////////////////////////////////////////// 
+class IBT2Motor: public GenericMotor {
+  public:
+    void stop();
+    void start();
+    void run();
+    void go_left();
+    void go_right();
+    boolean is_stopped();
+    boolean is_disabled();
+    char current_direction();
+    void enable();
+    void disable();
+    void print();
+    int speed = 0;
+    
+    IBT2Motor(int m_speed, int p_pmwr, int p_pmwl,  Limits *limits ) :
+      max_speed(m_speed), 
+      pin_pmwr(p_pmwr),
+      pin_pmwl(p_pmwl),
+      _is_disabled(false),
+      _limits(limits)
+      { 
+          pinMode(pin_pmwr, OUTPUT);
+          digitalWrite(pin_pmwr, 0);
+          pinMode(pin_pmwl, OUTPUT);
+          digitalWrite(pin_pmwl, 0);
+          current_pmw_pin = pin_pmwl;
+          disable(); go_left(); 
+       }
+    
+  private:
+    int pin_pmwr;
+    int pin_pmwl;
+    int current_pmw_pin;
+    int max_speed;
+    boolean _is_disabled;
+    Limits *_limits;
+
+    int move_left = 1;
+    int move_right = 0;
+};
+
+// bring the motor down in a controlled manor
+void IBT2Motor::stop() {
+  
+  boolean motor_was_running = false;
+
+  Serial.println("IBT2Motor::stop");
+  Serial.print("Speed=");
+  Serial.println(speed);
+  
+  for (int i=speed; i!=0; i--) {
+    motor_was_running = true;
+    analogWrite(current_pmw_pin, i);
+    if ((i % 50) == 0) {
+      Serial.println(i);
+      delay(30);
+    }
+  }
+  // only do this final dealy when really stoppin the motor
+  if (motor_was_running) {
+    delay(30);
+  }
+  speed = 0;
+}
+
+void IBT2Motor::start() { 
+    
+    Serial.println("IBT2Motor::start");
+    Serial.print("Speed=");
+    Serial.println(speed); 
+    
+    if (speed < MOTOR_START_SPEED) {
+      speed = MOTOR_START_SPEED;
+    }
+}
+
+// keep increasing the motor speed until max speed
+void IBT2Motor::run() {
+  if ( ! is_disabled() ) {
+    if (speed < max_speed) {
+      speed += SPEED_INCREMENT;
+      analogWrite(current_pmw_pin, speed);
+      if ((speed % 1) == 0) {
+        delay(50);
+      }
+    }
+  }
+}
+
+// continues left if alrady going left, else stops and restart left
+void IBT2Motor::go_left() {
+  int orig_speed = speed;
+  if (current_direction() != 'l') {
+    Serial.println("IBT2Motor::go_left: reversing direction");
+    stop();
+    move_left = 1;
+    move_right = 0;
+    current_pmw_pin = pin_pmwl;
+    if (orig_speed != 0) {
+      delay(REVERSE_DELAY);
+      start();
+    }
+  }
+}
+
+// contines right if already going right, else stops and restarts rights
+void IBT2Motor::go_right() {
+  int orig_speed = speed;
+  if (current_direction() != 'r') {
+    Serial.println("IBT2Motor::go_right: reversing direction");
+    stop();
+    move_left = 0;
+    move_right = 1;
+    current_pmw_pin = pin_pmwr;
+    if (orig_speed != 0) {
+      delay(REVERSE_DELAY);
+      start();
+    }  
+  }
+}
+
+// the current direction of the motor 
+char IBT2Motor::current_direction() {
+  if (move_left == 1) {
+    return 'l';
+  } else {
+    return 'r';
+  }
+}
+
+void IBT2Motor::enable() {
+  if (_is_disabled == true) {
+    Serial.println("enabeling motor");
+    start();
+    _is_disabled = false;
+  }
+}
+
+void IBT2Motor::disable() {
+  if (_is_disabled == false) {
+    Serial.println("disabeling motor");
+    stop();
+    _is_disabled = true;
+  }
+}
+
+boolean IBT2Motor::is_disabled() {
+  return _is_disabled;
+}
+
+boolean IBT2Motor::is_stopped() {
+  return (speed == 0);
+}
+
+void IBT2Motor::print() {
+  Serial.print(F("IBT2Motor: is_disabled="));
+  Serial.print(bool_tostr(is_disabled()));
+  Serial.print(F(", is_stopped="));
+  Serial.print(bool_tostr(is_stopped()));
+  Serial.print(F(", direction="));
+  Serial.print(current_direction());
+  Serial.print(F(", speed="));
+  Serial.println(speed);  
+}
+
+////////////////////// end IBT2Motor //////////////////////////
+
+
 ///////////////////////////////////////////////////////////
 //
 // Class to manage remote dancer stack input 
@@ -351,7 +580,7 @@ void HBridgeMotor::print() {
 class Dancer {
 
   public:
-    Dancer( int p_dancer, HBridgeMotor *motor ) : pin_dancer(p_dancer), start_again(false), _motor(motor) {update(); stop_dancing();}
+    Dancer( int p_dancer, GenericMotor *motor ) : pin_dancer(p_dancer), start_again(false), _motor(motor) {update(); stop_dancing();}
     void update();
     boolean i_am_dancing;         // the motor should be moving....
     boolean start_again;          // requeue to our first position
@@ -363,7 +592,7 @@ class Dancer {
   private:
     int     pin_dancer;
     boolean remote_is_dancing;
-    HBridgeMotor  *_motor;
+    GenericMotor  *_motor;
 };
 
 void Dancer::update() {
@@ -418,7 +647,7 @@ void Dancer::print() {
 
 Limits *current_limits;
 
-HBridgeMotor *my_motor;
+GenericMotor * my_motor;
 
 Dancer *my_dancer;
 
@@ -431,23 +660,27 @@ void setup() {
   pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
   pinMode(D_CENTER_PIN, INPUT_PULLUP);
   
-  pinMode(MOTOR_LEFT_PIN, OUTPUT);
-  digitalWrite(MOTOR_LEFT_PIN, 0);
-  pinMode(MOTOR_RIGHT_PIN, OUTPUT);
-  digitalWrite(MOTOR_RIGHT_PIN, 0);
-  pinMode(MOTOR_PMW_PIN, OUTPUT);
-  digitalWrite(MOTOR_PMW_PIN, 0);
-  pinMode(MOTOR_STDBY_PIN, OUTPUT);
-  digitalWrite(MOTOR_STDBY_PIN, 0);
-  
   pinMode(DANCER_INPUT_PIN, INPUT);
   
   current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN);
-  
-  my_motor = new HBridgeMotor(MOTOR_SPEED, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
+
+  Serial.print("MOTOR_CLASS=");
+  Serial.println(MOTOR_CLASS);
+  if (MOTOR_CLASS == "HBridgeMotor") {
+    my_motor = new HBridgeMotor(MOTOR_SPEED, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
+  } else if (MOTOR_CLASS == "IBT2Motor") {
+    my_motor = new IBT2Motor(MOTOR_SPEED, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL, current_limits);
+  } else {
+    Serial.println("ERROR: unknown motor class");
+  }
+
 
   my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
-  
+
+  Serial.print("Center is Left=");
+  Serial.print(LEFT_LIMIT_IS_CENTER);
+  Serial.print(" Center_IS_ANALOG=");
+  Serial.println(CENTER_IS_ANALOG);
   Serial.println("End setup");
 }
 
@@ -503,11 +736,17 @@ void loop() {
     my_dancer->start_again = true;
     my_dancer->update();
     // if we have passed the center on this run, then home is behind us
-    if (current_limits->center_passed) {
-      if (my_motor->current_direction() == 'l') {
-        my_motor->go_right();
-      } else {
+    if (LEFT_LIMIT_IS_CENTER) {
+      if (my_motor->current_direction() == 'r') {
         my_motor->go_left();
+      }
+    } else {
+      if (current_limits->center_passed) {
+        if (my_motor->current_direction() == 'l') {
+          my_motor->go_right();
+        } else {
+          my_motor->go_left();
+        }
       }
     }
   }

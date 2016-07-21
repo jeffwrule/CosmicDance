@@ -19,6 +19,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define LIFE        0x23                      // large tile convered scuplture   
 #define HEXAGONAL   0x25
 #define NEW1        0x27                      // expansion sculpture, not yet defined
+#define HEAVENNEARTH 0x29                     // the super big sculpture going to Asian Art Museum
+
 
 
 

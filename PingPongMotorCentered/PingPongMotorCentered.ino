@@ -21,10 +21,27 @@ using namespace std;
 #define CENTER_READ_CUTOFF 250    // known to work with LIFE piece.
 
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
-#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
+//#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
-#define MOTOR_START_SPEED 30   // low values don't produce movement must be lower then MOTOR_SPEED
-#define SPEED_INCREMENT 10     //
+#define MOTOR_SPEED_LEFT  84        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_RIGHT 120        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
+
+#define MOTOR_JUMP_START_SPEED1 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION1 5000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+#define MOTOR_JUMP_START_SPEED2 150       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION2 11000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
+#define MOTOR_START_SPEED  50       // low values don't produce movement must be lower then MOTOR_SPEED
+#define SPEED_INCREMENT 5          // amount to increment speed when starting....
+
+//#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
+
+#define STOP_DELAY         450    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
+#define STOP_DELAY_EVERY_N_R 5    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
+#define STOP_DELAY_EVERY_N_L 2    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
 
@@ -230,8 +247,9 @@ class HBridgeMotor: public GenericMotor {
     void print();
     int speed = 0;
     
-    HBridgeMotor(int m_speed, int p_speed, int p_standby, int p_left, int p_right, Limits *limits ) :
-      max_speed(m_speed), 
+    HBridgeMotor(int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right, Limits *limits ) :
+      max_speed_left(m_speed_left), 
+      max_speed_right(m_speed_right),
       pin_speed(p_speed),
       pin_left(p_left),
       pin_right(p_right),
@@ -256,10 +274,13 @@ class HBridgeMotor: public GenericMotor {
     int pin_right;
     int pin_standby;
     int max_speed;
-    boolean _is_disabled;
+    int max_speed_left;
+    int max_speed_right;
+    boolean _is_disabled = 0;
+    int stop_delay_every_n = 50;
     Limits *_limits;
 
-    int move_left = 1;
+    int move_left = 0;
     int move_right = 0;
 };
 
@@ -275,12 +296,14 @@ void HBridgeMotor::stop() {
   for (int i=speed; i!=0; i--) {
     motor_was_running = true;
     analogWrite(pin_speed, i);
-    if ((i % 50) == 0) {
+    if ((i % stop_delay_every_n) == 0) {
       Serial.println(i);
-      delay(30);
+      delay(STOP_DELAY);
     }
+    if (speed < MOTOR_START_SPEED) { break; }
   }
   // only do this final dealy when really stoppin the motor
+  analogWrite(pin_speed, 0);
   if (motor_was_running) {
     delay(30);
   }
@@ -309,6 +332,7 @@ void HBridgeMotor::run() {
   if ( ! is_disabled() ) {
     if (speed < max_speed) {
       speed += SPEED_INCREMENT;
+      if (speed > max_speed) { speed = max_speed; } 
       analogWrite(pin_speed, speed);
       if ((speed % 1) == 0) {
         delay(50);
@@ -325,6 +349,8 @@ void HBridgeMotor::go_left() {
     stop();
     move_left = 1;
     move_right = 0;
+    max_speed = max_speed_left;
+    stop_delay_every_n = STOP_DELAY_EVERY_N_L;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
       start();
@@ -340,6 +366,8 @@ void HBridgeMotor::go_right() {
     stop();
     move_left = 0;
     move_right = 1;
+    max_speed = max_speed_right;
+    stop_delay_every_n = STOP_DELAY_EVERY_N_R;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
       start();
@@ -389,6 +417,8 @@ void HBridgeMotor::print() {
   Serial.print(bool_tostr(is_stopped()));
   Serial.print(F(", direction="));
   Serial.print(current_direction());
+  Serial.print(F(", max_speed="));
+  Serial.print(max_speed);
   Serial.print(F(", speed="));
   Serial.println(speed);  
 }
@@ -418,8 +448,9 @@ class IBT2Motor: public GenericMotor {
     void print();
     int speed = 0;
     
-    IBT2Motor(int m_speed, int p_pmwr, int p_pmwl,  Limits *limits ) :
-      max_speed(m_speed), 
+    IBT2Motor(int m_speed_left, int m_speed_right,  int p_pmwr, int p_pmwl, Limits *limits ) :
+      max_speed_left(m_speed_left),
+      max_speed_right(m_speed_right),
       pin_pmwr(p_pmwr),
       pin_pmwl(p_pmwl),
       _is_disabled(false),
@@ -430,6 +461,8 @@ class IBT2Motor: public GenericMotor {
           pinMode(pin_pmwl, OUTPUT);
           digitalWrite(pin_pmwl, 0);
           current_pmw_pin = pin_pmwl;
+          alt_pmw_pin = pin_pmwr;
+          max_speed = 0;
           disable(); go_left(); 
        }
     
@@ -437,11 +470,26 @@ class IBT2Motor: public GenericMotor {
     int pin_pmwr;
     int pin_pmwl;
     int current_pmw_pin;
+    int alt_pmw_pin;
     int max_speed;
-    boolean _is_disabled;
+    int max_speed_left;
+    int max_speed_right;
+    int jump_start_speed;
+    bool needs_jump_start=false;
+    unsigned long jump_enabled_millis=0;      // set each time we go from disabled to enabled.
+    unsigned long jump_millis_duration1=JUMP_START_MILLIS_DURATION1;   // run jump start speed for this many milliseconds at startup
+    int jump_start_speed1=MOTOR_JUMP_START_SPEED1;                           // jumpstart speed 1
+    unsigned long jump_millis_duration2=JUMP_START_MILLIS_DURATION2;   // run jump start speed if seconds is longer then jump_millis_duration1 and less then this value 
+    int jump_start_speed2=MOTOR_JUMP_START_SPEED2;                           // jump start speed 2 (should be less then speed1)
+    unsigned long jump_diff_millis=0;
+    boolean _is_disabled = 0;
+    int stop_delay_every_n = 10;
+    unsigned long max_time_to_limit_switch = 1000L * MAX_SECONDS_TO_LIMIT_SWITCH;   // number of seconds to have passed before we reset motor
+    unsigned long millis_motor_start=0;                         // millis when motor was last started
+    unsigned long millis_since_start=0;                         // number of millis since motor was last started
     Limits *_limits;
 
-    int move_left = 1;
+    int move_left = 0;
     int move_right = 0;
 };
 
@@ -457,14 +505,18 @@ void IBT2Motor::stop() {
   for (int i=speed; i!=0; i--) {
     motor_was_running = true;
     analogWrite(current_pmw_pin, i);
-    if ((i % 50) == 0) {
+    digitalWrite(alt_pmw_pin, 0);
+    if ((i % stop_delay_every_n) == 0) {
       Serial.println(i);
-      delay(30);
+      delay(STOP_DELAY);
     }
+    if (i < MOTOR_START_SPEED) { break; }
   }
+  digitalWrite(current_pmw_pin, 0);
+  digitalWrite(alt_pmw_pin, 0);
   // only do this final dealy when really stoppin the motor
   if (motor_was_running) {
-    delay(30);
+    delay(100);
   }
   speed = 0;
 }
@@ -482,9 +534,81 @@ void IBT2Motor::start() {
 
 // keep increasing the motor speed until max speed
 void IBT2Motor::run() {
+  int run_max_speed=0;
+  unsigned long current_millis=0;
+  
   if ( ! is_disabled() ) {
-    if (speed < max_speed) {
+    
+    run_max_speed = max_speed; // default the current normal max speed
+
+//    Serial.print(F("speed="));
+//    Serial.print(speed);
+//    Serial.print(F(", needs_jump_start="));
+//    Serial.print(needs_jump_start);
+    
+    // check if we need to override max speed for a jump start 
+    if (needs_jump_start == true) { 
+      // this motor is just getting strted, list jump start it!
+      if (speed <= MOTOR_START_SPEED ) { 
+        jump_enabled_millis=millis();   // start the jump start duration timer
+      }
+      
+      current_millis = millis();
+      // check for millis wraparound
+      if (current_millis < jump_enabled_millis) { 
+        jump_enabled_millis = current_millis;
+      }
+      // how long have we been jumpstarting?
+      jump_diff_millis = current_millis - jump_enabled_millis;
+      
+      // are we still in the jump start window?, use the higher speed
+      if (jump_diff_millis < jump_millis_duration1) {
+        run_max_speed = jump_start_speed1;
+      } else if (jump_diff_millis < jump_millis_duration2) {
+         run_max_speed = jump_start_speed2;
+      } else {
+        run_max_speed = max_speed;
+      }
+      
+//      Serial.print(F(", jump_enabled_millis="));
+//      Serial.print(jump_enabled_millis);
+//      Serial.print(F(", jump_diff_millis="));
+//      Serial.print(jump_diff_millis);
+      
+    }
+
+    if (speed <= MOTOR_START_SPEED) {
+      millis_motor_start=millis();
+    }
+    current_millis=millis();
+    // guard against millis wrap around
+    if (current_millis < millis_motor_start){
+      millis_motor_start=current_millis;
+    }
+    millis_since_start = current_millis -  millis_motor_start; 
+    if (millis_since_start > max_time_to_limit_switch) {
+      // something is wrong we have taken way too long to reach the current switch
+      // reset and let the main routine sort it all out.
+      Serial.println(F("WARNING: Taking too long to reach limit switch, restarting motor..."));
+      stop();
+      start();
+      return;
+    }
+//    Serial.print(F(", run_max_speed="));
+//    Serial.println(run_max_speed);
+    
+    if (speed < run_max_speed) {
       speed += SPEED_INCREMENT;
+      if (speed > run_max_speed) { speed = run_max_speed; } 
+      digitalWrite(alt_pmw_pin, 0);
+      analogWrite(current_pmw_pin, speed);
+      if ((speed % 1) == 0) {
+        delay(50);
+      }
+    } else if (speed > run_max_speed) {
+      speed -= SPEED_INCREMENT;
+      if (speed < run_max_speed) { speed = run_max_speed; } 
+      digitalWrite(alt_pmw_pin, 0);
       analogWrite(current_pmw_pin, speed);
       if ((speed % 1) == 0) {
         delay(50);
@@ -502,6 +626,10 @@ void IBT2Motor::go_left() {
     move_left = 1;
     move_right = 0;
     current_pmw_pin = pin_pmwl;
+    alt_pmw_pin = pin_pmwr;
+    max_speed = max_speed_left;
+    needs_jump_start=false;
+    stop_delay_every_n = STOP_DELAY_EVERY_N_L;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
       start();
@@ -518,6 +646,10 @@ void IBT2Motor::go_right() {
     move_left = 0;
     move_right = 1;
     current_pmw_pin = pin_pmwr;
+    alt_pmw_pin = pin_pmwl;
+    max_speed = max_speed_right;
+    needs_jump_start=true;
+    stop_delay_every_n = STOP_DELAY_EVERY_N_R;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
       start();
@@ -565,6 +697,16 @@ void IBT2Motor::print() {
   Serial.print(bool_tostr(is_stopped()));
   Serial.print(F(", direction="));
   Serial.print(current_direction());
+  Serial.print(F(", max_speed="));
+  Serial.print(max_speed);
+  Serial.print(F(", needs_jumpstart="));
+  Serial.print(needs_jump_start);
+  Serial.print(F(", jump_diff_millis="));
+  Serial.print(jump_diff_millis);
+  Serial.print(F(", max_time_to_limit_switch="));
+  Serial.print((unsigned long) max_time_to_limit_switch);
+  Serial.print(F(", millis_since_start="));
+  Serial.print(millis_since_start);
   Serial.print(F(", speed="));
   Serial.println(speed);  
 }
@@ -667,9 +809,9 @@ void setup() {
   Serial.print("MOTOR_CLASS=");
   Serial.println(MOTOR_CLASS);
   if (MOTOR_CLASS == "HBridgeMotor") {
-    my_motor = new HBridgeMotor(MOTOR_SPEED, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
+    my_motor = new HBridgeMotor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
   } else if (MOTOR_CLASS == "IBT2Motor") {
-    my_motor = new IBT2Motor(MOTOR_SPEED, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL, current_limits);
+    my_motor = new IBT2Motor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL, current_limits);
   } else {
     Serial.println("ERROR: unknown motor class");
   }

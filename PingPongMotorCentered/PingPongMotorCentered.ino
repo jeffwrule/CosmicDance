@@ -24,12 +24,12 @@ using namespace std;
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
 #define MOTOR_SPEED_LEFT  84        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_RIGHT 120        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
-#define MOTOR_JUMP_START_SPEED1 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 150       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
 #define MOTOR_START_SPEED  50       // low values don't produce movement must be lower then MOTOR_SPEED

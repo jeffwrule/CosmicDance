@@ -23,7 +23,7 @@ using namespace std;
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
-#define MOTOR_SPEED_LEFT  84        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_LEFT  130        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
@@ -39,9 +39,9 @@ using namespace std;
 //#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
 //#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
 
-#define STOP_DELAY         450    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
-#define STOP_DELAY_EVERY_N_R 5    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
-#define STOP_DELAY_EVERY_N_L 2    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
+#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
+#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
+#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
 

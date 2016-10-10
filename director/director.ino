@@ -6,20 +6,19 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define SINGULARITY 0x01
 #define LEPTON      0x03
 #define PARTICLELF  0x05
-#define GRAVITY     0x19                      // gravity
 #define SPACE       0x07
-#define SINGULARITY2 0x08                     // wall sconce
+#define SINGULARITY2 0x08                     // wall sconce AKA GRAVATON
 #define WHITEHOLE   0x09
 #define DVNMOMENT   0x11                      // rocking chair
 #define TIME        0x13                      // hour glass
 #define STAR        0x15
 #define LIVEDIE     0x17                      // wall clock
+#define GRAVITY     0x19                      // gravity
 #define LEPTON2     0x19                      // new lepton collision
 #define GRAVITY_CG  0x21                      // new gravity build for cloud gate
 #define LIFE        0x23                      // large tile convered scuplture   
-#define HEXAGONAL   0x25
-#define NEW1        0x27                      // expansion sculpture, not yet defined
 #define HEAVENNEARTH 0x29                     // the super big sculpture going to Asian Art Museum
+#define GOLDENABYSS 0x30
 
 
 

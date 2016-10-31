@@ -46,7 +46,7 @@ const unsigned int RxD = 5;               // softserial read
 const unsigned int TxD = 10;              // softserial transmit
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 const int v12Switch = A0;                 // pin to turn the electronics on and off
-const int v5Switch = A1;                  // in to turn on/off
+const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
 const int FOB_PIN_ON = 1;                 // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
                                           // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0

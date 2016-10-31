@@ -21,6 +21,23 @@
 #define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
 #define BEEP_VOLUME  100    
 
+// turn this define on if you want to have a variable speed motor 
+// it takes approximately 1 minute to speed up then one minute to slow back down
+// you must attach PIN3 to the mosfet to make this work.
+// you also need to cut the traces for pin three on the MP3 card or you will conflict with the MP3 card.
+// uncomment the define VARY_SPEED line to have a variable speed montor
+#define VARY_SPEED
+#define VARY_MIN_SPEED 50L
+#define VARY_MAX_SPEED 255L
+#define VARY_INIT_SPEED 150L  // The mosfet seems to need a kick to get started  
+#define VARY_PIN 3
+#define VARY_OFF 0
+#define VARY_SECONDS 20L           // number of seconds to run before reversing direction
+#define VARY_STEP (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS
+long vary_current_speed;        // current motor speed
+unsigned long vary_prev_millis;  // mills last time we incremented or decremented
+boolean vary_is_increasing;     // true, we are increasing speed, false we are decreasing speed
+
 // if this is defined as true then we just keep 
 // playing the music over and over, for testig when no wires attached
 // to the arduino
@@ -142,6 +159,11 @@ void setup() {
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
   pinMode(fobA, INPUT_PULLUP);
+ #ifdef VARY_SPEED
+  pinMode(VARY_PIN, OUTPUT);
+  analogWrite(VARY_PIN, VARY_OFF);
+  vary_current_speed = VARY_OFF;
+ #endif
   
   xbeeSerial.begin(9600);
   
@@ -191,6 +213,10 @@ void stop_all() {
   MP3player.stopTrack();
   digitalWrite(v12Switch, LOW);
   digitalWrite(v5Switch, LOW);
+  #ifdef VARY_SPEED
+    analogWrite(VARY_PIN, VARY_OFF);
+    vary_current_speed = VARY_OFF;
+  #endif
   #if defined IS_CHATTY
     Serial.println(F("stop_all end..."));
   #endif
@@ -243,6 +269,11 @@ void start_dancing(unsigned char dance_piece) {
   } else {
     digitalWrite(v12Switch, HIGH);
     digitalWrite(v5Switch, HIGH);
+    #ifdef VARY_SPEED
+      analogWrite(VARY_PIN, VARY_INIT_SPEED);
+      delay(500);
+      vary_current_speed=VARY_MIN_SPEED;
+    #endif
   }
   is_dancing = true;
   dance_type = dance_piece;
@@ -416,6 +447,36 @@ void check_for_fob() {
   }
 }
 
+// vary the speed of the motor
+void do_vary_speed()
+{
+  unsigned long cur_millis;
+  
+  if (vary_current_speed <= VARY_MIN_SPEED) { vary_is_increasing=true; }
+  if (vary_current_speed >= VARY_MAX_SPEED) {vary_is_increasing=false;}
+  
+  cur_millis = millis();
+  if (cur_millis < vary_prev_millis) { vary_prev_millis = cur_millis;} // handle millis wrapping
+
+  if (cur_millis - vary_prev_millis > 1000) {
+    if (vary_is_increasing) {
+      vary_current_speed += VARY_STEP;
+      if (vary_current_speed > 255) { vary_current_speed = 255; }
+    } else {
+      vary_current_speed -= VARY_STEP;
+      if (vary_current_speed < 0) { vary_current_speed = 0; }
+    }
+    #if defined IS_BRIEF
+      Serial.print(F("do_vary_speed: vary_current_speed: "));
+      Serial.print(vary_current_speed);
+      Serial.print(F(", mills_diff: "));
+      Serial.println(cur_millis - vary_prev_millis);
+    #endif
+    analogWrite(VARY_PIN, vary_current_speed);
+    vary_prev_millis = cur_millis;
+  }
+}
+
 // start and stop dancers, keep the show moving along....
 void loop() {
   
@@ -443,6 +504,9 @@ void loop() {
   if (is_dancing) {
     signal_if_done();
     signal_every_so_often();
+    #ifdef VARY_SPEED
+      do_vary_speed();
+    #endif
   }
 }
 

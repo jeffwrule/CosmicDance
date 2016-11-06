@@ -27,13 +27,16 @@
 // you also need to cut the traces for pin three on the MP3 card or you will conflict with the MP3 card.
 // uncomment the define VARY_SPEED line to have a variable speed montor
 #define VARY_SPEED
-#define VARY_MIN_SPEED 50L
-#define VARY_MAX_SPEED 255L
-#define VARY_INIT_SPEED 150L  // The mosfet seems to need a kick to get started  
+//#define VARY_MIN_SPEED 40L    // string wave (oval piece) 
+//#define VARY_MAX_SPEED 40L    // string ripple (oval piece)
+#define VARY_MIN_SPEED 95L    // string ripple 
+#define VARY_MAX_SPEED 95L    // string ripple
+#define VARY_INIT_SPEED 125L  // The mosfet seems to need a kick to get started, must give initial value above desired  initial speed 
 #define VARY_PIN 3
 #define VARY_OFF 0
-#define VARY_SECONDS 20L           // number of seconds to run before reversing direction
-#define VARY_STEP (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS
+#define VARY_SECONDS 60L           // number of seconds to run before reversing direction
+//#define VARY_STEP (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS
+long vary_step = 1;              // how big a step to take when incrementing or decrementing
 long vary_current_speed;        // current motor speed
 unsigned long vary_prev_millis;  // mills last time we incremented or decremented
 boolean vary_is_increasing;     // true, we are increasing speed, false we are decreasing speed
@@ -163,6 +166,8 @@ void setup() {
   pinMode(VARY_PIN, OUTPUT);
   analogWrite(VARY_PIN, VARY_OFF);
   vary_current_speed = VARY_OFF;
+  vary_step = (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS;
+  if (vary_step < 1) { vary_step = 1; }
  #endif
   
   xbeeSerial.begin(9600);
@@ -460,13 +465,13 @@ void do_vary_speed()
 
   if (cur_millis - vary_prev_millis > 1000) {
     if (vary_is_increasing) {
-      vary_current_speed += VARY_STEP;
-      if (vary_current_speed > 255) { vary_current_speed = 255; }
+      vary_current_speed += vary_step;
+      if (vary_current_speed > VARY_MAX_SPEED) { vary_current_speed = VARY_MAX_SPEED; }
     } else {
-      vary_current_speed -= VARY_STEP;
-      if (vary_current_speed < 0) { vary_current_speed = 0; }
+      vary_current_speed -= vary_step;
+      if (vary_current_speed < VARY_MIN_SPEED) { vary_current_speed = VARY_MIN_SPEED; }
     }
-    #if defined IS_BRIEF
+    #if defined IS_CHATTY
       Serial.print(F("do_vary_speed: vary_current_speed: "));
       Serial.print(vary_current_speed);
       Serial.print(F(", mills_diff: "));

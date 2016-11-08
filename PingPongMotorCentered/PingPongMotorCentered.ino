@@ -23,15 +23,19 @@ using namespace std;
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
-#define MOTOR_SPEED_LEFT  130        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+//#define MOTOR_SPEED_LEFT  130        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+//#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
+#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
+// IBT_2 only setting this block
 #define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 #define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
+// make sure max speed (is always larger then this value)
 #define MOTOR_START_SPEED  50       // low values don't produce movement must be lower then MOTOR_SPEED
 #define SPEED_INCREMENT 5          // amount to increment speed when starting....
 
@@ -49,11 +53,16 @@ using namespace std;
 #define LEFT_LIMIT_PIN 2        // input from left limit switch
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
 
-#define LEFT_LIMIT_IS_CENTER true    // use th left limit as home rather then center, converts us back into a simple pingPong
+
+#define CENTER_IS 'r'    // use one of the following values right='r', left='l', center='c'
+
+                         // original gravity 'l' 
+                         // round_gravity is 'r'
+                         // others are 'c'
 
 #define D_CENTER_PIN 4          // digital center pin
 #define A_CENTER_PIN A3         // analog center pin
-#define CENTER_IS_ANALOG true   // are we reading a digital or analog pin for center
+#define CENTER_IS_ANALOG false   // are we reading a digital or analog pin for center
 
 
 //#define CENTER_LIMIT_PIN 4      // input from center limit switch
@@ -73,7 +82,7 @@ using namespace std;
 #define MOTOR_IBT2_PMWR  5   // PMW pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
 #define MOTOR_IBT2_PMWL  6   // PMW pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
 
-#define MOTOR_CLASS "IBT2Motor"  // A string that is the class name for this break out board.
+#define MOTOR_CLASS "HBridgeMotor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
                             
                               
 
@@ -142,7 +151,7 @@ void Limits::update() {
   center_limit_active = false;
   if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
   if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (LEFT_LIMIT_IS_CENTER) {
+  if (CENTER_IS == 'r' or CENTER_IS == 'l') {
     center_limit_active = false;
   } else {
     if (CENTER_IS_ANALOG) {
@@ -167,8 +176,10 @@ boolean Limits::isMaxRight() {
 }
 
 boolean Limits::isCentered() {
-    if (LEFT_LIMIT_IS_CENTER) {
+    if (CENTER_IS == 'l') {
       return left_limit_active;
+    } else if (CENTER_IS == 'r') {
+      return right_limit_active;
     } else {
       return center_limit_active;
     }
@@ -548,7 +559,7 @@ void IBT2Motor::run() {
     
     // check if we need to override max speed for a jump start 
     if (needs_jump_start == true) { 
-      // this motor is just getting strted, list jump start it!
+      // this motor is just getting started, let's jump start it!
       if (speed <= MOTOR_START_SPEED ) { 
         jump_enabled_millis=millis();   // start the jump start duration timer
       }
@@ -819,8 +830,8 @@ void setup() {
 
   my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
 
-  Serial.print("Center is Left=");
-  Serial.print(LEFT_LIMIT_IS_CENTER);
+  Serial.print("Center is=");
+  Serial.print(CENTER_IS);
   Serial.print(" Center_IS_ANALOG=");
   Serial.println(CENTER_IS_ANALOG);
   Serial.println("End setup");
@@ -878,9 +889,13 @@ void loop() {
     my_dancer->start_again = true;
     my_dancer->update();
     // if we have passed the center on this run, then home is behind us
-    if (LEFT_LIMIT_IS_CENTER) {
+    if (CENTER_IS == 'l') {
       if (my_motor->current_direction() == 'r') {
         my_motor->go_left();
+      }
+    } else if (CENTER_IS == 'r') {
+      if (my_motor->current_direction() == 'l') {
+        my_motor->go_right();
       }
     } else {
       if (current_limits->center_passed) {

@@ -26,13 +26,13 @@
 // you must attach PIN3 to the mosfet to make this work.
 // you also need to cut the traces for pin three on the MP3 card or you will conflict with the MP3 card.
 // uncomment the define VARY_SPEED line to have a variable speed montor
-#define VARY_SPEED
+//#define VARY_SPEED
 //#define VARY_MIN_SPEED 40L    // string wave (oval piece) 
 //#define VARY_MAX_SPEED 40L    // string ripple (oval piece)
 #define VARY_MIN_SPEED 95L    // string ripple 
 #define VARY_MAX_SPEED 95L    // string ripple
 #define VARY_INIT_SPEED 125L  // The mosfet seems to need a kick to get started, must give initial value above desired  initial speed 
-#define VARY_PIN 3
+#define VARY_PIN 3            // D3 pin, if you are going to use this you must cut the trace on mp3 card for MIDI-IN
 #define VARY_OFF 0
 #define VARY_SECONDS 60L           // number of seconds to run before reversing direction
 //#define VARY_STEP (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS

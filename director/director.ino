@@ -20,7 +20,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define HEAVENNEARTH 0x29                     // the super big sculpture going to Asian Art Museum
 #define GOLDENABYSS 0x30
 #define STRINGWAVE  0x32                      // oval piece
-#define STRINGRIPPLE 0x34                     // tall piece
+#define STRINGRIPPLE 0x34                     // tall spinning piece
+#define GRAVITYCU   0x36                      // gravity circle up
 
 
 
@@ -55,7 +56,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {DVNMOMENT};  // order to queue the dancers
 //unsigned int dance_order[]  = {GRAVITY_CG, GOLDENABYSS , LEPTON2, all_dancers};  // Asian Art Museum
 //unsigned int dance_order[]  = {LIFE, LEPTON2, STRINGRIPPLE , STRINGWAVE, HEAVENNEARTH, all_dancers};  // Taiwan Demo 2016
-unsigned int dance_order[]  = {STRINGWAVE, all_dancers};  // Taiwan Demo 2016
+unsigned int dance_order[]  = {DVNMOMENT, GOLDENABYSS, GRAVITYCU, all_dancers};  // ICA, San Jose, CA
+
 
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);

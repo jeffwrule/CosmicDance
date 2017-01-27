@@ -4,8 +4,8 @@ using namespace std;
 // PingPong montor that returns to a center switch when switched off
 
 #define DEBUG = true
-//#define PRINT_EVER_NTH_ITTER 15000
-#define PRINT_EVER_NTH_ITTER 30000
+#define PRINT_EVER_NTH_ITTER 15000
+//#define PRINT_EVER_NTH_ITTER 30000
 
 //#define PRINT_EVER_NTH_ITTER 1
 
@@ -18,58 +18,75 @@ using namespace std;
 #define CENTER_MOVING_LEFT_DELAY 1
 #define CENTER_MOVING_RIGHT_DELAY 1
 
-#define CENTER_READ_CUTOFF 250    // known to work with LIFE piece.
+#define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
 
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
 //#define MOTOR_SPEED_LEFT  130        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
 //#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
-#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+//#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
+//#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
+#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
-// IBT_2 only setting this block
-#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//// IBT_2 only setting this block
+//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+//#define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+//#define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
+// IBT_2 DRIPDRIP
+#define MOTOR_JUMP_START_SPEED1 80       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+#define MOTOR_JUMP_START_SPEED2 80       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
 
 // make sure max speed (is always larger then this value)
-#define MOTOR_START_SPEED  50       // low values don't produce movement must be lower then MOTOR_SPEED
+#define MOTOR_START_SPEED  79       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED
 #define SPEED_INCREMENT 5          // amount to increment speed when starting....
 
-//#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
+// used with dripdrip
+#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
+#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
+#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
 
-#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
-#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
-#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
+//#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
+//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
+//#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
+
+#define ACS712 AMPS
+#define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
+#define ACS712_20A_FACTOR 0.100  // 20 AMP sensing board (more sensative) use with 20AMP version of board
+#define ACS712_5A_FACTOR  0.185  // 5 AMP sensing board (most sensative) use with 5AMP version board
+#define ACS712_FACTOR ACS712_5A_FACTOR
+
+#define ACS_OFF 0.10              // when the motor is off the board returns values between ACS_OFF*-1 and ACS_OFF
 
 // limit switch related information...
 #define LEFT_LIMIT_PIN 2        // input from left limit switch
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
+#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271
+#define RIGHT_LIMIT_TYPE 'a'   // d for digital switch 'a' for analog ACS712 module
 
 
-#define CENTER_IS 'r'    // use one of the following values right='r', left='l', center='c'
+#define CENTER_IS 'l'    // use one of the following values right='r', left='l', center='c'
 
                          // original gravity 'l' 
                          // round_gravity is 'r'
                          // others are 'c'
+                         // dripdrop is 'l'
 
 #define D_CENTER_PIN 4          // digital center pin
 #define A_CENTER_PIN A3         // analog center pin
 #define CENTER_IS_ANALOG false   // are we reading a digital or analog pin for center
 
-
-//#define CENTER_LIMIT_PIN 4      // input from center limit switch
-//#define CENTER_LIMIT_PIN A0      // input from center limit switch
 #define PULLUP_ON 0             // reverse the logic for pullup pins
 #define PULLUP_OFF 1            // reverse the logic for pullup pins
-
 
 
 // pins to control the motor TB6612FNG (class HBridgeMotor)
@@ -82,7 +99,7 @@ using namespace std;
 #define MOTOR_IBT2_PMWR  5   // PMW pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
 #define MOTOR_IBT2_PMWL  6   // PMW pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
 
-#define MOTOR_CLASS "HBridgeMotor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
+#define MOTOR_CLASS "IBT2Motor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
                             
                               
 
@@ -98,6 +115,46 @@ String bool_tostr(bool input_bool) {
   } else {
     return("false");
   }
+}
+
+// read the ACS712 HAL censor to see if we have power 
+// map the result into PULLUP_OFF the motor is running, PULLUP_ON the motor is off
+float lastAcsValueF=0.0;
+int readACS712() {
+  // put your main code here, to run repeatedly:
+
+  unsigned int x=0;
+
+  float AcsValue=0.0,Samples=0.0,AvgAcs=0.0,AcsValueF=0.0;
+
+  // sample this value a bunch of times to get an average
+  for (int x=0; x < 150; x++) {
+    AcsValue = analogRead(ANALOG_RIGHT_LIMIT_PIN);
+    // Serial.print("individual read=");
+    // Serial.println(AcsValue);
+    Samples = Samples + AcsValue;
+    delay(1);
+  }
+  AvgAcs=Samples/150.0;
+  //  Serial.print("Samples=");
+  //  Serial.println(Samples);
+  //  Serial.print("AvgAcs=");
+  //  Serial.println(AvgAcs);
+  //  Serial.print("Scale up=");
+  //  Serial.println(AvgAcs * (5.0/1024.0));
+  // this is for a 30 AMP sensor
+  AcsValueF=((AvgAcs * (5.0 / 1024.0)) - 2.5)/ACS712_FACTOR;
+  lastAcsValueF = AcsValueF;
+  //  Serial.println(AcsValueF);
+  //  delay(10);
+  // if AcsValueF is near 0 then the power is off/limite switch was triggered
+  // also we use PULL_ON logic, switch active=0 switch off=1
+  if ( AcsValueF >= (ACS_OFF * -1.0) and AcsValueF <= ACS_OFF ) {
+    return PULLUP_ON;   // we have reached our limit
+  } else {
+    return PULLUP_OFF;  // we are not at limit/end
+  }
+ 
 }
 
 ///////////////////////////////////////////////////////////
@@ -136,7 +193,18 @@ class Limits {
 
 void Limits::update() {
   last_left_read = digitalRead(left_pin);
-  last_right_read = digitalRead(right_pin);
+  // check the analog pin for the ACS712 value 
+  if (RIGHT_LIMIT_TYPE == 'a') {
+    // when the left limit is on we turn off power, so this could create a false read
+    // just say it is not set when we have the left pin on.
+    if (last_left_read == PULLUP_ON) {
+      last_right_read = PULLUP_OFF;
+    } else {
+      last_right_read = readACS712();
+    }
+  } else {
+    last_right_read = digitalRead(right_pin);
+  }
   if (CENTER_IS_ANALOG) {
     last_a_center_read = analogRead(a_center_pin);
     last_d_center_read = PULLUP_OFF;
@@ -209,7 +277,9 @@ void Limits::print() {
   Serial.print(F(", a_center_pin="));
   Serial.print(a_center_pin);
   Serial.print(F(", right_pin="));
-  Serial.println(right_pin);
+  Serial.print(right_pin);
+  Serial.print(F(", lastAcsValueF="));
+  Serial.println(lastAcsValueF);
   Serial.print(F("        center_passed="));
   Serial.println(bool_tostr(center_passed));
 }
@@ -552,10 +622,10 @@ void IBT2Motor::run() {
     
     run_max_speed = max_speed; // default the current normal max speed
 
-//    Serial.print(F("speed="));
-//    Serial.print(speed);
-//    Serial.print(F(", needs_jump_start="));
-//    Serial.print(needs_jump_start);
+    Serial.print(F("speed="));
+    Serial.print(speed);
+    Serial.print(F(", needs_jump_start="));
+    Serial.println(needs_jump_start);
     
     // check if we need to override max speed for a jump start 
     if (needs_jump_start == true) { 
@@ -639,7 +709,7 @@ void IBT2Motor::go_left() {
     current_pmw_pin = pin_pmwl;
     alt_pmw_pin = pin_pmwr;
     max_speed = max_speed_left;
-    needs_jump_start=false;
+    needs_jump_start=true;
     stop_delay_every_n = STOP_DELAY_EVERY_N_L;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);

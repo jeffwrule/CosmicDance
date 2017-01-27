@@ -70,7 +70,7 @@ const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
 const int FOB_PIN_ON = 1;                 // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
                                           // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0
-                                          // we want to connect this pin to ground throught momentary switch
+                                          // we want to connect this pin to ground through the momentary switch
                                           // The fob switch is a momentary off switch, so normally on but off when pushed.
                                           // The fob pin is also configured with an internal pull_up resistor
                                           // so it is normally closed and being pulled down to ground so it reads as 0 normally.
@@ -410,7 +410,9 @@ void check_for_fob() {
   // this line tends to float back and forth so just 
   // pin it as not pushed and set indicator to say we are dancing...
   if (FAKE_FOB_IS_DANCING) {
-    Serial.println(F("Faking FOB"));
+    #ifdef IS_CHATTY
+      Serial.println(F("Faking FOB"));
+    #endif
     cur_status = 0;
     fob_is_dancing = true;
   }

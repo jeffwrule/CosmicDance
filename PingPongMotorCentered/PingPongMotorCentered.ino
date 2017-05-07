@@ -29,7 +29,7 @@ using namespace std;
 //#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
 #define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
-#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
+#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
 
 //// IBT_2 only setting this block
 //#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)

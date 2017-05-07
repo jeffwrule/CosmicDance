@@ -169,13 +169,13 @@ void setup() {
   vary_step = (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS;
   if (vary_step < 1) { vary_step = 1; }
  #endif
-  
+    
   xbeeSerial.begin(9600);
   
   is_dancing = false;
   new_direction = empty_request;
   
-  if(!sd.begin(9, SPI_FULL_SPEED)) sd.initErrorHalt();
+  if (!sd.begin(9, SPI_FULL_SPEED)) sd.initErrorHalt();
   if (!sd.chdir("/")) sd.errorHalt("sd.chdir");  
   
   MP3player.begin();
@@ -188,6 +188,12 @@ void setup() {
   fob_is_dancing = false;  
   fob_next_volume = NORMAL_VOLUME;
   if (ENHANCED_STANDALONE == true) solo_delay_seconds = 0;
+
+  // announce we are alive!
+  do_beep(200, 50);
+  do_beep(200, 50); 
+  do_beep(200, 30); 
+  
   Serial.println(F("End setup"));
 }
 

@@ -4,10 +4,10 @@ using namespace std;
 // PingPong montor that returns to a center switch when switched off
 
 #define DEBUG = true
-#define PRINT_EVER_NTH_ITTER 15000
+//#define PRINT_EVER_NTH_ITTER 50
 //#define PRINT_EVER_NTH_ITTER 30000
 
-//#define PRINT_EVER_NTH_ITTER 1
+#define PRINT_EVER_NTH_ITTER 1
 
 // because magnets are impprecise, add specific delays for different directions.
 // final delays for cloud gate build
@@ -106,7 +106,11 @@ using namespace std;
 // communicatin pin from the dancer
 #define DANCER_INPUT_PIN 9  // this goes high when the dancer is dancing
 
-int num_loops = 1;          // used to limit prints 
+// extend the center/home, this allows the dancer to keep going for a few more seconds, normally 0 for most piecies
+// we added this to strech out the fabric on drip drp.
+#define DANCER_EXTEND_SECONDS 6
+
+long num_loops = 1;          // used to limit prints 
 boolean do_print = false;   // used to limit prints
 
 String bool_tostr(bool input_bool) {
@@ -147,7 +151,7 @@ int readACS712() {
   lastAcsValueF = AcsValueF;
   //  Serial.println(AcsValueF);
   //  delay(10);
-  // if AcsValueF is near 0 then the power is off/limite switch was triggered
+  // if AcsValueF is near 0 then the power is off/limit switch was triggered
   // also we use PULL_ON logic, switch active=0 switch off=1
   if ( AcsValueF >= (ACS_OFF * -1.0) and AcsValueF <= ACS_OFF ) {
     return PULLUP_ON;   // we have reached our limit
@@ -622,11 +626,12 @@ void IBT2Motor::run() {
     
     run_max_speed = max_speed; // default the current normal max speed
 
-    Serial.print(F("speed="));
-    Serial.print(speed);
-    Serial.print(F(", needs_jump_start="));
-    Serial.println(needs_jump_start);
-    
+    if (do_print) {
+      Serial.print(F("speed="));
+      Serial.print(speed);
+      Serial.print(F(", needs_jump_start="));
+      Serial.println(needs_jump_start);
+    }
     // check if we need to override max speed for a jump start 
     if (needs_jump_start == true) { 
       // this motor is just getting started, let's jump start it!
@@ -803,33 +808,38 @@ void IBT2Motor::print() {
 class Dancer {
 
   public:
-    Dancer( int p_dancer, GenericMotor *motor ) : pin_dancer(p_dancer), start_again(false), _motor(motor) {update(); stop_dancing();}
+    Dancer( int p_dancer, GenericMotor *motor ) : pin_dancer(p_dancer), _motor(motor) {update(); stop_dancing();}
     void update();
     boolean i_am_dancing;         // the motor should be moving....
     boolean start_again;          // requeue to our first position
     void stop_dancing();
-    void start_dancing();
+    void extend_dance();
     void dance();
     void print();
+    boolean remote_is_dancing();
+    boolean dance_extended = false;
 
   private:
     int     pin_dancer;
-    boolean remote_is_dancing;
+    boolean remote_is_dancing_;
     GenericMotor  *_motor;
+    int     extend_seconds = DANCER_EXTEND_SECONDS;
 };
 
+boolean Dancer::remote_is_dancing() {
+  return remote_is_dancing_;
+}
+
 void Dancer::update() {
-  remote_is_dancing = (digitalRead(pin_dancer) == 1);
+  remote_is_dancing_ = (digitalRead(pin_dancer) == 1);
   
-  if (remote_is_dancing) {
-    start_again = false;    // always clear this when remote starts dancing
-  }
-  
-  if (remote_is_dancing || start_again ) {
-      i_am_dancing = true;
+  if (remote_is_dancing_ || dance_extended == false) {
+    dance_extended = false;
+    i_am_dancing = true;
   } else {
     i_am_dancing = false;
   }
+  
 }
 
 void Dancer::dance() {
@@ -841,15 +851,6 @@ void Dancer::dance() {
   _motor->run();
 }
 
-void Dancer::start_dancing() {
-  if (i_am_dancing == false) {
-    Serial.println("starting to dance");
-    // don't restart motor if already started...
-    _motor->enable();
-  }
-  _motor->start();  // keep doing this, it will just do nothing when we reach max speed
-}
-
 void Dancer::stop_dancing() {
   if (_motor->is_disabled() == false) {
     Serial.println("Stopping dance");
@@ -857,13 +858,34 @@ void Dancer::stop_dancing() {
   }
 }
 
+void Dancer::extend_dance() {
+  int i = extend_seconds;
+  
+  Serial.println(F("Extending dance, if necessary..."));
+
+  while ( i > 0 ) {
+    Serial.print(F("Extended dance seconds remaining: "));
+    Serial.println(i);
+    do_print = true;
+    print_status();
+    dance();
+    delay(1000);
+    i = i - 1;
+  }
+
+  Serial.println(F("Extending dance, complete..."));
+
+}
+
 void Dancer::print() {
   Serial.print(F("Dancer: i_am_dancing="));
   Serial.print(bool_tostr(i_am_dancing));
   Serial.print(F(", remote_is_dancing="));
-  Serial.print(bool_tostr(remote_is_dancing));
-  Serial.print(F(", start_again="));
-  Serial.println(bool_tostr(start_again));
+  Serial.print(bool_tostr(remote_is_dancing_));
+  Serial.print(F(", extend_seconds="));
+  Serial.print(extend_seconds);
+  Serial.print(F(", dance_extended="));
+  Serial.println(bool_tostr(dance_extended));
 }
 
 ////////////////////// end Dancer //////////////////////////
@@ -931,6 +953,7 @@ void slow_down_prints() {
   }
 }
 
+
 // watch for limits and request to enable/disable the motor
 void loop() {
   
@@ -952,12 +975,10 @@ void loop() {
   } 
   
   // if remote is stopped and we are not at start, go back to start
-  if (my_dancer->i_am_dancing == false && current_limits->isCentered() != true) {
+  if (my_dancer->remote_is_dancing() == false && my_dancer->dance_extended == false) {
     if (do_print) {
-      Serial.println("Not dancing, restarting dance...");
+      Serial.println("Not dancing, going home...");
     }
-    my_dancer->start_again = true;
-    my_dancer->update();
     // if we have passed the center on this run, then home is behind us
     if (CENTER_IS == 'l') {
       if (my_motor->current_direction() == 'r') {
@@ -978,8 +999,8 @@ void loop() {
     }
   }
 
-  // if remote is stopped and we are back at start position, stop
-  if (my_dancer->start_again && current_limits->isCentered()) {
+  // if remote is stopped and we are back at start position and not extended...
+  if (my_dancer->remote_is_dancing() == false && current_limits->isCentered() && my_dancer->dance_extended == false) {
     if (do_print) { 
       Serial.println("restart complete, stopping...");
     }
@@ -992,10 +1013,18 @@ void loop() {
       Serial.println(CENTER_MOVING_RIGHT_DELAY);
       delay(CENTER_MOVING_RIGHT_DELAY);
     }
-    
+    if (current_limits->isMaxLeft()) {
+      my_motor->go_right();
+    } else if (current_limits->isMaxRight()) {
+      my_motor->go_left();
+    }
+    my_dancer->extend_dance();  // will only move if DANCER_EXTEND_SECONDS > 0
     my_dancer->stop_dancing();
-    my_dancer->start_again = false;
+    my_dancer->dance_extended = true;
     my_dancer->update();
+    current_limits->update();
+    print_status();
+    Serial.println("Dancer is centered!");
   }  
   
   if (my_dancer->i_am_dancing) {

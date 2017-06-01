@@ -14,15 +14,15 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define STAR        0x15
 #define LIVEDIE     0x17                      // wall clock
 #define GRAVITY     0x19                      // gravity
-#define LEPTON2     0x19                      // new lepton collision
+#define SCOLLISION     0x19                      // new lepton collision AKA String Collision
 #define GRAVITY_CG  0x21                      // new gravity build for cloud gate
-#define LIFE        0x23                      // large tile convered scuplture   
+#define LIFE        0x23                      // large tile convered scuplture AKA BioGenisis
 #define HEAVENNEARTH 0x29                     // the super big sculpture going to Asian Art Museum
-#define GOLDENABYSS 0x30
-#define STRINGWAVE  0x32                      // oval piece
-#define STRINGRIPPLE 0x34                     // tall spinning piece
-#define GRAVITYCU   0x36                      // gravity circle up (aka Singularity)
-#define DRIPDRIP    0x38                      // single acuator piece
+#define CONTENPLATION 0x30                      // AKA model of contiplation
+#define STRINGRIPPLE  0x32                      // oval piece
+#define CONCENTRATION 0x34                     // model of concentration tall spinning piece
+#define SSINGLUARITY   0x36                      // gravity circle up (aka String Singularity)
+#define SFLUID    0x38                      // single acuator piece AKA Spiritual Fluid
 
 
 
@@ -56,7 +56,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {DVNMOMENT};  // order to queue the dancers
 //unsigned int dance_order[]  = {GRAVITY_CG, GOLDENABYSS , LEPTON2, all_dancers};  // Asian Art Museum
 //unsigned int dance_order[]  = {LIFE, LEPTON2, STRINGRIPPLE , STRINGWAVE, HEAVENNEARTH, all_dancers};  // Taiwan Demo 2016
-unsigned int dance_order[]  = {DRIPDRIP , GRAVITYCU, GOLDENABYSS, all_dancers};  // Mercury 20, Spiritula Fluid
+// unsigned int dance_order[]  = {DRIPDRIP , GRAVITYCU, GOLDENABYSS, all_dancers};  // Mercury 20, Spiritula Fluid // Mercury 20 Early 2017
+unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
 
 
                                

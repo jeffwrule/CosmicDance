@@ -21,40 +21,53 @@
 #define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
 #define BEEP_VOLUME  100    
 
-// turn this define on if you want to have a variable speed motor 
-// it takes approximately 1 minute to speed up then one minute to slow back down
+// uncomment the VARY_SPEED define on if you want to have a variable speed motor 
 // you must attach PIN3 to the mosfet to make this work.
 // you also need to cut the traces for pin three on the MP3 card or you will conflict with the MP3 card.
-// uncomment the define VARY_SPEED line to have a variable speed montor
-//#define VARY_SPEED
-//#define VARY_MIN_SPEED 40L    // string wave (oval piece) 
-//#define VARY_MAX_SPEED 40L    // string ripple (oval piece)
-#define VARY_MIN_SPEED 95L    // string ripple 
-#define VARY_MAX_SPEED 95L    // string ripple
-#define VARY_INIT_SPEED 125L  // The mosfet seems to need a kick to get started, must give initial value above desired  initial speed 
-#define VARY_PIN 3            // D3 pin, if you are going to use this you must cut the trace on mp3 card for MIDI-IN
-#define VARY_OFF 0
-#define VARY_SECONDS 60L           // number of seconds to run before reversing direction
-//#define VARY_STEP (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS
-long vary_step = 1;              // how big a step to take when incrementing or decrementing
-long vary_current_speed;        // current motor speed
-unsigned long vary_prev_millis;  // mills last time we incremented or decremented
-boolean vary_is_increasing;     // true, we are increasing speed, false we are decreasing speed
+// The speed of the motor will continiously vary between MIN and MAX speed
+// The VARY_SECONDS defines how long it takes to go from MIN to MAX or vise versa
+// To create a motor that starts above or below the variable range set INIT speed, above MAX (typical) or below MIN. 
+// The montor will then be ramped down or up to MIN/MAX and then vary between MIN/MAX until music ends.
+// If you want a montor that just has a jump start set INIT high and MIN = MAX.  
+//    This will ramp down(typical)/up the speed until it reaches MIN/MAX which are equal and will not move again.
+// SET VARY_SECONDS to set the number of seconds between MIN/MAX values
+// SET VARY_SECONDS_INIT to set the number of seconds between INIT and reaching either MIN if INIT is below min or MAX if INIT is above MAX.
+#define VARY_SPEED
+//#define VARY_MIN_SPEED 40L   // string wave (oval piece) 
+//#define VARY_MAX_SPEED 40L   // string wave (oval piece)
+//#define VARY_INIT_SPEED 60L  // string wave (oval piece)
+#define VARY_MIN_SPEED 125L    // string ripple 
+#define VARY_MAX_SPEED 125L    // string ripple
+#define VARY_INIT_SPEED 150L   // string ripple 
+#define VARY_PIN 3             // D3 pin, if you are going to use this you must cut the trace on mp3 card for MIDI-IN
+#define VARY_OFF 0             // OFF Speed for monto (do not change this)
+#define VARY_SECONDS 20L       // number of seconds between min and max
+#define VARY_SECONDS_INIT 20L  // number of seconds to vary the init value down/up to min/max
+
+// global variables for VARY speed feature
+float vary_step = 1.0;                    // default, how big a step to take when incrementing or decrementing
+float vary_step_init = 1.0;               // default, how big a step to take when incrementing or decrementing
+float vary_current_speed = VARY_OFF;      // current motor speed
+unsigned long vary_prev_millis;           // mills last time we incremented or decremented
+char vary_direction = 'i';                // i = increasing; d = decreasing
+boolean vary_jumped = false;              // true when we are jumpstarting the motor, less < MIN OR > MAX
+unsigned int vary_min = VARY_MIN_SPEED;   // default this value
+unsigned int vary_max = VARY_MAX_SPEED;   // default this value
+unsigned int vary_init = VARY_INIT_SPEED; //default this value
 
 // if this is defined as true then we just keep 
 // playing the music over and over, for testig when no wires attached
 // to the arduino
 #define FAKE_FOB_IS_DANCING false
 
-#define ENHANCED_STANDALONE false  // in FOB (standalone mode), plays once loud with motors and once quite w/o montors 0 delay
-                                  // if false Plays with normal volume, then waits solo_delay_seconds (usualy 5) and starts it all again
-                                  // normal volumn and motors on.
+#define ENHANCED_STANDALONE false   // in FOB (standalone mode), plays once loud with motors and once quite w/o montors 0 delay
+                                    // if false Plays with normal volume, then waits solo_delay_seconds (usualy 5) and starts it all again
+                                    // normal volumn and motors on.
 int fob_next_volume;
 
 const int PM_MINI = 1;            // play mode mini track001.xxx
 const int PM_LONG = 10;           // play mode long track010.xxx
 const char file_type[] = "mp3";   // mp3, m4a, acc etc....
-
 
 
 /*
@@ -162,12 +175,26 @@ void setup() {
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
   pinMode(fobA, INPUT_PULLUP);
+  
  #ifdef VARY_SPEED
   pinMode(VARY_PIN, OUTPUT);
   analogWrite(VARY_PIN, VARY_OFF);
-  vary_current_speed = VARY_OFF;
-  vary_step = (VARY_MAX_SPEED - VARY_MIN_SPEED) / VARY_SECONDS;
-  if (vary_step < 1) { vary_step = 1; }
+
+  // sanity check for these values
+  if (VARY_MIN_SPEED < 0) {vary_min = 0;}
+  if (VARY_MAX_SPEED > 255) { vary_max = 255;}
+  if (vary_min > vary_max) {vary_max = vary_min;}
+  if (VARY_INIT_SPEED < 0) {vary_init = 0;}
+  if (VARY_INIT_SPEED > 255) {vary_init=255;}
+
+  // update the step values for init and regular steps over time
+  if (vary_min < vary_max) { vary_step = ((float)vary_max - (float) vary_min) / (float) VARY_SECONDS;}
+  if (vary_step <= 0) { vary_step = 0.1; }
+  
+  // update the step_init values for init and regular steps over time
+  if (vary_init > vary_max) { vary_step_init = ((float)vary_init - (float)vary_max) / (float) VARY_SECONDS;  }
+  if (vary_init < vary_min) { vary_step_init = ((float)vary_min - (float)vary_init) / (float) VARY_SECONDS;  }
+  if (vary_step_init <= 0) { vary_step_init = 0.1; }
  #endif
     
   xbeeSerial.begin(9600);
@@ -281,9 +308,15 @@ void start_dancing(unsigned char dance_piece) {
     digitalWrite(v12Switch, HIGH);
     digitalWrite(v5Switch, HIGH);
     #ifdef VARY_SPEED
-      analogWrite(VARY_PIN, VARY_INIT_SPEED);
+      analogWrite(VARY_PIN, vary_init);
       delay(500);
-      vary_current_speed=VARY_MIN_SPEED;
+      vary_current_speed=vary_init;
+      vary_jumped = true;
+      if (vary_init < vary_min ) { 
+        vary_direction = 'i';
+      } else {
+        vary_direction = 'd';
+      }
     #endif
   }
   is_dancing = true;
@@ -461,31 +494,57 @@ void check_for_fob() {
 }
 
 // vary the speed of the motor
+// This routine will continuiously vary the montor speed between min and max, 
+// To obtain a constant speed set min and max to the same value
+// The init speed tells us if we want to start above or below this variable range.
 void do_vary_speed()
 {
   unsigned long cur_millis;
-  
-  if (vary_current_speed <= VARY_MIN_SPEED) { vary_is_increasing=true; }
-  if (vary_current_speed >= VARY_MAX_SPEED) {vary_is_increasing=false;}
+  float my_step;
+
+  // are we still in the jumped phase?
+  if (vary_jumped) {
+    if (vary_init < vary_min && vary_current_speed >= vary_min) { vary_jumped = false;}
+    if (vary_init > vary_max && vary_current_speed <= vary_max) { vary_jumped = false;}
+  }
+
+  // choose our step size based on jumped or regular phase
+  if (vary_jumped) {
+    my_step = vary_step_init;
+  } else {
+    my_step = vary_step;
+  }
+
+  // are we increasing or decreasing...
+  if (vary_direction = 'i' && vary_current_speed >= vary_max) {
+    vary_direction = 'd';
+  } else if (vary_direction = 'd' && vary_current_speed <= vary_min) {
+    vary_direction = 'i';
+  }
   
   cur_millis = millis();
   if (cur_millis < vary_prev_millis) { vary_prev_millis = cur_millis;} // handle millis wrapping
 
+  // adjust the speed in my_step intervals
   if (cur_millis - vary_prev_millis > 1000) {
-    if (vary_is_increasing) {
-      vary_current_speed += vary_step;
-      if (vary_current_speed > VARY_MAX_SPEED) { vary_current_speed = VARY_MAX_SPEED; }
+    if (vary_direction = 'i') {
+      vary_current_speed += my_step;
     } else {
-      vary_current_speed -= vary_step;
-      if (vary_current_speed < VARY_MIN_SPEED) { vary_current_speed = VARY_MIN_SPEED; }
+      vary_current_speed -= my_step;
+    }
+    if (vary_jumped == false) {
+      if (vary_current_speed > vary_max) { vary_current_speed = vary_max; vary_direction = 'd'; }
+      if (vary_current_speed < vary_min) { vary_current_speed = vary_min; vary_direction = 'i'; }      
     }
     #if defined IS_CHATTY
       Serial.print(F("do_vary_speed: vary_current_speed: "));
-      Serial.print(vary_current_speed);
+      Serial.print(vary_current_speed,4);
+      Serial.print(F(", vary_direction: "));
+      Serial.print(vary_direction);
       Serial.print(F(", mills_diff: "));
       Serial.println(cur_millis - vary_prev_millis);
     #endif
-    analogWrite(VARY_PIN, vary_current_speed);
+    analogWrite(VARY_PIN, (int) vary_current_speed);
     vary_prev_millis = cur_millis;
   }
 }
@@ -513,12 +572,17 @@ void loop() {
               play_mode = PM_LONG; break;
   }
   new_direction = empty_request;
-  // has the music stopped?
+  
   if (is_dancing) {
+    // has the music stopped? shut it down down and notify
     signal_if_done();
-    signal_every_so_often();
+  }
+  
+  // if we are still dancing after checking music status...
+  if (is_dancing) {
+    signal_every_so_often();    // let the director know we are still doing something
     #ifdef VARY_SPEED
-      do_vary_speed();
+      do_vary_speed();          // if variable speed motor, vary it!
     #endif
   }
 }

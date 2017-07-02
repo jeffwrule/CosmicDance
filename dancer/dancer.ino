@@ -36,13 +36,13 @@
 //#define VARY_MIN_SPEED 40L   // string wave (oval piece) 
 //#define VARY_MAX_SPEED 40L   // string wave (oval piece)
 //#define VARY_INIT_SPEED 60L  // string wave (oval piece)
-#define VARY_MIN_SPEED 125L    // string ripple 
-#define VARY_MAX_SPEED 125L    // string ripple
-#define VARY_INIT_SPEED 150L   // string ripple 
+#define VARY_MIN_SPEED 109L    // string ripple 
+#define VARY_MAX_SPEED 109L    // string ripple
+#define VARY_INIT_SPEED 119L   // string ripple 
 #define VARY_PIN 3             // D3 pin, if you are going to use this you must cut the trace on mp3 card for MIDI-IN
 #define VARY_OFF 0             // OFF Speed for monto (do not change this)
 #define VARY_SECONDS 20L       // number of seconds between min and max
-#define VARY_SECONDS_INIT 20L  // number of seconds to vary the init value down/up to min/max
+#define VARY_SECONDS_INIT 5L  // number of seconds to vary the init value down/up to min/max
 
 // global variables for VARY speed feature
 float vary_step = 1.0;                    // default, how big a step to take when incrementing or decrementing

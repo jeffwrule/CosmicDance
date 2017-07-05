@@ -9,6 +9,9 @@ using namespace std;
 
 #define PRINT_EVER_NTH_ITTER 1
 
+//#define IS_CHATTY     // define this for extra debug information 
+
+
 // because magnets are impprecise, add specific delays for different directions.
 // final delays for cloud gate build
 //#define CENTER_MOVING_LEFT_DELAY 9000
@@ -20,6 +23,33 @@ using namespace std;
 
 #define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
 
+
+//// IBT_2 only setting this block
+//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+//#define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+//#define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//
+//// IBT_2 DRIPDRIP
+//#define MOTOR_JUMP_START_SPEED1 80       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
+//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED2 80       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
+//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
+// IBT_2 DRIPDRIP
+#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
+#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
+#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
+// IBT_2 longing cloud
+#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
+#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
+#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
+#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
+#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
@@ -27,25 +57,15 @@ using namespace std;
 //#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 //#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
 //#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
-#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
+//#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
+//#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
+//#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
+#define MOTOR_SPEED_LEFT  100        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
+#define MOTOR_SPEED_RIGHT 100        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
 #define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
 
-//// IBT_2 only setting this block
-//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-//#define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-//#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-//#define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-
-// IBT_2 DRIPDRIP
-#define MOTOR_JUMP_START_SPEED1 80       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 80       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-
-
 // make sure max speed (is always larger then this value)
-#define MOTOR_START_SPEED  79       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED
+#define MOTOR_START_SPEED  99       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
 #define SPEED_INCREMENT 5          // amount to increment speed when starting....
 
 // used with dripdrip
@@ -59,7 +79,7 @@ using namespace std;
 
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
 
-#define ACS712 AMPS
+//ACS712 AMPS
 #define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
 #define ACS712_20A_FACTOR 0.100  // 20 AMP sensing board (more sensative) use with 20AMP version of board
 #define ACS712_5A_FACTOR  0.185  // 5 AMP sensing board (most sensative) use with 5AMP version board
@@ -70,21 +90,23 @@ using namespace std;
 // limit switch related information...
 #define LEFT_LIMIT_PIN 2        // input from left limit switch
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
-#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271
-#define RIGHT_LIMIT_TYPE 'a'   // d for digital switch 'a' for analog ACS712 module
+//#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271    // most pieces
+#define ANALOG_RIGHT_LIMIT_PIN A0 // using with ACS271
+#define RIGHT_LIMIT_TYPE 'b'   // d for digital switch 'a' for analog ACS712 module, b (both) single sensor for both right and left (longing cloud)
 
 
-#define CENTER_IS 'l'    // use one of the following values right='r', left='l', center='c'
+#define CENTER_IS 'r'    // use one of the following values right='r', left='l', center='c'
 
                          // original gravity 'l' 
                          // round_gravity is 'r'
                          // others are 'c'
                          // dripdrop is 'l'
+                         // longing cloud is 'r'
 
 #define D_CENTER_PIN 4          // digital center pin
 #define A_CENTER_PIN A3         // analog center pin
-#define CENTER_IS_ANALOG false   // are we reading a digital or analog pin for center
-
+#define CENTER_IS_ANALOG false  // are we reading a digital or analog pin for center, digital works best when center same left or right
+                                 
 #define PULLUP_ON 0             // reverse the logic for pullup pins
 #define PULLUP_OFF 1            // reverse the logic for pullup pins
 
@@ -108,7 +130,11 @@ using namespace std;
 
 // extend the center/home, this allows the dancer to keep going for a few more seconds, normally 0 for most piecies
 // we added this to strech out the fabric on drip drp.
-#define DANCER_EXTEND_SECONDS 6
+//#define DANCER_EXTEND_SECONDS 6         # drip drip
+#define DANCER_EXTEND_SECONDS 0
+
+// debug tool, do not leave set for normal user
+//#define ALWAYS_BE_DANCING     // uncomment for debu, normally commented out
 
 long num_loops = 1;          // used to limit prints 
 boolean do_print = false;   // used to limit prints
@@ -161,11 +187,35 @@ int readACS712() {
  
 }
 
+
+///////////////////////////////////////////////////////////
+//
+// Abstract Class to manage motor half_bridge and full bridge motors
+//
+/////////////////////////////////////////////////////////// 
+class GenericMotor {
+
+  public:
+    virtual void stop() =0;
+    virtual void start() =0;
+    virtual void run() =0;
+    virtual void go_left() =0;
+    virtual void go_right() =0;
+    virtual boolean is_stopped() =0;
+    virtual boolean is_disabled() =0;
+    virtual char current_direction() =0;
+    virtual void enable() =0;
+    virtual void disable() =0;
+    virtual void print() =0;
+    int speed = 0;
+};
+
 ///////////////////////////////////////////////////////////
 //
 // Class to manage limit switches
 //
 ///////////////////////////////////////////////////////////
+
 class Limits {
    
    public:
@@ -176,8 +226,8 @@ class Limits {
       int sumLimits( void ); 
       void print();
       boolean center_passed;      // have we passed the center since the last reverse
-      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin) : 
-        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false)
+      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin, GenericMotor* my_motor) : 
+        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false), _my_motor(my_motor)
         { update(); }  
  
    private:
@@ -190,32 +240,59 @@ class Limits {
       int last_a_center_read;    // the value the last time we peaked at the analong center pin 
       int last_d_center_read;    // the value the last time we peaked at the digital center pin 
       int last_center_read;      // normalize the value for the analog and digital center pin here
+      int last_acs_read;         // read from the acs sensor
       boolean left_limit_active;
       boolean right_limit_active;
       boolean center_limit_active;
+      GenericMotor* _my_motor;
 };
 
 void Limits::update() {
-  last_left_read = digitalRead(left_pin);
-  // check the analog pin for the ACS712 value 
-  if (RIGHT_LIMIT_TYPE == 'a') {
+
+  last_left_read = digitalRead(left_pin);   // set the left pin
+  
+  // set the right pin
+  if (RIGHT_LIMIT_TYPE == 'a') {      // acs712 device is active, but right side only
     // when the left limit is on we turn off power, so this could create a false read
     // just say it is not set when we have the left pin on.
-    if (last_left_read == PULLUP_ON) {
+    if (last_left_read == PULLUP_ON) { // if left limit switch active, then believe it
       last_right_read = PULLUP_OFF;
     } else {
       last_right_read = readACS712();
     }
-  } else {
+  } else if (RIGHT_LIMIT_TYPE == 'b') {  // no limit switch either side, use current direction and ACS712
+      last_acs_read = readACS712();
+      if (_my_motor->current_direction() == 'l') {
+        last_left_read = last_acs_read;   // left is set by ACS read
+        last_right_read = PULLUP_OFF;     // we are not right
+      } else {
+        last_right_read = last_acs_read;   // right is set by ACS read
+        last_left_read = PULLUP_OFF;       // we are not left      
+      }
+  } else { // not analog, just read the switch
     last_right_read = digitalRead(right_pin);
   }
-  if (CENTER_IS_ANALOG) {
-    last_a_center_read = analogRead(a_center_pin);
+
+  // set the center pin read
+  if (CENTER_IS == 'r' || CENTER_IS == 'l') {
+      // center is set using right/left pin setting setting from above
+      last_a_center_read = 2000;  // we use digital pin read for l/r communication
+      last_d_center_read = PULLUP_OFF;
+//      if (CENTER_IS == 'r') { last_center_read = last_right_read; }
+//      if (CENTER_IS == 'l') { last_center_read = last_left_read; }
+  } else  if (CENTER_IS_ANALOG) {
+    // center is computed off analog pin
     last_d_center_read = PULLUP_OFF;
+    last_a_center_read = analogRead(a_center_pin);
+    last_center_read = PULLUP_OFF;
+    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_passed = true; }
   } else {
+    // center is computed off digital pin
     last_a_center_read = 2000;   // set this to a value out of range for normal analog devices 0-1023
-    last_d_center_read = digitalRead(d_center_pin);    
+    last_d_center_read = digitalRead(d_center_pin); 
+    if (last_d_center_read == PULLUP_ON) { center_passed = true;}
   }
+  
   last_center_read = PULLUP_OFF;  // this will get set later in the routine. Default to not set.
   
   left_limit_active = false; 
@@ -223,16 +300,7 @@ void Limits::update() {
   center_limit_active = false;
   if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
   if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (CENTER_IS == 'r' or CENTER_IS == 'l') {
-    center_limit_active = false;
-  } else {
-    if (CENTER_IS_ANALOG) {
-      if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;} 
-    } else {
-      if (last_d_center_read == PULLUP_ON) { last_center_read = PULLUP_ON; center_limit_active = true; center_passed = true;}  
-    }
-  }
-  
+  if (last_center_read == PULLUP_ON) { center_limit_active = true; }
 }
 
 int  Limits::sumLimits() {
@@ -287,29 +355,9 @@ void Limits::print() {
   Serial.print(F("        center_passed="));
   Serial.println(bool_tostr(center_passed));
 }
+
+
 ////////////////////// end Limits //////////////////////////
-
-///////////////////////////////////////////////////////////
-//
-// Abstract Class to manage motor half_bridge and full bridge motors
-//
-/////////////////////////////////////////////////////////// 
-class GenericMotor {
-
-  public:
-    virtual void stop() =0;
-    virtual void start() =0;
-    virtual void run() =0;
-    virtual void go_left() =0;
-    virtual void go_right() =0;
-    virtual boolean is_stopped() =0;
-    virtual boolean is_disabled() =0;
-    virtual char current_direction() =0;
-    virtual void enable() =0;
-    virtual void disable() =0;
-    virtual void print() =0;
-    int speed = 0;
-};
 
 ///////////////////////////////////////////////////////////
 //
@@ -332,15 +380,14 @@ class HBridgeMotor: public GenericMotor {
     void print();
     int speed = 0;
     
-    HBridgeMotor(int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right, Limits *limits ) :
+    HBridgeMotor(int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right) :
       max_speed_left(m_speed_left), 
       max_speed_right(m_speed_right),
       pin_speed(p_speed),
       pin_left(p_left),
       pin_right(p_right),
       pin_standby(p_standby),
-      _is_disabled(false),
-      _limits(limits)
+      _is_disabled(false)
       { 
           pinMode(p_left, OUTPUT);
           digitalWrite(p_left, 0);
@@ -363,7 +410,6 @@ class HBridgeMotor: public GenericMotor {
     int max_speed_right;
     boolean _is_disabled = 0;
     int stop_delay_every_n = 50;
-    Limits *_limits;
 
     int move_left = 0;
     int move_right = 0;
@@ -520,9 +566,9 @@ void HBridgeMotor::print() {
 /////////////////////////////////////////////////////////// 
 class IBT2Motor: public GenericMotor {
   public:
-    void stop();
-    void start();
-    void run();
+    void stop();                // stop the motor by bring pmw down to 0
+    void start();               // if current speed is less then start speed, make it start speed
+    void run();                 // increment motor speed to max speed in SPEED_INCREMENT jumps over multiple calls, does nothing if motor is disabled
     void go_left();
     void go_right();
     boolean is_stopped();
@@ -533,13 +579,12 @@ class IBT2Motor: public GenericMotor {
     void print();
     int speed = 0;
     
-    IBT2Motor(int m_speed_left, int m_speed_right,  int p_pmwr, int p_pmwl, Limits *limits ) :
+    IBT2Motor(int m_speed_left, int m_speed_right,  int p_pmwr, int p_pmwl) :
       max_speed_left(m_speed_left),
       max_speed_right(m_speed_right),
       pin_pmwr(p_pmwr),
       pin_pmwl(p_pmwl),
-      _is_disabled(false),
-      _limits(limits)
+      _is_disabled(false)
       { 
           pinMode(pin_pmwr, OUTPUT);
           digitalWrite(pin_pmwr, 0);
@@ -552,30 +597,31 @@ class IBT2Motor: public GenericMotor {
        }
     
   private:
-    int pin_pmwr;
-    int pin_pmwl;
-    int current_pmw_pin;
-    int alt_pmw_pin;
-    int max_speed;
-    int max_speed_left;
-    int max_speed_right;
-    int jump_start_speed;
-    bool needs_jump_start=false;
-    unsigned long jump_enabled_millis=0;      // set each time we go from disabled to enabled.
-    unsigned long jump_millis_duration1=JUMP_START_MILLIS_DURATION1;   // run jump start speed for this many milliseconds at startup
-    int jump_start_speed1=MOTOR_JUMP_START_SPEED1;                           // jumpstart speed 1
-    unsigned long jump_millis_duration2=JUMP_START_MILLIS_DURATION2;   // run jump start speed if seconds is longer then jump_millis_duration1 and less then this value 
-    int jump_start_speed2=MOTOR_JUMP_START_SPEED2;                           // jump start speed 2 (should be less then speed1)
-    unsigned long jump_diff_millis=0;
-    boolean _is_disabled = 0;
-    int stop_delay_every_n = 10;
+    int pin_pmwr;                         // right pin
+    int pin_pmwl;                         // left pin
+    int current_pmw_pin;                  // current_pin switches between the two above
+    int alt_pmw_pin;                      // the other pin, this pin will be set to 0 while we use the current to drive the motor
+    int max_speed;                        // max speed for the current direction, set in go_left and go_right from max_speed_left/right
+    int max_speed_left;                   // max speed to go when going right, set with MOTOR_SPEED_RIGHT
+    int max_speed_right;                  // max speed to go when going left, set with MOTOR_SPEED_LEFT
+    bool needs_jump_start;                // mapped from NEEDS_JUMP_START_LEFT and NEEDS_JUMP_START_RIGHT in go_left and go_right
+    unsigned long jump_enabled_millis=0;  // set in run() to the current milliseconds value millis()
+    unsigned long jump_diff_millis=0;     // how long has the current jump window been active.
+    unsigned long jump_millis_duration1=JUMP_START_MILLIS_DURATION1;          // number of milliseconds to run jump window 1
+    int jump_start_speed1=MOTOR_JUMP_START_SPEED1;                            // jump window 1 max speed, mapped into max_speed during this window
+    unsigned long jump_millis_duration2=JUMP_START_MILLIS_DURATION2;          // number of milliseconds to run jump window 1, must be large then window 1 to run. 
+    int jump_start_speed2=MOTOR_JUMP_START_SPEED2;                            // jump window 1 max speed, mapped into max_speed during this window, 
+                                                                              //     jump start speed 2 (should be less then or equal to speed1)
+    boolean _is_disabled = 0;             // has disable() been called, cleared by enable()
+    int stop_delay_every_n = 10;          // when we have decrement the speed this many points, delay for STOP_DELAY milliseconds
     unsigned long max_time_to_limit_switch = 1000L * MAX_SECONDS_TO_LIMIT_SWITCH;   // number of seconds to have passed before we reset motor
-    unsigned long millis_motor_start=0;                         // millis when motor was last started
-    unsigned long millis_since_start=0;                         // number of millis since motor was last started
-    Limits *_limits;
+                                                                                    // add b/c the time piece would get stuck sometimes, this was just
+                                                                                    // a fix re-execute the jump start values.
+    unsigned long millis_motor_start=0;   // millis when motor was last started
+    unsigned long millis_since_start=0;   // number of millis since motor was last started
 
-    int move_left = 0;
-    int move_right = 0;
+    int move_left = 0;                    // we are moving left,  move_right should be 0, set in go_left, cleared in go_right, returned by current_direction
+    int move_right = 0;                   // we are moving right, move_left should be 0,  set in go_right, cleared go_left, returned by current_direction
 };
 
 // bring the motor down in a controlled manor
@@ -584,9 +630,16 @@ void IBT2Motor::stop() {
   boolean motor_was_running = false;
 
   Serial.println("IBT2Motor::stop");
-  Serial.print("Speed=");
-  Serial.println(speed);
-  
+  #ifdef IS_CHATTY
+    Serial.print("debug before stop: current_pmw_pin=");
+    Serial.print(current_pmw_pin);
+    Serial.print(", alt_pmw_pin=");
+    Serial.print(alt_pmw_pin);
+    Serial.print(", Speed=");
+    Serial.println(speed);
+  #endif
+
+  // trim down the motor speed; if speed > 0
   for (int i=speed; i!=0; i--) {
     motor_was_running = true;
     analogWrite(current_pmw_pin, i);
@@ -604,34 +657,45 @@ void IBT2Motor::stop() {
     delay(100);
   }
   speed = 0;
+
+  #ifdef IS_CHATTY
+    Serial.print("debug after stop: current_pmw_pin=");
+    Serial.print(current_pmw_pin);
+    Serial.print(", alt_pmw_pin=");
+    Serial.print(alt_pmw_pin);
+    Serial.print(", Speed=");
+    Serial.println(speed);
+  #endif
+  
 }
 
 void IBT2Motor::start() { 
     
     Serial.println("IBT2Motor::start");
-    Serial.print("Speed=");
+    Serial.print("before start Speed=");
     Serial.println(speed); 
     
     if (speed < MOTOR_START_SPEED) {
       speed = MOTOR_START_SPEED;
     }
+
+    Serial.print("after start Speed=");
+    Serial.println(speed); 
 }
 
 // keep increasing the motor speed until max speed
 void IBT2Motor::run() {
   int run_max_speed=0;
   unsigned long current_millis=0;
+
+  #ifdef IS_CHATTY
+    Serial.println(F("IBT2Motor::run() starting"));
+  #endif
   
   if ( ! is_disabled() ) {
     
     run_max_speed = max_speed; // default the current normal max speed
 
-    if (do_print) {
-      Serial.print(F("speed="));
-      Serial.print(speed);
-      Serial.print(F(", needs_jump_start="));
-      Serial.println(needs_jump_start);
-    }
     // check if we need to override max speed for a jump start 
     if (needs_jump_start == true) { 
       // this motor is just getting started, let's jump start it!
@@ -650,19 +714,34 @@ void IBT2Motor::run() {
       // are we still in the jump start window?, use the higher speed
       if (jump_diff_millis < jump_millis_duration1) {
         run_max_speed = jump_start_speed1;
+        #ifdef IS_CHATTY
+          Serial.print(F("In jump start1"));
+        #endif 
       } else if (jump_diff_millis < jump_millis_duration2) {
          run_max_speed = jump_start_speed2;
+        #ifdef IS_CHATTY
+          Serial.print(F("In jump start2"));
+        #endif       
       } else {
         run_max_speed = max_speed;
       }
-      
-//      Serial.print(F(", jump_enabled_millis="));
-//      Serial.print(jump_enabled_millis);
-//      Serial.print(F(", jump_diff_millis="));
-//      Serial.print(jump_diff_millis);
+   
+      #ifdef IS_CHATTY
+        Serial.print(F(", jump_enabled_millis="));
+        Serial.print(jump_enabled_millis);
+        Serial.print(F(", jump_diff_millis="));
+        Serial.print(jump_diff_millis);
+      #endif
       
     }
-
+    
+    if (do_print) {
+      Serial.print(F("IBT2Motor::run() speed="));
+      Serial.print(speed);
+      Serial.print(F(", max_speed="));
+      Serial.println(run_max_speed);
+    }  
+    
     if (speed <= MOTOR_START_SPEED) {
       millis_motor_start=millis();
     }
@@ -701,6 +780,9 @@ void IBT2Motor::run() {
       }
     }
   }
+  #ifdef IS_CHATTH
+    Serial.println(F("IBT2Motor::run() end"));
+  #endif
 }
 
 // continues left if alrady going left, else stops and restart left
@@ -714,7 +796,7 @@ void IBT2Motor::go_left() {
     current_pmw_pin = pin_pmwl;
     alt_pmw_pin = pin_pmwr;
     max_speed = max_speed_left;
-    needs_jump_start=true;
+    needs_jump_start=NEEDS_JUMP_START_LEFT;
     stop_delay_every_n = STOP_DELAY_EVERY_N_L;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
@@ -734,7 +816,7 @@ void IBT2Motor::go_right() {
     current_pmw_pin = pin_pmwr;
     alt_pmw_pin = pin_pmwl;
     max_speed = max_speed_right;
-    needs_jump_start=true;
+    needs_jump_start=NEEDS_JUMP_START_RIGHT;
     stop_delay_every_n = STOP_DELAY_EVERY_N_R;
     if (orig_speed != 0) {
       delay(REVERSE_DELAY);
@@ -781,12 +863,16 @@ void IBT2Motor::print() {
   Serial.print(bool_tostr(is_disabled()));
   Serial.print(F(", is_stopped="));
   Serial.print(bool_tostr(is_stopped()));
+  Serial.print(F(", move_left="));
+  Serial.print(move_left);
+  Serial.print(F(", move_right="));
+  Serial.print(move_right);
   Serial.print(F(", direction="));
   Serial.print(current_direction());
   Serial.print(F(", max_speed="));
   Serial.print(max_speed);
   Serial.print(F(", needs_jumpstart="));
-  Serial.print(needs_jump_start);
+  Serial.print(bool_tostr(needs_jump_start));
   Serial.print(F(", jump_diff_millis="));
   Serial.print(jump_diff_millis);
   Serial.print(F(", max_time_to_limit_switch="));
@@ -832,6 +918,9 @@ boolean Dancer::remote_is_dancing() {
 
 void Dancer::update() {
   remote_is_dancing_ = (digitalRead(pin_dancer) == 1);
+  #ifdef ALWAYS_BE_DANCING
+    remote_is_dancing_ = true;
+  #endif
   
   if (remote_is_dancing_ || dance_extended == false) {
     dance_extended = false;
@@ -907,18 +996,17 @@ void setup() {
   
   pinMode(DANCER_INPUT_PIN, INPUT);
   
-  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN);
-
   Serial.print("MOTOR_CLASS=");
   Serial.println(MOTOR_CLASS);
   if (MOTOR_CLASS == "HBridgeMotor") {
-    my_motor = new HBridgeMotor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN, current_limits);
+    my_motor = new HBridgeMotor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN);
   } else if (MOTOR_CLASS == "IBT2Motor") {
-    my_motor = new IBT2Motor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL, current_limits);
+    my_motor = new IBT2Motor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL);
   } else {
     Serial.println("ERROR: unknown motor class");
   }
 
+  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN, my_motor);
 
   my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
 
@@ -953,12 +1041,12 @@ void slow_down_prints() {
   }
 }
 
+// reset the arduino
+//void(* resetFunc) (void) = 0;
 
 // watch for limits and request to enable/disable the motor
 void loop() {
-  
-  boolean i_was_dancing = false;
-  
+    
   slow_down_prints();
   current_limits->update();
   my_dancer->update();
@@ -1038,6 +1126,6 @@ void loop() {
   } else {
     my_dancer->stop_dancing();
   }
-  
+
 }
 

@@ -363,13 +363,11 @@ boolean track_is_complete() {
   int retval;
   #if defined IS_CHATTY
     Serial.println("checking is playing...");
-delay(2000);
   #endif
   retval = MP3player.isPlaying();
 //  return MP3player.isPlaying() == 0;
   #if defined IS_CHATTY
     Serial.println("check complete...");
-delay(2000);
   #endif
   return(retval == 0);
 }

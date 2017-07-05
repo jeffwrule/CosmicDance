@@ -5,7 +5,6 @@
 
 //Add the SdFat Libraries
 #include <SdFat.h>
-#include <SdFatUtil.h>
 
 //and the MP3 Shield Library
 #include <SFEMP3Shield.h>
@@ -145,6 +144,9 @@ SdFat sd;
  */
 SFEMP3Shield MP3player;
 
+// reset the arduino
+void(* resetFunc) (void) = 0;
+
 
 //------------------------------------------------------------------------------
 /**
@@ -202,8 +204,18 @@ void setup() {
   is_dancing = false;
   new_direction = empty_request;
   
-  if (!sd.begin(9, SPI_FULL_SPEED)) sd.initErrorHalt();
-  if (!sd.chdir("/")) sd.errorHalt("sd.chdir");  
+  if (!sd.begin(9, SPI_FULL_SPEED)) { 
+      // sd.initErrorHalt();
+      Serial.println("sd.begin failed, restarting...");
+      delay(1000);
+      resetFunc();
+  }
+  if (!sd.chdir("/")) {
+    // sd.errorHalt("sd.chdir");  
+    Serial.println("sd.chdir failed, restarting...");
+    delay(1000);
+    resetFunc();
+  }
   
   MP3player.begin();
   MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
@@ -348,13 +360,26 @@ void reply_status() {
 
 // is the finished playing?
 boolean track_is_complete() {
-  return MP3player.isPlaying() == 0;
+  int retval;
+  #if defined IS_CHATTY
+    Serial.println("checking is playing...");
+delay(2000);
+  #endif
+  retval = MP3player.isPlaying();
+//  return MP3player.isPlaying() == 0;
+  #if defined IS_CHATTY
+    Serial.println("check complete...");
+delay(2000);
+  #endif
+  return(retval == 0);
 }
 
 // are we done?
 void signal_if_done() {
   // simulate the MP3 stopping after 13 seconds
-  // Serial.print("signal_if_done track status: ");
+  #if defined IS_CHATTY 
+    Serial.print("signal_if_done track status: ");
+  #endif
   if (track_is_complete()) {
     #if defined IS_CHATTY
       Serial.println(F("signal_if_done track status: complete"));
@@ -388,11 +413,18 @@ void signal_if_done() {
       }
     }
   }
+  #if defined IS_CHATTY 
+    else { Serial.println("track not done!"); }
+  #endif
 }
 
 // are we done?
 void signal_every_so_often() {
 
+  #if defined IS_CHATTY 
+    Serial.println("starting signal_every_so_often"); 
+  #endif
+  
   // no need to send out a signal we are on our own here
   if (fob_is_dancing) {
     return;

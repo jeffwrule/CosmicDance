@@ -60,24 +60,30 @@ using namespace std;
 //#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
 //#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
 //#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
-#define MOTOR_SPEED_LEFT  100        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
-#define MOTOR_SPEED_RIGHT 100        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
+#define MOTOR_SPEED_LEFT  198        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
+#define MOTOR_SPEED_RIGHT 198        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
 #define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
 
 // make sure max speed (is always larger then this value)
-#define MOTOR_START_SPEED  99       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
-#define SPEED_INCREMENT 5          // amount to increment speed when starting....
+#define MOTOR_START_SPEED  100       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
+#define SPEED_INCREMENT 50          // amount to increment speed when starting....
+//
+//// used with dripdrip
+//#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
 
-// used with dripdrip
-#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
-#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
-#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
+// used with longing cloud
+#define STOP_DELAY         0    // milliseconds to delay between decrements in speed when stopping, typical setting
+#define STOP_DELAY_EVERY_N_L 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
+#define STOP_DELAY_EVERY_N_R 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
+
 
 //#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
 //#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
 //#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
-#define REVERSE_DELAY  1000      // milleseconds to delay when reversing...
+#define REVERSE_DELAY  500      // milleseconds to delay when reversing... reduced from 1000 for longing cloud
 
 //ACS712 AMPS
 #define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
@@ -130,8 +136,9 @@ using namespace std;
 
 // extend the center/home, this allows the dancer to keep going for a few more seconds, normally 0 for most piecies
 // we added this to strech out the fabric on drip drp.
-//#define DANCER_EXTEND_SECONDS 6         # drip drip
-#define DANCER_EXTEND_SECONDS 0
+//#define DANCER_EXTEND_SECONDS 6    
+// longing cloud     
+#define DANCER_EXTEND_SECONDS 3     
 
 // debug tool, do not leave set for normal user
 //#define ALWAYS_BE_DANCING     // uncomment for debu, normally commented out
@@ -207,8 +214,21 @@ class GenericMotor {
     virtual void enable() =0;
     virtual void disable() =0;
     virtual void print() =0;
-    int speed = 0;
 };
+
+
+class GenericDancer {
+
+  public:
+    virtual void update() =0;
+    virtual void stop_dancing() =0;
+    virtual void extend_dance() =0;
+    virtual void dance() =0;
+    virtual void print() =0;
+    virtual boolean remote_is_dancing() =0;
+    boolean dance_extended = false;
+};
+
 
 ///////////////////////////////////////////////////////////
 //
@@ -226,8 +246,9 @@ class Limits {
       int sumLimits( void ); 
       void print();
       boolean center_passed;      // have we passed the center since the last reverse
-      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin, GenericMotor* my_motor) : 
-        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false), _my_motor(my_motor)
+      boolean dance_extended;     // was the dance extended....
+      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin, GenericMotor* my_motor, GenericDancer* my_dancer) : 
+        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false), _my_motor(my_motor), _my_dancer(my_dancer)
         { update(); }  
  
    private:
@@ -245,6 +266,7 @@ class Limits {
       boolean right_limit_active;
       boolean center_limit_active;
       GenericMotor* _my_motor;
+      GenericDancer* _my_dancer;
 };
 
 void Limits::update() {
@@ -261,7 +283,27 @@ void Limits::update() {
       last_right_read = readACS712();
     }
   } else if (RIGHT_LIMIT_TYPE == 'b') {  // no limit switch either side, use current direction and ACS712
-      last_acs_read = readACS712();
+    last_acs_read = readACS712();
+    #ifdef IS_CHATTY
+      Serial.println("Limits before we set 'b' type...");
+      _my_dancer->print();
+      print();
+      _my_motor->print();
+    #endif
+ _my_dancer->print();
+Serial.print(F("dance_extended: "));
+Serial.println(bool_tostr(_my_dancer->dance_extended));
+    if (_my_dancer->dance_extended == true ) { // we are neither left or right, just near left or right 
+      #ifdef IS_CHATTY
+        Serial.println("using 'b', dance_extended == true section...");
+      #endif
+      last_right_read = PULLUP_OFF;   // right is set by ACS read
+      last_left_read = PULLUP_OFF;       // we are not left            
+    } else {
+      // dance is not extended...
+      #ifdef IS_CHATTY
+        Serial.println("using 'b', dance_extended == false section...");
+      #endif        
       if (_my_motor->current_direction() == 'l') {
         last_left_read = last_acs_read;   // left is set by ACS read
         last_right_read = PULLUP_OFF;     // we are not right
@@ -269,6 +311,13 @@ void Limits::update() {
         last_right_read = last_acs_read;   // right is set by ACS read
         last_left_read = PULLUP_OFF;       // we are not left      
       }
+    }
+    #ifdef IS_CHATTY
+      Serial.println("Limits after right after we set 'b' type...");
+      _my_dancer->print();
+      print();
+      _my_motor->print();
+    #endif 
   } else { // not analog, just read the switch
     last_right_read = digitalRead(right_pin);
   }
@@ -278,8 +327,14 @@ void Limits::update() {
       // center is set using right/left pin setting setting from above
       last_a_center_read = 2000;  // we use digital pin read for l/r communication
       last_d_center_read = PULLUP_OFF;
-//      if (CENTER_IS == 'r') { last_center_read = last_right_read; }
-//      if (CENTER_IS == 'l') { last_center_read = last_left_read; }
+      if (RIGHT_LIMIT_TYPE == 'b') {  
+        // hard to detect if we are centered, just know we made it left or right and then extended, we are centered...
+        last_center_read = PULLUP_OFF;
+        if (_my_dancer->dance_extended == true ) { last_center_read = PULLUP_ON; }
+      } else { // center just follows the digital reads for left and right
+        if (CENTER_IS == 'r' && _my_motor->current_direction() == 'r') { last_center_read = last_right_read; }
+        if (CENTER_IS == 'l' && _my_motor->current_direction() == 'l') { last_center_read = last_left_read; }
+      }
   } else  if (CENTER_IS_ANALOG) {
     // center is computed off analog pin
     last_d_center_read = PULLUP_OFF;
@@ -300,7 +355,7 @@ void Limits::update() {
   center_limit_active = false;
   if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
   if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (last_center_read == PULLUP_ON) { center_limit_active = true; }
+  if (last_center_read == PULLUP_ON && _my_dancer->dance_extended == true) { center_limit_active = true; }
 }
 
 int  Limits::sumLimits() {
@@ -829,8 +884,10 @@ void IBT2Motor::go_right() {
 char IBT2Motor::current_direction() {
   if (move_left == 1) {
     return 'l';
-  } else {
+  } else if (move_right == 1) {
     return 'r';
+  } else {
+    return '?';
   }
 }
 
@@ -891,19 +948,17 @@ void IBT2Motor::print() {
 // Class to manage remote dancer stack input 
 //
 /////////////////////////////////////////////////////////// 
-class Dancer {
+class Dancer: public GenericDancer {
 
   public:
-    Dancer( int p_dancer, GenericMotor *motor ) : pin_dancer(p_dancer), _motor(motor) {update(); stop_dancing();}
+    Dancer( int p_dancer, GenericMotor *motor) : pin_dancer(p_dancer), _motor(motor) {update(); stop_dancing();}
     void update();
     boolean i_am_dancing;         // the motor should be moving....
-    boolean start_again;          // requeue to our first position
     void stop_dancing();
     void extend_dance();
     void dance();
     void print();
     boolean remote_is_dancing();
-    boolean dance_extended = false;
 
   private:
     int     pin_dancer;
@@ -961,7 +1016,10 @@ void Dancer::extend_dance() {
     delay(1000);
     i = i - 1;
   }
-
+  
+  dance_extended = true;
+  print_status();
+  
   Serial.println(F("Extending dance, complete..."));
 
 }
@@ -1006,9 +1064,9 @@ void setup() {
     Serial.println("ERROR: unknown motor class");
   }
 
-  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN, my_motor);
-
   my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
+
+  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN, my_motor, my_dancer);
 
   Serial.print("Center is=");
   Serial.print(CENTER_IS);
@@ -1108,7 +1166,6 @@ void loop() {
     }
     my_dancer->extend_dance();  // will only move if DANCER_EXTEND_SECONDS > 0
     my_dancer->stop_dancing();
-    my_dancer->dance_extended = true;
     my_dancer->update();
     current_limits->update();
     print_status();

@@ -56,7 +56,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {GRAVITY_CG, GOLDENABYSS , LEPTON2, all_dancers};  // Asian Art Museum
 //unsigned int dance_order[]  = {LIFE, LEPTON2, STRINGRIPPLE , STRINGWAVE, HEAVENNEARTH, all_dancers};  // Taiwan Demo 2016
 // unsigned int dance_order[]  = {DRIPDRIP , GRAVITYCU, GOLDENABYSS, all_dancers};  // Mercury 20, Spiritula Fluid // Mercury 20 Early 2017
-unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
+//unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
+unsigned int dance_order[]  = {LONGINGCLOUD};  // Taiwan Summer 2017 Cloud Gate install, second director box.
 
 
                                
@@ -73,7 +74,8 @@ const unsigned int TxD = 10;
 
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
-const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
+//const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
+const int l_solo_delay_seconds = 180;        // extra long delay for cloudgate, only one piece is being run so give it a rest
 //const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode
 const int l_ensembl_delay_seconds = 40;    // number of seconds to wait between ensemble play long mode
 //const int l_ensembl_delay_seconds = 150;    // number of seconds to wait between ensemble play long mode 

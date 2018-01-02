@@ -1,10 +1,10 @@
-/* Infraread_read.ino Example sketch for IRLib2 and Circuit Playground Express
+/* Infrared_Read.ino Example sketch for IRLib2 and Circuit Playground Express
    Illustrates how to receive an IR signal, decode it and print
    information about it to the serial monitor.
 */
 #include <Adafruit_CircuitPlayground.h>
 
-#if !defined(ADAFRUIT_CIRCUITPLAYGROUND_M0)
+#if !defined(ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS)
   #error "Infrared support is only for the Circuit Playground Express, it doesn't work with the Classic version"
 #endif
 

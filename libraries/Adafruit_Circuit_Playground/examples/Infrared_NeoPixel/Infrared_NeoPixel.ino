@@ -18,7 +18,7 @@
 #include <Adafruit_CircuitPlayground.h>
 #include "adafruit_mini_codes.h"
 
-#if !defined(ADAFRUIT_CIRCUITPLAYGROUND_M0)
+#if !defined(ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS)
   #error "Infrared support is only for the Circuit Playground Express, it doesn't work with the Classic version"
 #endif
 
@@ -64,6 +64,7 @@ void Show_Pattern(void) {
 
 void setup() {
   CircuitPlayground.begin();
+  Serial.begin(9600);
   CircuitPlayground.irReceiver.enableIRIn(); // Start the receiver
   Bright=8;  Phase=0;  Pattern=2;  Direction=1;  Speed=300;
   Mono=0;  
@@ -98,9 +99,9 @@ void loop() {
 
   // Did we get any NEC remote messages?
   if (! CircuitPlayground.irDecoder.protocolNum == NEC) {
+    CircuitPlayground.irReceiver.enableIRIn(); // Restart receiver  
     return;
   }
-
 
   // What message did we get?
   switch(CircuitPlayground.irDecoder.value) {

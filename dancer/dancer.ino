@@ -13,12 +13,19 @@
 //#define IS_CHATTY True 
 
 //non-amplified star, time etc
-//#define NORMAL_VOLUME 0          
+#define NORMAL_VOLUME 0          
 // amplified most pieces
 #define NORMAL_VOLUME 12 
 
+// comment out if there is not xbee card (not fully tested...)
+//#define HAS_XBEE True
+
 #define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
 #define BEEP_VOLUME  100    
+
+//Which board are we using gravitech or sparkfun
+//this is also needs to be set to match the seeeting in the SFEMP3Shield.h file
+//GRAVITECH=1 gravitech mp3 board, GRAVITECH=0 (sparkfun mp3 board)
 
 // uncomment the VARY_SPEED define on if you want to have a variable speed motor 
 // you must attach PIN3 to the mosfet to make this work.
@@ -31,7 +38,9 @@
 //    This will ramp down(typical)/up the speed until it reaches MIN/MAX which are equal and will not move again.
 // SET VARY_SECONDS to set the number of seconds between MIN/MAX values
 // SET VARY_SECONDS_INIT to set the number of seconds between INIT and reaching either MIN if INIT is below min or MAX if INIT is above MAX.
-#define VARY_SPEED
+
+//#define VARY_SPEED
+
 //#define VARY_MIN_SPEED 40L   // string wave (oval piece) 
 //#define VARY_MAX_SPEED 40L   // string wave (oval piece)
 //#define VARY_INIT_SPEED 60L  // string wave (oval piece)
@@ -74,8 +83,10 @@ const char file_type[] = "mp3";   // mp3, m4a, acc etc....
  * Note the pins jumpers on the xbee shield are configured just the opposite
  * Tx=5, Rx=10
  */
+#ifdef HAS_XBEE
 const unsigned int RxD = 5;               // softserial read
 const unsigned int TxD = 10;              // softserial transmit
+#endif
 const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // pin to turn electronics on/off
@@ -127,8 +138,10 @@ uint8_t payload[] = { 0 };
 // 1 byte to hold receive messages
 unsigned char new_direction;
 
+#ifdef HAS_XBEE
 // software serial port
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
+#endif
 
 /**
  * \brief Object instancing the SdFat library.
@@ -168,43 +181,62 @@ void setup() {
 
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
-  
+
+  pinMode( 2, OUTPUT);
+  pinMode( 3, OUTPUT);
+  pinMode( 6, OUTPUT);
+  pinMode( 7, OUTPUT);
+  pinMode( 8, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(SD_SEL, OUTPUT);  // 4 (gravitech) or 9 (sparkfun)
+
+  #if (GRAVITECH == 1)
+    pinMode(10, OUTPUT);  // recommended in http://flashgamer.com/hardware/comments/tutorial-making-gravitechs-mp3-player-add-on-work
+    Serial.println("using GRAVITECH pin setup");
+  #endif
+
   // setup the soft serial port for xbee reads and writes
-  pinMode(RxD, INPUT);
-  pinMode(TxD, OUTPUT);
+  #ifdef HAS_XBEE
+    pinMode(RxD, INPUT);
+    pinMode(TxD, OUTPUT);
+  #endif
   pinMode(v12Switch, OUTPUT);
   digitalWrite(v12Switch, LOW);
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
   pinMode(fobA, INPUT_PULLUP);
   
- #ifdef VARY_SPEED
-  pinMode(VARY_PIN, OUTPUT);
-  analogWrite(VARY_PIN, VARY_OFF);
-
-  // sanity check for these values
-  if (VARY_MIN_SPEED < 0) {vary_min = 0;}
-  if (VARY_MAX_SPEED > 255) { vary_max = 255;}
-  if (vary_min > vary_max) {vary_max = vary_min;}
-  if (VARY_INIT_SPEED < 0) {vary_init = 0;}
-  if (VARY_INIT_SPEED > 255) {vary_init=255;}
-
-  // update the step values for init and regular steps over time
-  if (vary_min < vary_max) { vary_step = ((float)vary_max - (float) vary_min) / (float) VARY_SECONDS;}
-  if (vary_step <= 0) { vary_step = 0.1; }
+  #ifdef VARY_SPEED
+    pinMode(VARY_PIN, OUTPUT);
+    analogWrite(VARY_PIN, VARY_OFF);
   
-  // update the step_init values for init and regular steps over time
-  if (vary_init > vary_max) { vary_step_init = ((float)vary_init - (float)vary_max) / (float) VARY_SECONDS;  }
-  if (vary_init < vary_min) { vary_step_init = ((float)vary_min - (float)vary_init) / (float) VARY_SECONDS;  }
-  if (vary_step_init <= 0) { vary_step_init = 0.1; }
- #endif
+    // sanity check for these values
+    if (VARY_MIN_SPEED < 0) {vary_min = 0;}
+    if (VARY_MAX_SPEED > 255) { vary_max = 255;}
+    if (vary_min > vary_max) {vary_max = vary_min;}
+    if (VARY_INIT_SPEED < 0) {vary_init = 0;}
+    if (VARY_INIT_SPEED > 255) {vary_init=255;}
+  
+    // update the step values for init and regular steps over time
+    if (vary_min < vary_max) { vary_step = ((float)vary_max - (float) vary_min) / (float) VARY_SECONDS;}
+    if (vary_step <= 0) { vary_step = 0.1; }
     
-  xbeeSerial.begin(9600);
+    // update the step_init values for init and regular steps over time
+    if (vary_init > vary_max) { vary_step_init = ((float)vary_init - (float)vary_max) / (float) VARY_SECONDS;  }
+    if (vary_init < vary_min) { vary_step_init = ((float)vary_min - (float)vary_init) / (float) VARY_SECONDS;  }
+    if (vary_step_init <= 0) { vary_step_init = 0.1; }
+  #endif
+
+  #ifdef HAS_XBEE
+    xbeeSerial.begin(9600);
+  #endif
   
   is_dancing = false;
   new_direction = empty_request;
   
-  if (!sd.begin(9, SPI_FULL_SPEED)) { 
+  if (!sd.begin(SD_SEL, SPI_HALF_SPEED)) { 
       // sd.initErrorHalt();
       Serial.println("sd.begin failed, restarting...");
       delay(1000);
@@ -236,6 +268,28 @@ void setup() {
   Serial.println(F("End setup"));
 }
 
+unsigned char xbee_read() {
+  #ifdef HAS_XBEE
+    return xbeeSerial.read();
+  #else
+    return empty_request;
+  #endif
+}
+
+int xbee_available() {
+  #ifdef HAS_XBEE
+    return xbeeSerial.available();
+  #else
+    return 0;
+  #endif
+}
+
+void xbee_write(unsigned char msg) {
+  #ifdef HAS_XBEE
+    xbeeSerial.write(msg);
+  #endif
+}
+
 /*
  * check the network to see if we any new directions 
  * from the director
@@ -245,8 +299,8 @@ void check_for_direction() {
   #if defined IS_CHATTY
     Serial.println(F("checking for direction..."));
   #endif
-  if (xbeeSerial.available() > 0) {
-    new_direction = xbeeSerial.read();
+  if (xbee_available() > 0) {
+    new_direction = xbee_read();
     #if defined IS_BRIEF
       Serial.print("check_for_direction:Got something: ");
       Serial.println((char) new_direction);
@@ -292,7 +346,7 @@ void start_dancing(unsigned char dance_piece) {
         MP3player.setVolume(fob_next_volume,fob_next_volume);
     }
   } else {
-    xbeeSerial.write(dancing);
+    xbee_write(dancing);
   }
   switch (dance_piece) {
     case solo:     my_track = 1 * play_mode; break;
@@ -346,12 +400,12 @@ void reply_status() {
     Serial.print("sending status: ");
   #endif
   if (is_dancing) {
-    xbeeSerial.write(dancing);
+    xbee_write(dancing);
     #if defined IS_BRIEF
       Serial.println("dancing");
     #endif
   } else {
-    xbeeSerial.write(finished); 
+    xbee_write(finished); 
     #if defined IS_BRIEF
       Serial.println("finished");
     #endif
@@ -386,7 +440,7 @@ void signal_if_done() {
       #if defined IS_CHATTY
         Serial.println(F("Fob is off, sending finished message to director"));
       #endif
-      xbeeSerial.write(finished);
+      xbee_write(finished);
     } else {
       #if defined IS_CHATTY
         Serial.println(F("Fob is on, skipping 'finished' message to director"));
@@ -432,21 +486,21 @@ void signal_every_so_often() {
     #if defined IS_CHATTY
       Serial.println(F("signal_every_so_often checking in..."));
     #endif
-    xbeeSerial.write(dancing);
+    xbee_write(dancing);
     last_checkin = millis();
   }
 }
 
 void drain_serial() {
   // drain any outstanding input queries....
-  while (xbeeSerial.available() > 0) {
+  while (xbee_available() > 0) {
     # if defined IS_CHATTY
-      char x = xbeeSerial.read();
+      char x = xbee_read();
       Serial.print(F("Draining Serial got: "));
       Serial.println(x);
     #else
       Serial.println("draining...");
-      xbeeSerial.read();
+      xbee_read();
     #endif  
   }
 }

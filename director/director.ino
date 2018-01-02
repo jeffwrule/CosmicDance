@@ -57,7 +57,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {LIFE, LEPTON2, STRINGRIPPLE , STRINGWAVE, HEAVENNEARTH, all_dancers};  // Taiwan Demo 2016
 // unsigned int dance_order[]  = {DRIPDRIP , GRAVITYCU, GOLDENABYSS, all_dancers};  // Mercury 20, Spiritula Fluid // Mercury 20 Early 2017
 //unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
-unsigned int dance_order[]  = {LONGINGCLOUD};  // Taiwan Summer 2017 Cloud Gate install, second director box.
+//unsigned int dance_order[]  = {LONGINGCLOUD};  // Taiwan Summer 2017 Cloud Gate install, second director box.
+unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
 
 
                                

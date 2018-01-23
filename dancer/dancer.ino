@@ -182,26 +182,31 @@ void setup() {
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
 
-  pinMode( 2, OUTPUT);
-  pinMode( 3, OUTPUT);
-  pinMode( 6, OUTPUT);
-  pinMode( 7, OUTPUT);
-  pinMode( 8, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
-  pinMode(SD_SEL, OUTPUT);  // 4 (gravitech) or 9 (sparkfun)
-
   #if (GRAVITECH == 1)
+    pinMode( 2, OUTPUT);
+    pinMode( 3, OUTPUT);
+    pinMode( 6, OUTPUT);
+    pinMode( 7, OUTPUT);
+    pinMode( 8, OUTPUT);
     pinMode(10, OUTPUT);  // recommended in http://flashgamer.com/hardware/comments/tutorial-making-gravitechs-mp3-player-add-on-work
+    pinMode(11, OUTPUT);
+    pinMode(12, OUTPUT);
+    pinMode(13, OUTPUT);
+    pinMode(SD_SEL, OUTPUT);  // 4 (gravitech) or 9 (sparkfun)
     Serial.println("using GRAVITECH pin setup");
+  #else
+    Serial.println("using Sparkfun MP3 Card pin setup");
   #endif
 
   // setup the soft serial port for xbee reads and writes
   #ifdef HAS_XBEE
+    Serial.println("XBEE card configured");
     pinMode(RxD, INPUT);
     pinMode(TxD, OUTPUT);
+  #else
+        Serial.println("NOT usinging XBEE card");
   #endif
+  
   pinMode(v12Switch, OUTPUT);
   digitalWrite(v12Switch, LOW);
   pinMode(v5Switch, OUTPUT);
@@ -209,6 +214,8 @@ void setup() {
   pinMode(fobA, INPUT_PULLUP);
   
   #ifdef VARY_SPEED
+    Serial.println("using Varying Speed Setup");
+
     pinMode(VARY_PIN, OUTPUT);
     analogWrite(VARY_PIN, VARY_OFF);
   
@@ -227,6 +234,8 @@ void setup() {
     if (vary_init > vary_max) { vary_step_init = ((float)vary_init - (float)vary_max) / (float) VARY_SECONDS;  }
     if (vary_init < vary_min) { vary_step_init = ((float)vary_min - (float)vary_init) / (float) VARY_SECONDS;  }
     if (vary_step_init <= 0) { vary_step_init = 0.1; }
+  #else
+    Serial.println("using single Speed Setup (not varying)");
   #endif
 
   #ifdef HAS_XBEE

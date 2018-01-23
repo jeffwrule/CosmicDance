@@ -9,9 +9,9 @@
 #include <Arduino.h>
 
 // only print every so often as it screws up timing
-#define PRINT_EVERY 10000L
+#define PRINT_EVERY 5000L
 // uncomment the next line to use a simple switch between DANCER_PIN and ground, not normal mode.
-//#define DANCER_IS_PULLUP    ' 
+#define DANCER_IS_PULLUP    ' 
 unsigned long loop_count=0;
 
 
@@ -28,7 +28,7 @@ unsigned long loop_count=0;
 
 #define DIR_PIN 8
 #define STEP_PIN 9
-#define ENABLE_PIN 13 // optional (just delete ENABLE from everywhere if not used)
+#define ENABLE_PIN 7 // optional (just delete ENABLE from everywhere if not used)
 
 #define DOWN_DIR ExtendedBasicStepperDriver::DOWN_DIRECTION
 #define UP_DIR ExtendedBasicStepperDriver::UP_DIRECTION
@@ -66,7 +66,7 @@ int last_stop_read;
 // total number of steps to the top (we are going to go small at first, the bigger)
 #define REVOLUTIONS_UP 2L
 // same as up + 1 to make sure it comes all the way down.  The sensor switch will stop it.
-#define REVOLUSTIONS_DOWN (REVOLUTIONS_UP + 1)
+#define REVOLUSTIONS_DOWN (REVOLUTIONS_UP +1)
 #define STEPS_UP (MOTOR_STEPS * MICROSTEPS * REVOLUTIONS_UP)
 #define STEPS_DOWN (MOTOR_STEPS * MICROSTEPS * REVOLUSTIONS_DOWN * -1)
 #define DANCER_PIN 3  // input from other arduino, are we dancing?
@@ -219,14 +219,14 @@ void loop() {
           dancer.stopTopMotor();
         }
 
-        // if we have started up and are 20% and stopper is still set, then we have a problem
-        if (stepper.getDirection() == UP_DIR && stepper.getStepCount() > (STEPS_UP * 0.5)) {
-          Serial.println("Error Detected: stopping motor, need reset");
-          dancer.setStateError("Seems like stopper is stuck, waiting for reset");
-          stepper.stop();
-          dancer.stopTopMotor();
-          return;
-        }
+//        // if we have started up and are 20% and stopper is still set, then we have a problem
+//        if (stepper.getDirection() == UP_DIR && stepper.getStepCount() > (STEPS_UP * 0.5)) {
+//          Serial.println("Error Detected: stopping motor, need reset");
+//          dancer.setStateError("Seems like stopper is stuck, waiting for reset");
+//          stepper.stop();
+//          dancer.stopTopMotor();
+//          return;
+//        }
 
     }
 

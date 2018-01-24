@@ -18,7 +18,11 @@
 #define NORMAL_VOLUME 12 
 
 // comment out if there is not xbee card (not fully tested...)
-//#define HAS_XBEE True
+#define HAS_XBEE
+
+// uses signals to start MP3 on a diff arduino else starts MP3 on it's own card
+// use this when the primary dancer does not have an MP3 card..
+#define REMOTE_MP3
 
 #define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
 #define BEEP_VOLUME  100    
@@ -87,7 +91,6 @@ const char file_type[] = "mp3";   // mp3, m4a, acc etc....
 const unsigned int RxD = 5;               // softserial read
 const unsigned int TxD = 10;              // softserial transmit
 #endif
-const unsigned int delay_seconds = 20;    // number of seconds to wait to restart cycle
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
@@ -143,6 +146,16 @@ unsigned char new_direction;
 SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 #endif
 
+#ifdef REMOTE_MP3
+  #define  solo_pin    A4
+  #define ensembl_pin A5
+  #define mp3_playing_pin 3
+
+  int last_solo_write;
+  int last_ensembl_write;
+  int last_mp3_playing_read;
+#else
+
 /**
  * \brief Object instancing the SdFat library.
  *
@@ -159,7 +172,7 @@ SFEMP3Shield MP3player;
 
 // reset the arduino
 void(* resetFunc) (void) = 0;
-
+#endif    // REMOTE_MP3
 
 //------------------------------------------------------------------------------
 /**
@@ -182,7 +195,10 @@ void setup() {
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
 
-  #if (GRAVITECH == 1)
+#ifdef REMOTE_MP3
+  Serial.println("MP3 is remote no MP3 card configured");
+#else
+  #if (GRAVITECH == 1 )
     pinMode( 2, OUTPUT);
     pinMode( 3, OUTPUT);
     pinMode( 6, OUTPUT);
@@ -197,6 +213,7 @@ void setup() {
   #else
     Serial.println("using Sparkfun MP3 Card pin setup");
   #endif
+#endif // REMOTE_MP3
 
   // setup the soft serial port for xbee reads and writes
   #ifdef HAS_XBEE
@@ -214,7 +231,7 @@ void setup() {
   pinMode(fobA, INPUT_PULLUP);
   
   #ifdef VARY_SPEED
-    Serial.println("using Varying Speed Setup");
+    Serial.println("Using Varying Speed Setup");
 
     pinMode(VARY_PIN, OUTPUT);
     analogWrite(VARY_PIN, VARY_OFF);
@@ -244,8 +261,26 @@ void setup() {
   
   is_dancing = false;
   new_direction = empty_request;
+
+#ifdef REMOTE_MP3
+  Serial.println("Setting up solo_pin, ensembl_pin: OUTPUT, mp3_playing_pin: INPUT");
   
-  if (!sd.begin(SD_SEL, SPI_HALF_SPEED)) { 
+  pinMode(solo_pin, OUTPUT);
+  digitalWrite(solo_pin, LOW);
+  delay(50);
+  last_solo_write = LOW;
+  
+  pinMode(ensembl_pin, OUTPUT);
+  digitalWrite(ensembl_pin, LOW);
+  delay(50);
+  last_ensembl_write = LOW;
+
+  pinMode(mp3_playing_pin, INPUT);
+  delay(50);
+  last_mp3_playing_read = digitalRead(mp3_playing_pin);
+#else
+  delay(2000);
+  if (!sd.begin(SD_SEL, SPI_FULL_SPEED)) { 
       // sd.initErrorHalt();
       Serial.println("sd.begin failed, restarting...");
       delay(1000);
@@ -260,6 +295,7 @@ void setup() {
   
   MP3player.begin();
   MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+#endif
   
   // just let it settle for a bit
   delay(10000);  // delay 15 seconds to let things settle down
@@ -276,6 +312,21 @@ void setup() {
   
   Serial.println(F("End setup"));
 }
+
+
+#ifdef REMOTE_MP3
+void remote_mp3_status()
+{
+  #ifdef IS_CHATTY
+    Serial.print("remote_mp3_status: solo ");
+    Serial.print(last_solo_write);
+    Serial.print(", ensembl ");
+    Serial.print(last_ensembl_write);
+    Serial.print(", mp3_is_playing ");
+    Serial.println(last_mp3_playing_read);
+  #endif
+}
+#endif
 
 unsigned char xbee_read() {
   #ifdef HAS_XBEE
@@ -317,13 +368,24 @@ void check_for_direction() {
   }
 }
 
+void mp3_stop() {
+  #ifdef REMOTE_MP3
+    digitalWrite(solo_pin, LOW);
+    last_solo_write = LOW;
+    digitalWrite(ensembl_pin, LOW);
+    last_ensembl_write = LOW;
+  #else
+    MP3player.stopTrack();
+  #endif
+}
+
 // stop the music and motor
 void stop_all() {
   #if defined IS_BRIEF
     Serial.println("stop_all begin...");
   #endif
   is_dancing = false;
-  MP3player.stopTrack();
+  mp3_stop();
   digitalWrite(v12Switch, LOW);
   digitalWrite(v5Switch, LOW);
   #ifdef VARY_SPEED
@@ -333,6 +395,66 @@ void stop_all() {
   #if defined IS_CHATTY
     Serial.println(F("stop_all end..."));
   #endif
+}
+
+int mp3_play_track(unsigned char dance_piece) {
+  int result = 0;
+
+  #ifdef REMOTE_MP3
+
+    #ifdef IS_BRIEF
+      Serial.print("Starting remote MP3 music setting remote pins for dance type: ");
+      Serial.println((char)dance_piece);
+    #endif
+    switch(dance_piece) {
+      case solo: Serial.println("case: solo chosen");
+                 digitalWrite(solo_pin, HIGH);
+                 digitalWrite(ensembl_pin, LOW);
+                 last_solo_write = HIGH;
+                 last_ensembl_write = LOW;
+                 break;
+                 
+      case ensembl: Serial.println("case: ensembl chosen");
+                    digitalWrite(ensembl_pin, HIGH);
+                    digitalWrite(solo_pin, LOW);
+                    last_solo_write = LOW;
+                    last_ensembl_write = HIGH;
+                    break;
+                    
+      default: Serial.println("case: default chosen, probably an ERROR!");
+               digitalWrite(solo_pin, LOW);
+               digitalWrite(ensembl_pin, LOW);
+               last_solo_write = LOW;
+               last_ensembl_write = LOW;
+               break;
+    }
+    remote_mp3_status();
+    // give the remote device a chance to see our request 
+    for (int i = 0;  i < ((solo_delay_seconds * 2) + 1); i++) {
+      delay(500);
+      last_mp3_playing_read = digitalRead(mp3_playing_pin);
+      #ifdef IS_BRIEF
+          Serial.print("mp3_play_track: mp3_is_playing: ");
+          Serial.println(last_mp3_playing_read);
+      #endif
+      if (last_mp3_playing_read == 1) { break; }
+    }
+    #ifdef IS_BRIEF
+      Serial.print("mp3_play_track: mp3_is_playing FINAL: ");
+      Serial.println(last_mp3_playing_read);
+    #endif
+  #else
+    result = MP3player.playMP3(track_name, 0);
+  #endif
+
+  return(result);
+}
+
+void mp3_set_volume(int volume) {
+
+  #ifndef REMOTE_MP3
+    MP3player.setVolume(volume,volume);
+  #endif     
 }
 
 // start playing the solo or the ensembl
@@ -352,7 +474,7 @@ void start_dancing(unsigned char dance_piece) {
       Serial.println(F("fobA is on, skip sending dancing status to director"));
     #endif
     if (ENHANCED_STANDALONE == true) {
-        MP3player.setVolume(fob_next_volume,fob_next_volume);
+        mp3_set_volume(fob_next_volume);
     }
   } else {
     xbee_write(dancing);
@@ -367,7 +489,7 @@ void start_dancing(unsigned char dance_piece) {
     Serial.print("Starting Track:");
     Serial.println(track_name);
   #endif
-  int result = MP3player.playMP3(track_name, 0);
+  int result = mp3_play_track(dance_piece);
   if(result != 0) {
     Serial.print("Error code: ");
     Serial.print(result);
@@ -421,13 +543,21 @@ void reply_status() {
   }
 }
 
+int mp3_is_playing() {
+  #ifdef REMOTE_MP3
+    return(digitalRead(mp3_playing_pin));
+  #else
+    return(MP3player.isPlaying());
+  #endif
+}
+
 // is the finished playing?
 boolean track_is_complete() {
   int retval;
   #if defined IS_CHATTY
     Serial.println("checking is playing...");
   #endif
-  retval = MP3player.isPlaying();
+  retval = mp3_is_playing();
 //  return MP3player.isPlaying() == 0;
   #if defined IS_CHATTY
     Serial.println("check complete...");
@@ -516,6 +646,9 @@ void drain_serial() {
 
 // make a beeping sound
 void do_beep(int num_millis, int delay_after) {
+#ifdef REMOTE_MP3
+  delay(1);
+#else
   Serial.println("Making a beep...");
   MP3player.setVolume(BEEP_VOLUME,BEEP_VOLUME);
   MP3player.enableTestSineWave(14);
@@ -525,6 +658,7 @@ void do_beep(int num_millis, int delay_after) {
   if (delay_after > 0) {
     delay(delay_after);
   }
+#endif
 }
 
 void check_for_fob() {
@@ -646,7 +780,11 @@ void do_vary_speed()
 void loop() {
   
   // MP3player.available();  // fill the buffer if we are polling or simpleTimer
-  
+
+#ifdef REMOTE_MP3
+  last_mp3_playing_read = digitalRead(mp3_playing_pin);
+  remote_mp3_status();
+#endif
   check_for_fob();
   if (fob_is_dancing == false) {
     check_for_direction();

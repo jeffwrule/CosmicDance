@@ -84,7 +84,7 @@ Support for Arduino Leonardo is afflicted by having the SPI pins not routing the
  *
  * Set \c GRAVITECH to \c 1 to use on a Gravitech's MP3-4NANO
  */
-#define GRAVITECH 0 // set to 1 if using the Gravitech's MP3-4NANO shield
+#define GRAVITECH 1 // set to 1 if using the Gravitech's MP3-4NANO shield
 
 /**
  * \def TEENSY2

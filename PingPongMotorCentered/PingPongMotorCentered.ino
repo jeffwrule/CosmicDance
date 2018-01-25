@@ -23,12 +23,29 @@ using namespace std;
 
 #define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
 
+#define MONTOR_START_DELAY 30     // seconds to delay after start dancing is set but before we actually start the motor
+boolean start_delay_complete=false;
+unsigned long start_delay_begin;
+unsigned long start_delay_current;
+
 
 //// IBT_2 only setting this block
-//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-//#define JUMP_START_MILLIS_DURATION1 7000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-//#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-//#define JUMP_START_MILLIS_DURATION2 13000  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+
+// Heaven and Earth
+#define NEEDS_JUMP_START_RIGHT true         // jumpstart when going right
+#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
+#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION1 2000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 7000
+#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define JUMP_START_MILLIS_DURATION2 4000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 1300
+#define MOTOR_SPEED_LEFT  120        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_RIGHT 130
+// GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
+
+#define MOTOR_START_SPEED  100       // low values don't produce movement must be lower then MOTOR_SPEED_(LEFT_RIGHT),, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
+#define SPEED_INCREMENT 50          // amount to increment speed when starting....
+
 //
 //// IBT_2 DRIPDRIP
 //#define MOTOR_JUMP_START_SPEED1 80       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
@@ -37,36 +54,36 @@ using namespace std;
 //#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
 // IBT_2 DRIPDRIP
-#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
-#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
-#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
+//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
+//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
 // IBT_2 longing cloud
-#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
-#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
-#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
-#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
-#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
+//#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
+//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
+//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
+//#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
+//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
 // #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
 //#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
-//#define MOTOR_SPEED_LEFT  130        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-//#define MOTOR_SPEED_RIGHT 150        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+
+
+
 //#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
 //#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 //#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
 //#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
+//#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
+//#define MOTOR_SPEED_LEFT  198        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
+//#define MOTOR_SPEED_RIGHT 198        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
 //#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
-#define MOTOR_SPEED_LEFT  198        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
-#define MOTOR_SPEED_RIGHT 198        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
-#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
 
 // make sure max speed (is always larger then this value)
-#define MOTOR_START_SPEED  100       // low values don't produce movement must be lower then MOTOR_SPEED, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
-#define SPEED_INCREMENT 50          // amount to increment speed when starting....
+
 //
 //// used with dripdrip
 //#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
@@ -74,16 +91,16 @@ using namespace std;
 //#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
 
 // used with longing cloud
-#define STOP_DELAY         0    // milliseconds to delay between decrements in speed when stopping, typical setting
-#define STOP_DELAY_EVERY_N_L 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
-#define STOP_DELAY_EVERY_N_R 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
+//#define STOP_DELAY         0    // milliseconds to delay between decrements in speed when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_L 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
+//#define STOP_DELAY_EVERY_N_R 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
 
 
-//#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
-//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
-//#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
+#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
+#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
+#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
-#define REVERSE_DELAY  500      // milleseconds to delay when reversing... reduced from 1000 for longing cloud
+#define REVERSE_DELAY  1000      // milleseconds to delay when reversing... reduced from 1000 for longing cloud
 
 //ACS712 AMPS
 #define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
@@ -98,19 +115,23 @@ using namespace std;
 #define RIGHT_LIMIT_PIN 3       // input from right limit switch
 //#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271    // most pieces
 #define ANALOG_RIGHT_LIMIT_PIN A0 // using with ACS271
-#define RIGHT_LIMIT_TYPE 'b'   // d for digital switch 'a' for analog ACS712 module, b (both) single sensor for both right and left (longing cloud)
 
-
-#define CENTER_IS 'r'    // use one of the following values right='r', left='l', center='c'
-
+// what kind of limit switches are we using, physical switches or analog censors
+#define RIGHT_LIMIT_TYPE 'd'   // d for digital switch 'a' for analog ACS712 module, b (both) single sensor for both right and left 
+                               // b longing cloud  ACS712 checks power being cut both directions
+                               // d heaven and earth  (digital pins both directions)
+#define CENTER_IS 'l'    // use one of the following values right='r', left='l', center='c'
                          // original gravity 'l' 
                          // round_gravity is 'r'
                          // others are 'c'
                          // dripdrop is 'l'
                          // longing cloud is 'r'
+                         // heaven and earth l
+                         
 
 #define D_CENTER_PIN 4          // digital center pin
 #define A_CENTER_PIN A3         // analog center pin
+// IMPORTANT: must set this correctly for any scuplpture the has a center other then LEFT or RIGHT.
 #define CENTER_IS_ANALOG false  // are we reading a digital or analog pin for center, digital works best when center same left or right
                                  
 #define PULLUP_ON 0             // reverse the logic for pullup pins
@@ -127,18 +148,21 @@ using namespace std;
 #define MOTOR_IBT2_PMWR  5   // PMW pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
 #define MOTOR_IBT2_PMWL  6   // PMW pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
 
+// Set this depending on what kind of ping/pong motor controler you have hooked up.
+// IBT2Motor http://www.hessmer.org/blog/2013/12/28/ibt-2-h-bridge-with-arduino/  (for larger amp motors)
+// HBridgeMotor: https://www.sparkfun.com/products/9457  (for smaller amp motors)
 #define MOTOR_CLASS "IBT2Motor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
                             
-                              
-
-// communicatin pin from the dancer
+// communication pin from the dancer
 #define DANCER_INPUT_PIN 9  // this goes high when the dancer is dancing
 
 // extend the center/home, this allows the dancer to keep going for a few more seconds, normally 0 for most piecies
 // we added this to strech out the fabric on drip drp.
 //#define DANCER_EXTEND_SECONDS 6    
 // longing cloud     
-#define DANCER_EXTEND_SECONDS 3     
+//#define DANCER_EXTEND_SECONDS 3  
+//Heaven and Earth
+#define DANCER_EXTEND_SECONDS 0    
 
 // debug tool, do not leave set for normal user
 //#define ALWAYS_BE_DANCING     // uncomment for debu, normally commented out
@@ -527,7 +551,7 @@ void HBridgeMotor::run() {
   }
 }
 
-// continues left if alrady going left, else stops and restart left
+// continues left if already going left, else stops and restart left
 void HBridgeMotor::go_left() {
   int orig_speed = speed;
   if (current_direction() != 'l') {
@@ -1119,7 +1143,7 @@ void loop() {
     my_dancer->stop_dancing();
     return;
   } 
-  
+
   // if remote is stopped and we are not at start, go back to start
   if (my_dancer->remote_is_dancing() == false && my_dancer->dance_extended == false) {
     if (do_print) {
@@ -1145,7 +1169,7 @@ void loop() {
     }
   }
 
-  // if remote is stopped and we are back at start position and not extended...
+  // if remote is stopped and we are back at start position and not extended... extend!
   if (my_dancer->remote_is_dancing() == false && current_limits->isCentered() && my_dancer->dance_extended == false) {
     if (do_print) { 
       Serial.println("restart complete, stopping...");

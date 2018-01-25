@@ -4,10 +4,10 @@ using namespace std;
 // PingPong montor that returns to a center switch when switched off
 
 #define DEBUG = true
-//#define PRINT_EVER_NTH_ITTER 50
+#define PRINT_EVER_NTH_ITTER 50
 //#define PRINT_EVER_NTH_ITTER 30000
 
-#define PRINT_EVER_NTH_ITTER 1
+//#define PRINT_EVER_NTH_ITTER 1
 
 //#define IS_CHATTY     // define this for extra debug information 
 
@@ -23,28 +23,33 @@ using namespace std;
 
 #define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
 
-#define MONTOR_START_DELAY 30     // seconds to delay after start dancing is set but before we actually start the motor
-boolean start_delay_complete=false;
-unsigned long start_delay_begin;
-unsigned long start_delay_current;
+// some setting 
+const unsigned long MOTOR_START_DELAY=14;           // seconds to delay after start dancing is set but before we actually start the motor
+                                      // most should be 0
+                                      // heaven and earth 30
+boolean start_delay_started;          // have we started the count up clock                               
+boolean start_delay_complete;         // have we completed our wait
+unsigned long start_delay_begin_ms;   // time in ms when we started this delay
+unsigned long start_delay_current_ms; // current time 
+long start_delay_ms_diff;             // milliseconds diff betwen delay start and now
+long start_delay_seconds_diff;        // seconds diff between dealy and now
 
 
 //// IBT_2 only setting this block
 
 // Heaven and Earth
-#define NEEDS_JUMP_START_RIGHT true         // jumpstart when going right
+#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
 #define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
 #define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION1 2000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 7000
 #define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION2 4000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 1300
-#define MOTOR_SPEED_LEFT  120        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_RIGHT 130
-// GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_LEFT  50        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_RIGHT 57        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
-#define MOTOR_START_SPEED  100       // low values don't produce movement must be lower then MOTOR_SPEED_(LEFT_RIGHT),, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
-#define SPEED_INCREMENT 50          // amount to increment speed when starting....
+#define MOTOR_START_SPEED  10       // low values don't produce movement must be lower then MOTOR_SPEED_(LEFT_RIGHT),, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
+#define SPEED_INCREMENT 10          // amount to increment speed when starting....
 
 //
 //// IBT_2 DRIPDRIP
@@ -539,6 +544,7 @@ void HBridgeMotor::start() {
 
 // keep increasing the motor speed until max speed
 void HBridgeMotor::run() {
+  if ( ! start_delay_complete ) { return; } // do not run while we are in delay 
   if ( ! is_disabled() ) {
     if (speed < max_speed) {
       speed += SPEED_INCREMENT;
@@ -770,6 +776,9 @@ void IBT2Motor::run() {
   #ifdef IS_CHATTY
     Serial.println(F("IBT2Motor::run() starting"));
   #endif
+
+  // do not run the motor while in start delay
+  if (!start_delay_complete) { return; }
   
   if ( ! is_disabled() ) {
     
@@ -949,8 +958,8 @@ void IBT2Motor::print() {
   Serial.print(F(", move_right="));
   Serial.print(move_right);
   Serial.print(F(", direction="));
-  Serial.print(current_direction());
-  Serial.print(F(", max_speed="));
+  Serial.println(current_direction());
+  Serial.print(F("        max_speed="));
   Serial.print(max_speed);
   Serial.print(F(", needs_jumpstart="));
   Serial.print(bool_tostr(needs_jump_start));
@@ -1042,6 +1051,7 @@ void Dancer::extend_dance() {
   }
   
   dance_extended = true;
+  start_delay_started = false; // when we are fully reset we need a new delay
   print_status();
   
   Serial.println(F("Extending dance, complete..."));
@@ -1057,6 +1067,24 @@ void Dancer::print() {
   Serial.print(extend_seconds);
   Serial.print(F(", dance_extended="));
   Serial.println(bool_tostr(dance_extended));
+  
+  Serial.print(F("        start_delay_started="));
+  Serial.print(bool_tostr(start_delay_started));
+  Serial.print(F(", start_delay_complete="));
+  Serial.print(bool_tostr(start_delay_complete));
+  Serial.print(F(", MOTOR_START_DELAY="));
+  Serial.print(MOTOR_START_DELAY);
+  Serial.print(F(", target_ms="));
+  Serial.println(MOTOR_START_DELAY * 1000);
+  Serial.print(F("        start_delay_begin_ms="));
+  Serial.print(start_delay_begin_ms);
+  Serial.print(F(", start_delay_current_ms="));
+  Serial.print(start_delay_current_ms);
+  Serial.print(F(", start_delay_ms_diff="));
+  Serial.print(start_delay_ms_diff);
+  Serial.print(F(", start_delay_seconds_diff="));
+  Serial.println(start_delay_seconds_diff);
+
 }
 
 ////////////////////// end Dancer //////////////////////////
@@ -1091,6 +1119,11 @@ void setup() {
   my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
 
   current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN, my_motor, my_dancer);
+
+  start_delay_complete = false;
+  start_delay_started = false;
+  Serial.print("Motor Start Delay is: ");
+  Serial.println(MOTOR_START_DELAY);
 
   Serial.print("Center is=");
   Serial.print(CENTER_IS);
@@ -1134,6 +1167,31 @@ void loop() {
   my_dancer->update();
   print_status();
 
+  // always allow the motor to run when the remote has stopped requesting a dance (we may need to get back home etc...)
+  // start_delay_started only gets reset back to false after we complete a center + extend event
+  // montor running only checks that start_delay_complete is true;
+  if (!my_dancer->remote_is_dancing()) { start_delay_complete = true; }
+
+  // remote new request, reset the time to 0 and delay complete to false
+  if (my_dancer->remote_is_dancing()  && !start_delay_started ) {
+    start_delay_begin_ms = millis();
+    start_delay_started = true;
+    start_delay_complete = false;
+  }
+
+  // we are in delay mode but not yet completed the delay, is it over yet?
+  if (start_delay_started && !start_delay_complete) {
+    // grab the current time
+    start_delay_current_ms = millis(); 
+    // check for wrap around, extreemly rare
+    if (start_delay_current_ms < start_delay_begin_ms) { start_delay_begin_ms = start_delay_current_ms; } 
+    // we have passed our start delay wait, release the hounds
+    start_delay_ms_diff = start_delay_current_ms - start_delay_begin_ms;
+    start_delay_seconds_diff = (start_delay_ms_diff / 1000);
+    if (start_delay_ms_diff >=  (MOTOR_START_DELAY * 1000)) { start_delay_complete = true; }
+  }
+
+ 
   // 0 switches actives = 3, 1 switches active = 2, 2 switches active 1, 3 switches active = 0 
   if (current_limits->sumLimits() < 2) {
     // something is very wrong stop the motor....

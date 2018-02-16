@@ -273,6 +273,7 @@ void setup() {
   start = millis();            // when the program first started
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
+  Serial.println(F("Sketch=Director.ino"));
   
   // setup the soft serial port for xbee reads and writes
   pinMode(RxD, INPUT);

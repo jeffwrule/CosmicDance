@@ -7,7 +7,7 @@
 //#define IS_CHATTY True 
 
 //non-amplified star, time etc
-#define NORMAL_VOLUME 0          
+//#define NORMAL_VOLUME 0          
 // amplified most pieces
 #define NORMAL_VOLUME 12 
 
@@ -20,7 +20,7 @@
 
 // which MP3 card are we using
 // sparkfun card (not define) or adafruit card 
-#define HAS_ADAFRUIT_MP3
+//#define HAS_ADAFRUIT_MP3
 
 #ifndef REMOTE_MP2
   #ifdef HAS_ADAFRUIT_MP3
@@ -59,6 +59,20 @@
     //and the MP3 Shield Library
     #include <SFEMP3Shield.h>
     
+     /**
+     * \brief Object instancing the SdFat library.
+     *
+     * principal object for handling all SdCard functions.
+     */
+    SdFat sd;
+    
+    /**
+     * \brief Object instancing the SFEMP3Shield library.
+     *
+     * principal object for handling all the attributes, members and functions for the library.
+     */
+    SFEMP3Shield MP3player;
+
     // reset the arduino
     void(* resetFunc) (void) = 0;
   #endif // HAS_ADAFRUIT_MP3
@@ -219,6 +233,7 @@ void setup() {
 
   Serial.begin(9600);          // setup the interal serial port for debug messages
   Serial.println(F("Start setup"));
+  Serial.println(F("Sketch=Dancer.ino"));
 
 #ifdef REMOTE_MP3
   Serial.println(F("MP3 is remote no MP3 card configured"));
@@ -344,7 +359,7 @@ void setup() {
 #endif
   
   // just let it settle for a bit
-  delay(10000);  // delay 15 seconds to let things settle down
+  delay(10000);  // delay 10 seconds to let things settle down
   
   // default to fob mode off when we start
   fob_is_dancing = false;  
@@ -355,6 +370,8 @@ void setup() {
   do_beep(200, 50);
   do_beep(200, 50); 
   do_beep(200, 30); 
+  
+  delay(2000);
   
   Serial.println(F("End setup"));
 }
@@ -736,6 +753,8 @@ void do_beep(int num_millis, int delay_after) {
 }
 
 void check_for_fob() {
+
+  delay(30); 
   
   int cur_status = digitalRead(fobA);
 

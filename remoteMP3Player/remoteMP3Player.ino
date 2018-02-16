@@ -1,3 +1,13 @@
+// this code was used in a arduion nano
+// to pay mp3 for Heave and Hear
+// b/c we could not replace the MP3 card 
+// it is a temporary fix and could be moved
+// back to a primry card when we have a new MP3 card
+// the dancer is configred with REMOTE_MP3
+// so it does not play an MP3 and waits
+// watches one of the return lines to tell
+// it when the MP3 has finished playing.
+
 #include <SoftwareSerial.h>
 
 #include <SoftwareSerial.h>

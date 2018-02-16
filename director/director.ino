@@ -24,6 +24,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define SSINGLUARITY   0x36                      // gravity circle up (aka String Singularity)
 #define SFLUID    0x38                      // single acuator piece AKA Spiritual Fluid
 #define LONGINGCLOUD 0x40                   // double linear acuator piece (for cloudgate).
+#define PASTPRESENTFUTURE 0x42              // three clocks
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

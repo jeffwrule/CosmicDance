@@ -321,7 +321,7 @@ void setup() {
     }
     
     // Set volume for left, right channels. lower numbers == louder volume!
-    musicPlayer.setVolume(20,20);
+    musicPlayer.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
     musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
   #else
     delay(2000);

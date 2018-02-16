@@ -149,7 +149,14 @@ const unsigned int TxD = 10;              // softserial transmit
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
-const int FOB_PIN_ON = 1;                 // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
+//#define FOB_NC                            // we have two kinds of fob switches old ones are NC (normal closed)
+#ifdef FOB_NC
+  const int FOB_PIN_ON = 1;  
+#else
+  const int FOB_PIN_ON = 0;  
+#endif
+               
+                                          // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
                                           // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0
                                           // we want to connect this pin to ground through the momentary switch
                                           // The fob switch is a momentary off switch, so normally on but off when pushed.
@@ -273,6 +280,12 @@ void setup() {
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
   pinMode(fobA, INPUT_PULLUP);
+
+  #ifdef FOB_NC
+    Serial.println(F("Fob is configured as normaly closed (NC)."));
+  #else
+      Serial.println(F("Fob is configured as normaly open (NO), NON-STANDARD!"));
+  #endif
   
   #ifdef VARY_SPEED
     Serial.println(F("Using Varying Speed Setup"));
@@ -753,8 +766,6 @@ void do_beep(int num_millis, int delay_after) {
 }
 
 void check_for_fob() {
-
-  delay(30); 
   
   int cur_status = digitalRead(fobA);
 

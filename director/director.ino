@@ -59,8 +59,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
 //unsigned int dance_order[]  = {LONGINGCLOUD};  // Taiwan Summer 2017 Cloud Gate install, second director box.
 // unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
-//unsigned int dance_order[]  = {GRAVITY_CG, HEAVENNEARTH, LONGINGCLOUD, WHITEHOLE, all_dancers};  // National Theater Show Jan-2018
-unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
+unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
+//unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
 
 
                                
@@ -78,8 +78,11 @@ const unsigned int TxD = 10;
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
 //const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
-const int l_solo_delay_seconds = 35;        // Taiwan National Theater Show
-const int l_ensembl_delay_seconds = 100;    // number of seconds to wait between ensemble play long mode
+const int l_solo_delay_seconds = 14;        // Taiwan National Theater Show
+//const int l_ensembl_delay_seconds = 100;    // number of seconds to wait between ensemble play long mode
+const int l_ensembl_delay_seconds = 280;     // National Taiwan Theater setting Jan-2018
+                                            // number of seconds to wait between ensemble play long mode, extra long to allow
+                                            // two pieces that play longer 1.5 min extra, plus another 2 minutes after they finish
 
 /*
 This example is for Series 1 XBee

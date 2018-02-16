@@ -3,12 +3,6 @@
 #include <SoftwareSerial.h>
 #include <SPI.h>
 
-//Add the SdFat Libraries
-#include <SdFat.h>
-
-//and the MP3 Shield Library
-#include <SFEMP3Shield.h>
-
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
@@ -22,7 +16,54 @@
 
 // uses signals to start MP3 on a diff arduino else starts MP3 on it's own card
 // use this when the primary dancer does not have an MP3 card..
-#define REMOTE_MP3
+//#define REMOTE_MP3
+
+// which MP3 card are we using
+// sparkfun card (not define) or adafruit card 
+#define HAS_ADAFRUIT_MP3
+
+#ifndef REMOTE_MP2
+  #ifdef HAS_ADAFRUIT_MP3
+    #include <Adafruit_VS1053.h>
+    #include <SD.h>
+  
+    // define the pins used
+    #define CLK 13       // SPI Clock, shared with SD card
+    #define MISO 12      // Input data, from VS1053/SD card
+    #define MOSI 11      // Output data, to VS1053/SD card
+    // Connect CLK, MISO and MOSI to hardware SPI pins. 
+    // See http://arduino.cc/en/Reference/SPI "Connections"
+  
+    // These are the pins used for the breakout example
+    //#define BREAKOUT_RESET  9      // VS1053 reset pin (output)
+    //#define BREAKOUT_CS     10     // VS1053 chip select pin (output)
+    //#define BREAKOUT_DCS    8      // VS1053 Data/command select pin (output)
+    // These are the pins used for the music maker shield
+    #define SHIELD_RESET  -1      // VS1053 reset pin (unused!)
+    #define SHIELD_CS     7      // VS1053 chip select pin (output)
+    #define SHIELD_DCS    6      // VS1053 Data/command select pin (output)
+    
+    // These are common pins between breakout and shield
+    #define CARDCS 4     // Card chip select pin
+    // DREQ should be an Int pin, see http://arduino.cc/en/Reference/attachInterrupt
+    #define DREQ 3       // VS1053 Data request, ideally an Interrupt pin
+    Adafruit_VS1053_FilePlayer musicPlayer = 
+      // create shield-example object!
+      Adafruit_VS1053_FilePlayer(SHIELD_RESET, SHIELD_CS, SHIELD_DCS, DREQ, CARDCS);
+  
+  #else
+  
+    //Add the SdFat Libraries
+    #include <SdFat.h>
+    
+    //and the MP3 Shield Library
+    #include <SFEMP3Shield.h>
+    
+    // reset the arduino
+    void(* resetFunc) (void) = 0;
+  #endif // HAS_ADAFRUIT_MP3
+#endif // REMOTE_MP3
+
 
 #define FOB_QUIET_VOLUME 40    // alternate volume to use when using ENHANCED_STANDALONE mode 
 #define BEEP_VOLUME  100    
@@ -51,7 +92,7 @@
 #define VARY_MIN_SPEED 109L    // string ripple 
 #define VARY_MAX_SPEED 109L    // string ripple
 #define VARY_INIT_SPEED 119L   // string ripple 
-#define VARY_PIN 3             // D3 pin, if you are going to use this you must cut the trace on mp3 card for MIDI-IN
+#define VARY_PIN 3             // D3 pin, if you are going to use this you must cut the trace on sparkfun mp3 card for MIDI-IN
 #define VARY_OFF 0             // OFF Speed for monto (do not change this)
 #define VARY_SECONDS 20L       // number of seconds between min and max
 #define VARY_SECONDS_INIT 5L  // number of seconds to vary the init value down/up to min/max
@@ -154,24 +195,8 @@ SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
   int last_solo_write;
   int last_ensembl_write;
   int last_mp3_playing_read;
-#else
 
-/**
- * \brief Object instancing the SdFat library.
- *
- * principal object for handling all SdCard functions.
- */
-SdFat sd;
 
-/**
- * \brief Object instancing the SFEMP3Shield library.
- *
- * principal object for handling all the attributes, members and functions for the library.
- */
-SFEMP3Shield MP3player;
-
-// reset the arduino
-void(* resetFunc) (void) = 0;
 #endif    // REMOTE_MP3
 
 //------------------------------------------------------------------------------
@@ -193,10 +218,10 @@ void(* resetFunc) (void) = 0;
 void setup() {
 
   Serial.begin(9600);          // setup the interal serial port for debug messages
-  Serial.println("Start setup");
+  Serial.println(F("Start setup"));
 
 #ifdef REMOTE_MP3
-  Serial.println("MP3 is remote no MP3 card configured");
+  Serial.println(F("MP3 is remote no MP3 card configured"));
 #else
   #if (GRAVITECH == 1 )
     pinMode( 2, OUTPUT);
@@ -209,19 +234,23 @@ void setup() {
     pinMode(12, OUTPUT);
     pinMode(13, OUTPUT);
     pinMode(SD_SEL, OUTPUT);  // 4 (gravitech) or 9 (sparkfun)
-    Serial.println("using GRAVITECH pin setup");
+    Serial.println(F("using GRAVITECH pin setup"));
   #else
-    Serial.println("using Sparkfun MP3 Card pin setup");
-  #endif
+    #ifdef HAS_ADAFRUIT_MP3
+      Serial.println(F("using Adafruit MP3 Card pin setup"));
+    #else
+      Serial.println(F("using Sparkfun MP3 Card pin setup"));
+    #endif // has ADAFRUTIT_MP3
+  #endif // GRAVATECH
 #endif // REMOTE_MP3
 
   // setup the soft serial port for xbee reads and writes
   #ifdef HAS_XBEE
-    Serial.println("XBEE card configured");
+    Serial.println(F("XBEE card configured"));
     pinMode(RxD, INPUT);
     pinMode(TxD, OUTPUT);
   #else
-        Serial.println("NOT usinging XBEE card");
+        Serial.println(F("NOT usinging XBEE card"));
   #endif
   
   pinMode(v12Switch, OUTPUT);
@@ -231,7 +260,7 @@ void setup() {
   pinMode(fobA, INPUT_PULLUP);
   
   #ifdef VARY_SPEED
-    Serial.println("Using Varying Speed Setup");
+    Serial.println(F("Using Varying Speed Setup"));
 
     pinMode(VARY_PIN, OUTPUT);
     analogWrite(VARY_PIN, VARY_OFF);
@@ -252,7 +281,7 @@ void setup() {
     if (vary_init < vary_min) { vary_step_init = ((float)vary_min - (float)vary_init) / (float) VARY_SECONDS;  }
     if (vary_step_init <= 0) { vary_step_init = 0.1; }
   #else
-    Serial.println("using single Speed Setup (not varying)");
+    Serial.println(F("using single Speed Setup (not varying)"));
   #endif
 
   #ifdef HAS_XBEE
@@ -263,7 +292,7 @@ void setup() {
   new_direction = empty_request;
 
 #ifdef REMOTE_MP3
-  Serial.println("Setting up solo_pin, ensembl_pin: OUTPUT, mp3_playing_pin: INPUT");
+  Serial.println(F("Setting up solo_pin, ensembl_pin: OUTPUT, mp3_playing_pin: INPUT"));
   
   pinMode(solo_pin, OUTPUT);
   digitalWrite(solo_pin, LOW);
@@ -279,22 +308,39 @@ void setup() {
   delay(50);
   last_mp3_playing_read = digitalRead(mp3_playing_pin);
 #else
-  delay(2000);
-  if (!sd.begin(SD_SEL, SPI_FULL_SPEED)) { 
-      // sd.initErrorHalt();
-      Serial.println("sd.begin failed, restarting...");
+    #ifdef HAS_ADAFRUIT_MP3
+      if (! musicPlayer.begin()) { // initialise the music player
+       Serial.println(F("Couldn't find VS1053, do you have the right pins defined?"));
+       while (1);
+    }
+    Serial.println(F("VS1053 found"));
+    
+     if (!SD.begin(CARDCS)) {
+      Serial.println(F("SD failed, or not present"));
+      while (1);  // don't do anything more
+    }
+    
+    // Set volume for left, right channels. lower numbers == louder volume!
+    musicPlayer.setVolume(20,20);
+    musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
+  #else
+    delay(2000);
+    if (!sd.begin(SD_SEL, SPI_FULL_SPEED)) { 
+        // sd.initErrorHalt();
+        Serial.println(F("sd.begin failed, restarting..."));
+        delay(1000);
+        resetFunc();
+    }
+    if (!sd.chdir("/")) {
+      // sd.errorHalt("sd.chdir");  
+      Serial.println(F("sd.chdir failed, restarting..."));
       delay(1000);
       resetFunc();
-  }
-  if (!sd.chdir("/")) {
-    // sd.errorHalt("sd.chdir");  
-    Serial.println("sd.chdir failed, restarting...");
-    delay(1000);
-    resetFunc();
-  }
-  
-  MP3player.begin();
-  MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+    }
+    
+    MP3player.begin();
+    MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+  #endif HAS_ADAFRUIT_MP3
 #endif
   
   // just let it settle for a bit
@@ -318,11 +364,11 @@ void setup() {
 void remote_mp3_status()
 {
   #ifdef IS_CHATTY
-    Serial.print("remote_mp3_status: solo ");
+    Serial.print(F("remote_mp3_status: solo "));
     Serial.print(last_solo_write);
-    Serial.print(", ensembl ");
+    Serial.print(F(", ensembl "));
     Serial.print(last_ensembl_write);
-    Serial.print(", mp3_is_playing ");
+    Serial.print(F(", mp3_is_playing "));
     Serial.println(last_mp3_playing_read);
   #endif
 }
@@ -362,7 +408,7 @@ void check_for_direction() {
   if (xbee_available() > 0) {
     new_direction = xbee_read();
     #if defined IS_BRIEF
-      Serial.print("check_for_direction:Got something: ");
+      Serial.print(F("check_for_direction:Got something: "));
       Serial.println((char) new_direction);
     #endif
   }
@@ -375,14 +421,18 @@ void mp3_stop() {
     digitalWrite(ensembl_pin, LOW);
     last_ensembl_write = LOW;
   #else
-    MP3player.stopTrack();
+    #ifdef HAS_ADAFRUIT_MP3
+      musicPlayer.stopPlaying();
+    #else
+      MP3player.stopTrack();
+    #endif
   #endif
 }
 
 // stop the music and motor
 void stop_all() {
   #if defined IS_BRIEF
-    Serial.println("stop_all begin...");
+    Serial.println(F("stop_all begin..."));
   #endif
   is_dancing = false;
   mp3_stop();
@@ -403,25 +453,25 @@ int mp3_play_track(unsigned char dance_piece) {
   #ifdef REMOTE_MP3
 
     #ifdef IS_BRIEF
-      Serial.print("Starting remote MP3 music setting remote pins for dance type: ");
+      Serial.print(F("Starting remote MP3 music setting remote pins for dance type: "));
       Serial.println((char)dance_piece);
     #endif
     switch(dance_piece) {
-      case solo: Serial.println("case: solo chosen");
+      case solo: Serial.println(F("case: solo chosen"));
                  digitalWrite(solo_pin, HIGH);
                  digitalWrite(ensembl_pin, LOW);
                  last_solo_write = HIGH;
                  last_ensembl_write = LOW;
                  break;
                  
-      case ensembl: Serial.println("case: ensembl chosen");
+      case ensembl: Serial.println(F("case: ensembl chosen"));
                     digitalWrite(ensembl_pin, HIGH);
                     digitalWrite(solo_pin, LOW);
                     last_solo_write = LOW;
                     last_ensembl_write = HIGH;
                     break;
                     
-      default: Serial.println("case: default chosen, probably an ERROR!");
+      default: Serial.println(F("case: default chosen, probably an ERROR!"));
                digitalWrite(solo_pin, LOW);
                digitalWrite(ensembl_pin, LOW);
                last_solo_write = LOW;
@@ -434,17 +484,21 @@ int mp3_play_track(unsigned char dance_piece) {
       delay(500);
       last_mp3_playing_read = digitalRead(mp3_playing_pin);
       #ifdef IS_BRIEF
-          Serial.print("mp3_play_track: mp3_is_playing: ");
+          Serial.print(F("mp3_play_track: mp3_is_playing: "));
           Serial.println(last_mp3_playing_read);
       #endif
       if (last_mp3_playing_read == 1) { break; }
     }
     #ifdef IS_BRIEF
-      Serial.print("mp3_play_track: mp3_is_playing FINAL: ");
+      Serial.print(F("mp3_play_track: mp3_is_playing FINAL: "));
       Serial.println(last_mp3_playing_read);
     #endif
   #else
-    result = MP3player.playMP3(track_name, 0);
+    #ifdef HAS_ADAFRUIT_MP3
+      result =  musicPlayer.startPlayingFile(track_name);
+    #else
+      result = MP3player.playMP3(track_name, 0);
+    #endif // HAS_ADAFRUIT_MP3
   #endif
 
   return(result);
@@ -453,7 +507,11 @@ int mp3_play_track(unsigned char dance_piece) {
 void mp3_set_volume(int volume) {
 
   #ifndef REMOTE_MP3
-    MP3player.setVolume(volume,volume);
+    #ifdef HAS_ADAFRUIT_MP3
+      musicPlayer.setVolume(volume, volume);
+    #else
+      MP3player.setVolume(volume,volume);
+    #endif // HAS_ADAFRUIT_MP3
   #endif     
 }
 
@@ -462,10 +520,10 @@ void start_dancing(unsigned char dance_piece) {
   int my_track;
   
   #if defined IS_BRIEF
-    Serial.print("start_dancing starting: ");
+    Serial.print(F("start_dancing starting: "));
     Serial.print((char)dance_piece);
     num_dances += 1;
-    Serial.print(" total dances: ");
+    Serial.print(F(" total dances: "));
     Serial.println(num_dances);
   #endif
   // don't write a response about starting file fobA is on
@@ -486,19 +544,25 @@ void start_dancing(unsigned char dance_piece) {
   }
   sprintf(track_name, "track%03d.%s", my_track, file_type);
   #if defined IS_BRIEF
-    Serial.print("Starting Track:");
+    Serial.print(F("Starting Track:"));
     Serial.println(track_name);
   #endif
   int result = mp3_play_track(dance_piece);
-  if(result != 0) {
-    Serial.print("Error code: ");
-    Serial.print(result);
-    Serial.println(" when trying to play track");
-  }
+  #ifdef HAS_ADAFRUIT_MP3
+    if (result != 1 ) {
+      Serial.print(F("Failed to start mp3track"));    
+    }
+  #else
+    if(result != 0) {
+      Serial.print(F("Error code: "));
+      Serial.print(result);
+      Serial.println(F(" when trying to play track"));
+    }
+  #endif // HAS_ADAFRUIT_MP3
   delay(300); // this seems to stick sometimes when we start dancing
   if (fob_is_dancing && ENHANCED_STANDALONE && fob_next_volume == FOB_QUIET_VOLUME) {
     #if defined IS_BRIEF
-      Serial.print("ENHANCED_STANDALONE=true, quiet and skipping motors this run");
+      Serial.print(F("ENHANCED_STANDALONE=true, quiet and skipping motors this run"));
     #endif
     // do nothing we don't want to start motors when fob mode and the quite play
   } else {
@@ -528,17 +592,17 @@ void start_dancing(unsigned char dance_piece) {
 // are we currently dancing?
 void reply_status() {
   #if defined IS_BRIEF
-    Serial.print("sending status: ");
+    Serial.print(F("sending status: "));
   #endif
   if (is_dancing) {
     xbee_write(dancing);
     #if defined IS_BRIEF
-      Serial.println("dancing");
+      Serial.println(F("dancing"));
     #endif
   } else {
     xbee_write(finished); 
     #if defined IS_BRIEF
-      Serial.println("finished");
+      Serial.println(F("finished"));
     #endif
   }
 }
@@ -547,7 +611,11 @@ int mp3_is_playing() {
   #ifdef REMOTE_MP3
     return(digitalRead(mp3_playing_pin));
   #else
-    return(MP3player.isPlaying());
+    #ifdef HAS_ADAFRUIT_MP3
+      return(musicPlayer.playingMusic);
+    #else
+      return(MP3player.isPlaying());
+    #endif // HAS_ADAFRUIT_MP3
   #endif
 }
 
@@ -555,12 +623,12 @@ int mp3_is_playing() {
 boolean track_is_complete() {
   int retval;
   #if defined IS_CHATTY
-    Serial.println("checking is playing...");
+    Serial.println(F("checking is playing..."));
   #endif
   retval = mp3_is_playing();
 //  return MP3player.isPlaying() == 0;
   #if defined IS_CHATTY
-    Serial.println("check complete...");
+    Serial.println(F("check complete..."));
   #endif
   return(retval == 0);
 }
@@ -569,7 +637,7 @@ boolean track_is_complete() {
 void signal_if_done() {
   // simulate the MP3 stopping after 13 seconds
   #if defined IS_CHATTY 
-    Serial.print("signal_if_done track status: ");
+    Serial.print(F("signal_if_done track status: "));
   #endif
   if (track_is_complete()) {
     #if defined IS_CHATTY
@@ -605,7 +673,7 @@ void signal_if_done() {
     }
   }
   #if defined IS_CHATTY 
-    else { Serial.println("track not done!"); }
+    else { Serial.println(F("track not done!")); }
   #endif
 }
 
@@ -613,7 +681,7 @@ void signal_if_done() {
 void signal_every_so_often() {
 
   #if defined IS_CHATTY 
-    Serial.println("starting signal_every_so_often"); 
+    Serial.println(F("starting signal_every_so_often")); 
   #endif
   
   // no need to send out a signal we are on our own here
@@ -638,7 +706,7 @@ void drain_serial() {
       Serial.print(F("Draining Serial got: "));
       Serial.println(x);
     #else
-      Serial.println("draining...");
+      Serial.println(F("draining..."));
       xbee_read();
     #endif  
   }
@@ -649,12 +717,18 @@ void do_beep(int num_millis, int delay_after) {
 #ifdef REMOTE_MP3
   delay(1);
 #else
-  Serial.println("Making a beep...");
-  MP3player.setVolume(BEEP_VOLUME,BEEP_VOLUME);
-  MP3player.enableTestSineWave(14);
-  delay(num_millis);
-  MP3player.disableTestSineWave();
-  MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+  Serial.println(F("Making a beep..."));
+  #ifdef HAS_ADAFRUIT_MP3
+    musicPlayer.setVolume(BEEP_VOLUME,BEEP_VOLUME);
+    musicPlayer.sineTest(14, num_millis);
+    musicPlayer.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+  #else
+    MP3player.setVolume(BEEP_VOLUME,BEEP_VOLUME);
+    MP3player.enableTestSineWave(14);
+    delay(num_millis);
+    MP3player.disableTestSineWave();
+    MP3player.setVolume(NORMAL_VOLUME,NORMAL_VOLUME);
+  #endif // HAS_ADAFRUIT_MP3
   if (delay_after > 0) {
     delay(delay_after);
   }

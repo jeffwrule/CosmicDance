@@ -146,9 +146,12 @@ const char file_type[] = "mp3";   // mp3, m4a, acc etc....
 const unsigned int RxD = 5;               // softserial read
 const unsigned int TxD = 10;              // softserial transmit
 #endif
+
+// motor/device activation pins
 const int v12Switch = A0;                 // pin to turn the electronics on and off
 const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
+
 //#define FOB_NC                            // we have two kinds of fob switches old ones are NC (normal closed)
 #ifdef FOB_NC
   const int FOB_PIN_ON = 1;  

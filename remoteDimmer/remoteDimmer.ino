@@ -263,8 +263,11 @@ Dimmer future_pend("future_pend",   PMW6, 60, 6, 100, 0);
 
 // create a list of all the dimmers to make the code easier to work with
 #define NUM_DIMMERS 6
-//Dimmer dimmer_list[NUM_DIMMERS] = { past_clock, past_pend, present_clock, present_pend, future_clock, future_pend };
-Dimmer dimmer_list[NUM_DIMMERS] = { past_clock , past_pend, present_clock, present_pend, future_clock, future_pend};
+Dimmer dimmer_list[NUM_DIMMERS] = { 
+      past_clock , past_pend, 
+      present_clock, present_pend, 
+      future_clock, future_pend
+      };
 
 
 void setup() {

@@ -4,12 +4,11 @@ using namespace std;
 // PingPong montor that returns to a center switch when switched off
 
 #define DEBUG = true
-#define PRINT_EVER_NTH_ITTER 50
-//#define PRINT_EVER_NTH_ITTER 30000
+#define SERIAL_SPEED 250000
+#define PRINT_EVER_NTH_ITTER 20000    // use with SERIAL_SPEED 250000 
+//#define PRINT_EVER_NTH_ITTER 1      // may cause lock up of memory with SERIAL_SPEED 250000 (to much logging)
 
-//#define PRINT_EVER_NTH_ITTER 1
-
-//#define IS_CHATTY     // define this for extra debug information 
+// #define IS_CHATTY     // define this for extra debug information 
 
 
 // because magnets are impprecise, add specific delays for different directions.
@@ -17,14 +16,14 @@ using namespace std;
 //#define CENTER_MOVING_LEFT_DELAY 9000
 //#define CENTER_MOVING_RIGHT_DELAY 1
 
-// expected delays for normal analog line (white switch) switch Sparkfun QRE1113 (Analog)
+// expected delays for normal analog line (white switch) switch Sparkfun QRE1113 (Analog power level switch)
 #define CENTER_MOVING_LEFT_DELAY 1
 #define CENTER_MOVING_RIGHT_DELAY 1
 
 #define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
 
 // some setting 
-const unsigned long MOTOR_START_DELAY=14;           // seconds to delay after start dancing is set but before we actually start the motor
+const unsigned long MOTOR_START_DELAY=0;           // seconds to delay after start dancing is set but before we actually start the motor
                                       // most should be 0
                                       // heaven and earth 30
 boolean start_delay_started;          // have we started the count up clock                               
@@ -100,14 +99,15 @@ long start_delay_seconds_diff;        // seconds diff between dealy and now
 //#define STOP_DELAY_EVERY_N_L 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
 //#define STOP_DELAY_EVERY_N_R 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
 
-
+// more IBT2_MOTOR settings
 #define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
 #define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
 #define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
 
+// both HBRIDGE and IBT_2 drivers use this setting
 #define REVERSE_DELAY  1000      // milleseconds to delay when reversing... reduced from 1000 for longing cloud
 
-//ACS712 AMPS
+//ACS712 AMPS (voltage sensor)
 #define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
 #define ACS712_20A_FACTOR 0.100  // 20 AMP sensing board (more sensative) use with 20AMP version of board
 #define ACS712_5A_FACTOR  0.185  // 5 AMP sensing board (most sensative) use with 5AMP version board
@@ -116,8 +116,8 @@ long start_delay_seconds_diff;        // seconds diff between dealy and now
 #define ACS_OFF 0.10              // when the motor is off the board returns values between ACS_OFF*-1 and ACS_OFF
 
 // limit switch related information...
-#define LEFT_LIMIT_PIN 2        // input from left limit switch
-#define RIGHT_LIMIT_PIN 3       // input from right limit switch
+#define LEFT_LIMIT_PIN 2        // input from left limit switch, expects a NO (normally open) switch
+#define RIGHT_LIMIT_PIN 3       // input from right limit switch, expects a NO (normally open) switch
 //#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271    // most pieces
 #define ANALOG_RIGHT_LIMIT_PIN A0 // using with ACS271
 
@@ -138,10 +138,16 @@ long start_delay_seconds_diff;        // seconds diff between dealy and now
 #define A_CENTER_PIN A3         // analog center pin
 // IMPORTANT: must set this correctly for any scuplpture the has a center other then LEFT or RIGHT.
 #define CENTER_IS_ANALOG false  // are we reading a digital or analog pin for center, digital works best when center same left or right
-                                 
-#define PULLUP_ON 0             // reverse the logic for pullup pins
-#define PULLUP_OFF 1            // reverse the logic for pullup pins
 
+
+#define LEFT_RIGHT_LMIT_SWITCH_TYPE NC   // define as NC (normally closed) or NO (normally open)    
+#if LEFT_RIGHT_LIMIT_SWITCH_TYPE == 'NO'                        
+  #define SWITCH_CLOSED 0            // NO, so push closes and sends us to ground
+  #define SWITCH_OPEN 1              // NO, so not pushed and pulled up to 5v by INPUT_PULLUP resistor
+#else
+  #define SWITCH_CLOSED 1           // NC, so push opens curcuit and pulled up to 5v by INPUT_PULLUP resistor
+  #define SWITCH_OPEN 0             // NC, so no push is closed circuit to ground so 0
+#endif
 
 // pins to control the motor TB6612FNG (class HBridgeMotor)
 #define MOTOR_PMW_PIN 5     // output speed/on-off must be a PMW pin
@@ -156,7 +162,7 @@ long start_delay_seconds_diff;        // seconds diff between dealy and now
 // Set this depending on what kind of ping/pong motor controler you have hooked up.
 // IBT2Motor http://www.hessmer.org/blog/2013/12/28/ibt-2-h-bridge-with-arduino/  (for larger amp motors)
 // HBridgeMotor: https://www.sparkfun.com/products/9457  (for smaller amp motors)
-#define MOTOR_CLASS "IBT2Motor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
+#define MOTOR_CLASS "HBridgeMotor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
                             
 // communication pin from the dancer
 #define DANCER_INPUT_PIN 9  // this goes high when the dancer is dancing
@@ -170,7 +176,8 @@ long start_delay_seconds_diff;        // seconds diff between dealy and now
 #define DANCER_EXTEND_SECONDS 0    
 
 // debug tool, do not leave set for normal user
-//#define ALWAYS_BE_DANCING     // uncomment for debu, normally commented out
+//#define ALWAYS_BE_DANCING     // uncomment for debug, normally commented out, set remote_is_dancing_ 1 (helps with floating line)
+//#define NEVER_BE_DANCING        // uncomment for debug, normally commented out, sets remote_is_dancing_ 0 (helps with floating line)
 
 long num_loops = 1;          // used to limit prints 
 boolean do_print = false;   // used to limit prints
@@ -184,7 +191,7 @@ String bool_tostr(bool input_bool) {
 }
 
 // read the ACS712 HAL censor to see if we have power 
-// map the result into PULLUP_OFF the motor is running, PULLUP_ON the motor is off
+// map the result into SWITCH_OPEN (when button not pushed) the motor is running, SWITCH_CLOSED the motor is off
 float lastAcsValueF=0.0;
 int readACS712() {
   // put your main code here, to run repeatedly:
@@ -216,9 +223,9 @@ int readACS712() {
   // if AcsValueF is near 0 then the power is off/limit switch was triggered
   // also we use PULL_ON logic, switch active=0 switch off=1
   if ( AcsValueF >= (ACS_OFF * -1.0) and AcsValueF <= ACS_OFF ) {
-    return PULLUP_ON;   // we have reached our limit
+    return SWITCH_CLOSED;   // we have reached our limit
   } else {
-    return PULLUP_OFF;  // we are not at limit/end
+    return SWITCH_CLOSED;  // we are not at limit/end
   }
  
 }
@@ -306,8 +313,8 @@ void Limits::update() {
   if (RIGHT_LIMIT_TYPE == 'a') {      // acs712 device is active, but right side only
     // when the left limit is on we turn off power, so this could create a false read
     // just say it is not set when we have the left pin on.
-    if (last_left_read == PULLUP_ON) { // if left limit switch active, then believe it
-      last_right_read = PULLUP_OFF;
+    if (last_left_read == SWITCH_CLOSED) { // if left limit switch active, then believe it
+      last_right_read = SWITCH_OPEN;
     } else {
       last_right_read = readACS712();
     }
@@ -319,15 +326,15 @@ void Limits::update() {
       print();
       _my_motor->print();
     #endif
- _my_dancer->print();
-Serial.print(F("dance_extended: "));
-Serial.println(bool_tostr(_my_dancer->dance_extended));
+    _my_dancer->print();
+    Serial.print(F("dance_extended: "));
+    Serial.println(bool_tostr(_my_dancer->dance_extended));
     if (_my_dancer->dance_extended == true ) { // we are neither left or right, just near left or right 
       #ifdef IS_CHATTY
         Serial.println("using 'b', dance_extended == true section...");
       #endif
-      last_right_read = PULLUP_OFF;   // right is set by ACS read
-      last_left_read = PULLUP_OFF;       // we are not left            
+      last_right_read = SWITCH_OPEN;   // right is set by ACS read
+      last_left_read = SWITCH_OPEN;       // we are not left            
     } else {
       // dance is not extended...
       #ifdef IS_CHATTY
@@ -335,10 +342,10 @@ Serial.println(bool_tostr(_my_dancer->dance_extended));
       #endif        
       if (_my_motor->current_direction() == 'l') {
         last_left_read = last_acs_read;   // left is set by ACS read
-        last_right_read = PULLUP_OFF;     // we are not right
+        last_right_read = SWITCH_OPEN;     // we are not right
       } else {
         last_right_read = last_acs_read;   // right is set by ACS read
-        last_left_read = PULLUP_OFF;       // we are not left      
+        last_left_read = SWITCH_OPEN;       // we are not left      
       }
     }
     #ifdef IS_CHATTY
@@ -355,40 +362,44 @@ Serial.println(bool_tostr(_my_dancer->dance_extended));
   if (CENTER_IS == 'r' || CENTER_IS == 'l') {
       // center is set using right/left pin setting setting from above
       last_a_center_read = 2000;  // we use digital pin read for l/r communication
-      last_d_center_read = PULLUP_OFF;
+      last_d_center_read = SWITCH_OPEN;
       if (RIGHT_LIMIT_TYPE == 'b') {  
         // hard to detect if we are centered, just know we made it left or right and then extended, we are centered...
-        last_center_read = PULLUP_OFF;
-        if (_my_dancer->dance_extended == true ) { last_center_read = PULLUP_ON; }
+        last_center_read = SWITCH_OPEN;
+        if (_my_dancer->dance_extended == true ) { last_center_read = SWITCH_CLOSED; }
       } else { // center just follows the digital reads for left and right
         if (CENTER_IS == 'r' && _my_motor->current_direction() == 'r') { last_center_read = last_right_read; }
         if (CENTER_IS == 'l' && _my_motor->current_direction() == 'l') { last_center_read = last_left_read; }
       }
   } else  if (CENTER_IS_ANALOG) {
     // center is computed off analog pin
-    last_d_center_read = PULLUP_OFF;
+    last_d_center_read = SWITCH_OPEN;
     last_a_center_read = analogRead(a_center_pin);
-    last_center_read = PULLUP_OFF;
-    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = PULLUP_ON; center_passed = true; }
+    last_center_read = SWITCH_OPEN;
+    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = SWITCH_CLOSED; center_passed = true; }
   } else {
     // center is computed off digital pin
     last_a_center_read = 2000;   // set this to a value out of range for normal analog devices 0-1023
     last_d_center_read = digitalRead(d_center_pin); 
-    if (last_d_center_read == PULLUP_ON) { center_passed = true;}
+    if (last_d_center_read == SWITCH_CLOSED) { center_passed = true;}
   }
   
-  last_center_read = PULLUP_OFF;  // this will get set later in the routine. Default to not set.
+  last_center_read = SWITCH_OPEN;  // this will get set later in the routine. Default to not set.
   
   left_limit_active = false; 
   right_limit_active = false;
   center_limit_active = false;
-  if (last_left_read == PULLUP_ON) {left_limit_active = true; center_passed = false;}
-  if (last_right_read == PULLUP_ON) { right_limit_active = true; center_passed = false;}
-  if (last_center_read == PULLUP_ON && _my_dancer->dance_extended == true) { center_limit_active = true; }
+  if (last_left_read == SWITCH_CLOSED) {left_limit_active = true; center_passed = false;}
+  if (last_right_read == SWITCH_CLOSED) { right_limit_active = true; center_passed = false;}
+  if (last_center_read == SWITCH_CLOSED && _my_dancer->dance_extended == true) { center_limit_active = true; }
 }
 
 int  Limits::sumLimits() {
-    return last_left_read + last_right_read + last_center_read;
+    int limits_active=0;
+    if (left_limit_active) { limits_active++; }
+    if (right_limit_active) { limits_active++; }
+    if (CENTER_IS != 'r' && CENTER_IS != 'l' && center_limit_active ) { limits_active++; }
+    return limits_active;
 }
 
 boolean Limits::isMaxLeft() {
@@ -1009,6 +1020,10 @@ void Dancer::update() {
   #ifdef ALWAYS_BE_DANCING
     remote_is_dancing_ = true;
   #endif
+
+  #ifdef NEVER_BE_DANCING
+    remote_is_dancing_ = false;
+  #endif
   
   if (remote_is_dancing_ || dance_extended == false) {
     dance_extended = false;
@@ -1097,7 +1112,7 @@ Dancer *my_dancer;
 
 void setup() {
 
-  Serial.begin(9600);          // setup the interal serial port for debug messages
+  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
   
   pinMode(LEFT_LIMIT_PIN, INPUT_PULLUP);
@@ -1193,7 +1208,7 @@ void loop() {
 
  
   // 0 switches actives = 3, 1 switches active = 2, 2 switches active 1, 3 switches active = 0 
-  if (current_limits->sumLimits() < 2) {
+  if (current_limits->sumLimits() > 1) {
     // something is very wrong stop the motor....
     if (do_print) {
       Serial.println("ERROR: 2 or more limts are active at the same time, motor is stopped...");

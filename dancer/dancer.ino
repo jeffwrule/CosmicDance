@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h>
 #include <SPI.h>
 
+#define SERIAL_SPEED  250000
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
@@ -152,21 +153,9 @@ const int v12Switch = A0;                 // pin to turn the electronics on and 
 const int v5Switch = A1;                  // pin to turn electronics on/off
 const int fobA = A3;                      // input pin that the fobA button is hooked up too
 
-//#define FOB_NC                            // we have two kinds of fob switches old ones are NC (normal closed)
-#ifdef FOB_NC
-  const int FOB_PIN_ON = 1;  
-#else
-  const int FOB_PIN_ON = 0;  
-#endif
-               
-                                          // the FOB PIN is on (this is a momentary switch) so it just toggles fob_is_dancing;
-                                          // we are using a pull_up resistor so NOT_PUSHED = 1 and PUSHED = 0
-                                          // we want to connect this pin to ground through the momentary switch
-                                          // The fob switch is a momentary off switch, so normally on but off when pushed.
-                                          // The fob pin is also configured with an internal pull_up resistor
-                                          // so it is normally closed and being pulled down to ground so it reads as 0 normally.
-                                          // When the switch is pushed, ground is disconnected and it floats high to 1.
-                                          // the fob toggles always dancing or network/director mode.
+unsigned short g_fob_pin_off;             // fob pin normal state     
+#define FOB_PUSHED !g_fob_pin_off         // the fob button is in a pushed state
+#define FOB_NOT_PUSHED g_fob_pin_off      // the fob button is in a non-pushed state
 boolean fob_is_dancing;                   // true if the fob has been pushed so we are dancing, false otherwise
 
 /*
@@ -241,7 +230,7 @@ SoftwareSerial xbeeSerial(RxD, TxD); // RX, TX
 
 void setup() {
 
-  Serial.begin(9600);          // setup the interal serial port for debug messages
+  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
   Serial.println(F("Start setup"));
   Serial.println(F("Sketch=Dancer.ino"));
 
@@ -282,14 +271,24 @@ void setup() {
   digitalWrite(v12Switch, LOW);
   pinMode(v5Switch, OUTPUT);
   digitalWrite(v5Switch, LOW);
-  pinMode(fobA, INPUT_PULLUP);
 
-  #ifdef FOB_NC
-    Serial.println(F("Fob is configured as normaly closed (NC)."));
-  #else
-      Serial.println(F("Fob is configured as normaly open (NO), NON-STANDARD!"));
-  #endif
-  
+  // fob setup
+  pinMode(fobA, INPUT_PULLUP);
+  delay(40);
+  g_fob_pin_off = digitalRead(fobA);  // check if fob off is NO or NC state we have both kinds of buttons
+  Serial.print(F("Fob is detected as "));
+  if (g_fob_pin_off == 1 ) {
+    Serial.print("NO (normally open)");  // has a pull-up resistor so open = 1
+  } else {
+    Serial.print("NC (normally closed)");  // pin tied to ground so closed = 0
+  }
+  Serial.print(", off=");
+  Serial.println(g_fob_pin_off);
+  Serial.print(F("macros FOB_PUSHED: "));
+  Serial.print(FOB_PUSHED);
+  Serial.print(F(", FOB_NOT_PUSHED: "));
+  Serial.println(FOB_NOT_PUSHED);
+      
   #ifdef VARY_SPEED
     Serial.println(F("Using Varying Speed Setup"));
 
@@ -786,11 +785,11 @@ void check_for_fob() {
     #ifdef IS_CHATTY
       Serial.println(F("Faking FOB"));
     #endif
-    cur_status = 0;
+    cur_status = FOB_NOT_PUSHED;
     fob_is_dancing = true;
   }
   
-  if (cur_status == FOB_PIN_ON) { // we have a switch request....
+  if (cur_status == FOB_PUSHED) { // we have a switch request....
     // fob button has been pushed, reset everyting and switch mode
     #if defined IS_BRIEF
       Serial.println(F("Fob Pin Pushed, switching status..."));

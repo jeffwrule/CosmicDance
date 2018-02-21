@@ -9,7 +9,8 @@
 // each light has a home configuration
 // then a new configuration to be used after
 /// a certain amount of time has passed
-  
+
+#define SERIAL_SPEED  250000
 #define IS_BRIEF True
 // #define IS_CHATTY True 
 
@@ -272,7 +273,7 @@ Dimmer dimmer_list[NUM_DIMMERS] = {
 
 void setup() {
 
-  Serial.begin(250000);          // setup the interal serial port for debug messages
+  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
   Serial.println("remoteDimmer.ino");
   

@@ -1,31 +1,34 @@
 #include <XBee.h>
 #include <SoftwareSerial.h>
 
+#define SERIAL_SPEED 250000
+
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
 #define SINGULARITY 0x01
 #define LEPTON      0x03
 #define PARTICLELF  0x05
 #define SPACE       0x07
-#define SINGULARITY2 0x08                     // wall sconce AKA GRAVATON
+#define SINGULARITY2 0x08                   // wall sconce AKA GRAVATON
 #define WHITEHOLE   0x09
-#define DVNMOMENT   0x11                      // rocking chair
-#define TIME        0x13                      // hour glass
+#define DVNMOMENT   0x11                    // rocking chair
+#define TIME        0x13                    // hour glass
 #define STAR        0x15
-#define LIVEDIE     0x17                      // wall clock
-#define GRAVITY     0x19                      // gravity
-#define SCOLLISION     0x19                      // new lepton collision AKA String Collision
-#define GRAVITY_CG  0x21                      // new gravity build for cloud gate
-#define LIFE        0x23                      // large tile convered scuplture AKA BioGenisis
-#define HEAVENNEARTH 0x29                     // the super big sculpture going to Asian Art Museum
-#define CONTENPLATION 0x30                      // AKA model of contiplation
-#define STRINGRIPPLE  0x32                      // oval piece
-#define CONCENTRATION 0x34                     // model of concentration tall spinning piece
-#define SSINGLUARITY   0x36                      // gravity circle up (aka String Singularity)
+#define LIVEDIE     0x17                    // wall clock
+#define GRAVITY     0x19                    // gravity
+#define SCOLLISION     0x19                 // new lepton collision AKA String Collision
+#define GRAVITY_CG  0x21                    // new gravity build for cloud gate
+#define LIFE        0x23                    // large tile convered scuplture AKA BioGenisis
+#define HEAVENNEARTH 0x29                   // the super big sculpture going to Asian Art Museum
+#define CONTENPLATION 0x30                  // AKA model of contiplation
+#define STRINGRIPPLE  0x32                  // oval piece
+#define CONCENTRATION 0x34                  // model of concentration tall spinning piece
+#define SSINGLUARITY   0x36                 // gravity circle up (aka String Singularity)
 #define SFLUID    0x38                      // single acuator piece AKA Spiritual Fluid
 #define LONGINGCLOUD 0x40                   // double linear acuator piece (for cloudgate).
 #define PASTPRESENTFUTURE 0x42              // three clocks
 #define NOSTAY 0x44                         // no stay, small book shelf
+#define SITX2 0x46                          // SITX2, 2 chairs piece
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -272,7 +275,7 @@ void delay_next_dance() {
 
 void setup() {
   start = millis();            // when the program first started
-  Serial.begin(9600);          // setup the interal serial port for debug messages
+  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
   Serial.println("Start setup");
   Serial.println(F("Sketch=Director.ino"));
   

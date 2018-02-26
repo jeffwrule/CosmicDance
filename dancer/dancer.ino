@@ -23,7 +23,7 @@
 // sparkfun card (not define) or adafruit card 
 //#define HAS_ADAFRUIT_MP3
 
-#ifndef REMOTE_MP2
+#ifndef REMOTE_MP3
   #ifdef HAS_ADAFRUIT_MP3
     #include <Adafruit_VS1053.h>
     #include <SD.h>

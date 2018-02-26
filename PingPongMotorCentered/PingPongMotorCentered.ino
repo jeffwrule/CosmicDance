@@ -3,183 +3,19 @@ using namespace std;
 
 // PingPong montor that returns to a center switch when switched off
 
-#define DEBUG = true
 #define SERIAL_SPEED 250000
 #define PRINT_EVER_NTH_ITTER 20000    // use with SERIAL_SPEED 250000 
-//#define PRINT_EVER_NTH_ITTER 1      // may cause lock up of memory with SERIAL_SPEED 250000 (to much logging)
+//#define SERIAL_SPEED 9600
+//#define PRINT_EVER_NTH_ITTER 1      // may cause lock up of memory with SERIAL_SPEED 250000 (to much logging) if using a monitor window
 
+#define IS_BRIEF True
 // #define IS_CHATTY     // define this for extra debug information 
-
-
-// because magnets are impprecise, add specific delays for different directions.
-// final delays for cloud gate build
-//#define CENTER_MOVING_LEFT_DELAY 9000
-//#define CENTER_MOVING_RIGHT_DELAY 1
-
-// expected delays for normal analog line (white switch) switch Sparkfun QRE1113 (Analog power level switch)
-#define CENTER_MOVING_LEFT_DELAY 1
-#define CENTER_MOVING_RIGHT_DELAY 1
-
-#define CENTER_READ_CUTOFF 250    // known to work with LIFE piece. (magnetic sensor?)
-
-// some setting 
-const unsigned long MOTOR_START_DELAY=0;           // seconds to delay after start dancing is set but before we actually start the motor
-                                      // most should be 0
-                                      // heaven and earth 30
-boolean start_delay_started;          // have we started the count up clock                               
-boolean start_delay_complete;         // have we completed our wait
-unsigned long start_delay_begin_ms;   // time in ms when we started this delay
-unsigned long start_delay_current_ms; // current time 
-long start_delay_ms_diff;             // milliseconds diff betwen delay start and now
-long start_delay_seconds_diff;        // seconds diff between dealy and now
-
-
-//// IBT_2 only setting this block
-
-// Heaven and Earth
-#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
-#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
-#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION1 2000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 7000
-#define MOTOR_JUMP_START_SPEED2 170       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
-#define JUMP_START_MILLIS_DURATION2 4000  // IBT_2 motor will run left (up) speed for this many seconds when starting left was 1300
-#define MOTOR_SPEED_LEFT  50        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_RIGHT 57        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
-
-#define MOTOR_START_SPEED  10       // low values don't produce movement must be lower then MOTOR_SPEED_(LEFT_RIGHT),, REALLY!! at least 1 < MOTOR_SPEED|MOTOR_SPEED_LEFT|MOTOR_SPEED_RIGHT
-#define SPEED_INCREMENT 10          // amount to increment speed when starting....
-
-//
-//// IBT_2 DRIPDRIP
-//#define MOTOR_JUMP_START_SPEED1 80       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
-//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-//#define MOTOR_JUMP_START_SPEED2 80       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
-//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-
-// IBT_2 DRIPDRIP
-//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
-//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-//#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
-//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-
-// IBT_2 longing cloud
-//#define NEEDS_JUMP_START_RIGHT false         // jumpstart when going right
-//#define NEEDS_JUMP_START_LEFT  false         // jumpstart when going left
-//#define MOTOR_JUMP_START_SPEED1 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drop)
-//#define JUMP_START_MILLIS_DURATION1 1  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-//#define MOTOR_JUMP_START_SPEED2 255       // IBT_2 needs more power to get going (up) then the normal run speed (drip drip)
-//#define JUMP_START_MILLIS_DURATION2 2  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-
-// #define MOTOR_SPEED 72        // values between 0 (off) and 255 (fully on) (normal production speed)
-//#define MOTOR_SPEED 130        // values between 0 (off) and 255 (fully on) a little fast for LIFE
-//#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
-
-
-
-//#define MOTOR_SPEED_LEFT  90        // GO DOWN: values between 0 (off) and 255 (fully on) This is for gravity circle up
-//#define MOTOR_SPEED_RIGHT 70        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
-//#define MOTOR_SPEED_LEFT  80        // GO UP: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
-//#define MOTOR_SPEED_RIGHT 80        // GO DOWN: values between 0 (off) and 255 (fully on) This is for DRIPDRIP
-//#define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
-//#define MOTOR_SPEED_LEFT  198        // GO UP: values between 0 (off) and 255 (fully on) This is for Longing Cloud
-//#define MOTOR_SPEED_RIGHT 198        // GO DOWN: values between 0 (off) and 255 (fully on) This is for Longing Cloud
-//#define MAX_SECONDS_TO_LIMIT_SWITCH 350 // max time we should ever expect to reach either limit switch
-
-// make sure max speed (is always larger then this value)
-
-//
-//// used with dripdrip
-//#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_L 50    // delay every Nth decrement when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting
-
-// used with longing cloud
-//#define STOP_DELAY         0    // milliseconds to delay between decrements in speed when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_L 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
-//#define STOP_DELAY_EVERY_N_R 1000    // basically no delay, it stops automatically: delay every Nth decrement when stopping, typical setting
-
-// more IBT2_MOTOR settings
-#define STOP_DELAY         100    // milliseconds to delay between decrements in speed when stopping, typical setting, heaven n earty
-#define STOP_DELAY_EVERY_N_R 50    // delay every Nth decrement when stopping, typical setting going right (up), heaven n earth
-#define STOP_DELAY_EVERY_N_L 25    // delay every Nth decrement when stopping, typical setting going left (down), heaven n earth
-
-// both HBRIDGE and IBT_2 drivers use this setting
-#define REVERSE_DELAY  1000      // milleseconds to delay when reversing... reduced from 1000 for longing cloud
-
-//ACS712 AMPS (voltage sensor)
-#define ACS712_30A_FACTOR 0.066  // 30 AMP sensing board (least sensative) use with 30AMP version of board
-#define ACS712_20A_FACTOR 0.100  // 20 AMP sensing board (more sensative) use with 20AMP version of board
-#define ACS712_5A_FACTOR  0.185  // 5 AMP sensing board (most sensative) use with 5AMP version board
-#define ACS712_FACTOR ACS712_5A_FACTOR
-
-#define ACS_OFF 0.10              // when the motor is off the board returns values between ACS_OFF*-1 and ACS_OFF
-
-// limit switch related information...
-#define LEFT_LIMIT_PIN 2        // input from left limit switch, expects a NO (normally open) switch
-#define RIGHT_LIMIT_PIN 3       // input from right limit switch, expects a NO (normally open) switch
-//#define ANALOG_RIGHT_LIMIT_PIN A1 // using with ACS271    // most pieces
-#define ANALOG_RIGHT_LIMIT_PIN A0 // using with ACS271
-
-// what kind of limit switches are we using, physical switches or analog censors
-#define RIGHT_LIMIT_TYPE 'd'   // d for digital switch 'a' for analog ACS712 module, b (both) single sensor for both right and left 
-                               // b longing cloud  ACS712 checks power being cut both directions
-                               // d heaven and earth  (digital pins both directions)
-#define CENTER_IS 'l'    // use one of the following values right='r', left='l', center='c'
-                         // original gravity 'l' 
-                         // round_gravity is 'r'
-                         // others are 'c'
-                         // dripdrop is 'l'
-                         // longing cloud is 'r'
-                         // heaven and earth l
-                         
-
-#define D_CENTER_PIN 4          // digital center pin
-#define A_CENTER_PIN A3         // analog center pin
-// IMPORTANT: must set this correctly for any scuplpture the has a center other then LEFT or RIGHT.
-#define CENTER_IS_ANALOG false  // are we reading a digital or analog pin for center, digital works best when center same left or right
-
-
-#define LEFT_RIGHT_LMIT_SWITCH_TYPE NC   // define as NC (normally closed) or NO (normally open)    
-#if LEFT_RIGHT_LIMIT_SWITCH_TYPE == 'NO'                        
-  #define SWITCH_CLOSED 0            // NO, so push closes and sends us to ground
-  #define SWITCH_OPEN 1              // NO, so not pushed and pulled up to 5v by INPUT_PULLUP resistor
-#else
-  #define SWITCH_CLOSED 1           // NC, so push opens curcuit and pulled up to 5v by INPUT_PULLUP resistor
-  #define SWITCH_OPEN 0             // NC, so no push is closed circuit to ground so 0
-#endif
-
-// pins to control the motor TB6612FNG (class HBridgeMotor)
-#define MOTOR_PMW_PIN 5     // output speed/on-off must be a PMW pin
-#define MOTOR_LEFT_PIN 6     // output to move left pin on h-bridge shield
-#define MOTOR_RIGHT_PIN 7    // output to move right pin on h-bridge shield
-#define MOTOR_STDBY_PIN 8   // 0 after we stop the motor, 1 when we are ready to start the motor...
-
-// pins to control the motor IBT_2  (class IBT2Motor)
-#define MOTOR_IBT2_PMWR  5   // PMW pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
-#define MOTOR_IBT2_PMWL  6   // PMW pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
-
-// Set this depending on what kind of ping/pong motor controler you have hooked up.
-// IBT2Motor http://www.hessmer.org/blog/2013/12/28/ibt-2-h-bridge-with-arduino/  (for larger amp motors)
-// HBridgeMotor: https://www.sparkfun.com/products/9457  (for smaller amp motors)
-#define MOTOR_CLASS "HBridgeMotor"  // A string that is the class name for this break out board. IBT2Motor or HBridgeMotor
-                            
-// communication pin from the dancer
-#define DANCER_INPUT_PIN 9  // this goes high when the dancer is dancing
-
-// extend the center/home, this allows the dancer to keep going for a few more seconds, normally 0 for most piecies
-// we added this to strech out the fabric on drip drp.
-//#define DANCER_EXTEND_SECONDS 6    
-// longing cloud     
-//#define DANCER_EXTEND_SECONDS 3  
-//Heaven and Earth
-#define DANCER_EXTEND_SECONDS 0    
 
 // debug tool, do not leave set for normal user
 //#define ALWAYS_BE_DANCING     // uncomment for debug, normally commented out, set remote_is_dancing_ 1 (helps with floating line)
 //#define NEVER_BE_DANCING        // uncomment for debug, normally commented out, sets remote_is_dancing_ 0 (helps with floating line)
 
-long num_loops = 1;          // used to limit prints 
+unsigned long num_loops = 1; // used to limit prints 
 boolean do_print = false;   // used to limit prints
 
 String bool_tostr(bool input_bool) {
@@ -190,45 +26,24 @@ String bool_tostr(bool input_bool) {
   }
 }
 
-// read the ACS712 HAL censor to see if we have power 
-// map the result into SWITCH_OPEN (when button not pushed) the motor is running, SWITCH_CLOSED the motor is off
-float lastAcsValueF=0.0;
-int readACS712() {
-  // put your main code here, to run repeatedly:
+//////// ABSTRACT CLASSES 
 
-  unsigned int x=0;
+///////////////////////////////////////////////////////////
+//
+// Abstract Class to a single limit switch
+//
+/////////////////////////////////////////////////////////// 
+class GenericLimitSwitch {
 
-  float AcsValue=0.0,Samples=0.0,AvgAcs=0.0,AcsValueF=0.0;
+  public:
+    virtual void update() =0;
+    virtual void status() =0;
+    virtual String get_limit_type() =0;
+    virtual boolean get_is_at_limit() =0;
+    virtual char get_limit_position() =0;
+    virtual String get_switch_name() =0;
 
-  // sample this value a bunch of times to get an average
-  for (int x=0; x < 150; x++) {
-    AcsValue = analogRead(ANALOG_RIGHT_LIMIT_PIN);
-    // Serial.print("individual read=");
-    // Serial.println(AcsValue);
-    Samples = Samples + AcsValue;
-    delay(1);
-  }
-  AvgAcs=Samples/150.0;
-  //  Serial.print("Samples=");
-  //  Serial.println(Samples);
-  //  Serial.print("AvgAcs=");
-  //  Serial.println(AvgAcs);
-  //  Serial.print("Scale up=");
-  //  Serial.println(AvgAcs * (5.0/1024.0));
-  // this is for a 30 AMP sensor
-  AcsValueF=((AvgAcs * (5.0 / 1024.0)) - 2.5)/ACS712_FACTOR;
-  lastAcsValueF = AcsValueF;
-  //  Serial.println(AcsValueF);
-  //  delay(10);
-  // if AcsValueF is near 0 then the power is off/limit switch was triggered
-  // also we use PULL_ON logic, switch active=0 switch off=1
-  if ( AcsValueF >= (ACS_OFF * -1.0) and AcsValueF <= ACS_OFF ) {
-    return SWITCH_CLOSED;   // we have reached our limit
-  } else {
-    return SWITCH_CLOSED;  // we are not at limit/end
-  }
- 
-}
+};
 
 
 ///////////////////////////////////////////////////////////
@@ -249,206 +64,342 @@ class GenericMotor {
     virtual char current_direction() =0;
     virtual void enable() =0;
     virtual void disable() =0;
-    virtual void print() =0;
+    virtual void status() =0;
+    virtual String get_motor_name() =0;
+    virtual void new_speed(unsigned int new_target_speed) =0;
 };
 
 
-class GenericDancer {
+//////////////////////////////////////////////////////////////
+//
+// Limit Switch Class Specific Classes..
+//
+/////////////////////////////////////////////////////////// 
+/// Any digital limit switch which just has 0/1, input_pin will be set as INPUT_PULLUP
+class DigitalLimitSwitch: public GenericLimitSwitch{
 
   public:
-    virtual void update() =0;
-    virtual void stop_dancing() =0;
-    virtual void extend_dance() =0;
-    virtual void dance() =0;
-    virtual void print() =0;
-    virtual boolean remote_is_dancing() =0;
-    boolean dance_extended = false;
+    void update();
+    void status();
+    String get_limit_type();
+    boolean get_is_at_limit();
+    char get_limit_position();
+    String get_switch_name();
+
+    // p_siwtch_name            name for this limit switch
+    // p_digital_pin            digital pin that limit switch is attached to (can be analog but we read it with digitalRead), will be set to INPUT_PULLUP, tie to ground
+    // p_limit_position         l,r,c where are we physically located (NOTE a center switch can be l or r to signal that center is same as l)
+    // p_normally_open_closed   is either String "NC" normally closed or "NO" normally open, most are NC 
+    DigitalLimitSwitch (
+          String p_switch_name, 
+          int p_digital_pin, 
+          char p_limit_position, 
+          String p_normally_open_closed) :
+      switch_name(p_switch_name),
+      digital_pin(p_digital_pin),      
+      limit_position(p_limit_position)
+      { if (limit_position != 'l' && limit_position != 'r' && limit_position != 'c') {
+          Serial.print(F("ERROR: Limit Switch "));
+          Serial.print(switch_name);
+          Serial.println(F(" limit_position="));
+          Serial.println(limit_position);
+        }
+        if (p_normally_open_closed == "NC") {
+          limit_off = nc_off;
+        } else {
+          limit_off = no_off;
+        }
+        pinMode(digital_pin, INPUT_PULLUP);
+        update();
+        // print the init and set once values
+        Serial.print(F("CONSTRUCTOR::DigitalLimitSwitch p_switch_name="));
+        Serial.print(p_switch_name);
+        Serial.print(F(", limit_type="));
+        Serial.print(limit_type);
+        Serial.print(F(", p_digital_pin: "));
+        Serial.print(p_digital_pin);
+        Serial.print(F(", p_limit_position: "));
+        Serial.print(p_limit_position);
+        Serial.print(F(", p_normally_open_closed "));
+        Serial.print(p_normally_open_closed);
+        Serial.print(F(", limit_off "));
+        Serial.println(limit_off);
+      }
+      
+  private:
+
+    const String limit_type = "digital";
+    boolean is_at_limit=false;
+    char limit_position;
+    String switch_name;
+
+    const int nc_off=0;   // NC(normally closed), so no push is closed circuit to ground so 0
+    const int no_off=1;   // NO(normally open), so not pushed and pulled up to 5v by INPUT_PULLUP resistor
+
+    int digital_pin;
+    int limit_off;        // limit switch in 'open'/'not pushed' state
 };
+
+String DigitalLimitSwitch::get_limit_type() {return limit_type; }
+boolean DigitalLimitSwitch::get_is_at_limit() {return is_at_limit; }
+char DigitalLimitSwitch::get_limit_position() {return limit_position; }
+String DigitalLimitSwitch::get_switch_name() {return switch_name; };
+
+void DigitalLimitSwitch::update() {
+  is_at_limit = !digitalRead(digital_pin) == limit_off;
+}
+
+void DigitalLimitSwitch::status() {
+  if (! do_print) {
+    return;
+  }
+  Serial.print(F("DigitalLimitSwitch:: switch_name="));
+  Serial.print(switch_name);
+  Serial.print(F(", position="));
+  Serial.print(limit_position);
+  Serial.print(F(", is_at_limit: "));
+  Serial.println(bool_tostr(is_at_limit));
+}
+
+///////// ACS Limit Switch   
+/// base on code from here: http://www.microcontroller-project.com/acs712-current-sensor-with-arduino.html
+class ACS712LimitSwitch: public GenericLimitSwitch {
+  public:
+  
+    
+    void update()=0;
+    void status()=0;
+    String get_limit_type();
+    boolean get_is_at_limit();
+    char get_limit_position();
+    String get_switch_name();
+
+    ACS712LimitSwitch(int p_analog_pin, String p_switch_name, char p_limit_position, int p_amperage) :
+      analog_pin(p_analog_pin), 
+      switch_name(p_switch_name),
+      limit_position(p_limit_position),
+      amperage(p_amperage)
+      {
+        if (amperage == 30) {
+          acs_factor=acs_30a_factor;
+        } else if (amperage == 20) {
+          acs_factor=acs_20a_factor;
+        } else {
+          acs_factor=acs_5a_factor;
+        }
+        pinMode(analog_pin, INPUT);
+        update();
+        // print the init and set once values
+        Serial.print(F("CONSTRUCTOR::ACS712LimitSwitch switch_name="));
+        Serial.print(switch_name);
+        Serial.print(F(", p_analog_pin="));
+        Serial.print(p_analog_pin);
+        Serial.print(F(", p_limit_position: "));
+        Serial.print(p_limit_position);
+        Serial.print(F(", p_amperage "));
+        Serial.print(p_amperage);
+        Serial.print(F(", acs_factor "));
+        Serial.println(acs_factor, 3);
+      }
+
+  private:
+
+    const String limit_type = "acs712";   // limit class
+    boolean is_at_limit=false;            // have we reached out limit?
+    char limit_position;                  // position where this limit is installed r,l,c
+    String  switch_name;                  // give this limit a name (for status etc..)
+
+    const float acs_off = 0.10;           // acs cutoff value values betwen -acs_off to acs_off, power is off
+    const  float acs_30a_factor = 0.066;   // 30Amp chip factor
+    const   float acs_20a_factor = 0.100;  // 20Amp chip factor
+    const  float acs_5a_factor = 0.185;    // 5Amp chip factor
+    
+    int     analog_pin;           // analog pin hooked up to ACS breakout input
+    int     amperage;             // amperage rating for ACS, so we can assign the correct acs_factor;
+    float   acs_factor;           // constant factor to put into ACS sensor routine
+    float   last_acs_value_f=0.0; // previous acs read value
+    float   acs_value_f=0.0;      // current acs formula output
+};
+
+String ACS712LimitSwitch::get_limit_type() {return limit_type; }
+boolean ACS712LimitSwitch::get_is_at_limit() {return is_at_limit; }
+char ACS712LimitSwitch::get_limit_position() {return limit_position; }
+String ACS712LimitSwitch::get_switch_name() {return switch_name; };
+
+// read the ACS712 HAL censor to see if we have power (at limit or not)
+// map the result into SWITCH_OPEN (when button not pushed) the motor is running, SWITCH_CLOSED the motor is off
+void ACS712LimitSwitch::update() {
+  unsigned int x=0;
+
+  float acs_value=0.0,
+        samples=0.0,
+        avg_acs=0.0,
+        acs_value_f=0.0;
+
+  // sample this value a bunch of times to get an average
+  for (int x=0; x < 150; x++) {
+    acs_value = analogRead(analog_pin);
+    // Serial.print("individual read=");
+    // Serial.println(AcsValue);
+    samples = samples + acs_value;
+    delay(1);
+  }
+  avg_acs=samples/150.0;
+  #ifdef IS_CHATTY
+    Serial.print("samples=");
+    Serial.println(samples);
+    Serial.print("avg_acs=");
+    Serial.println(avg_acs);
+    Serial.print("Scale up=");
+    Serial.println(avg_acs * (5.0/1024.0));
+  #endif
+  // this is for a 30 AMP sensor (this comment may not be true any more)
+  acs_value_f=((avg_acs * (5.0 / 1024.0)) - 2.5)/acs_factor;
+  last_acs_value_f = acs_value_f;
+  #ifdef IS_CHATTY
+    Serial.println(AcsValueF);
+    delay(10);
+  #endif
+  // if AcsValueF is near 0 then the power is off/limit switch was triggered
+  if ( acs_value_f >= (acs_off * -1.0) and acs_value_f <= acs_off ) {
+    is_at_limit=true;
+  } else {
+    is_at_limit=false;
+  }
+}
+
+// print our status
+void ACS712LimitSwitch::status() {
+  if (! do_print) {
+    return;
+  }
+  Serial.print(F("ACS712LimitSwitch:: switch_name="));
+  Serial.print(switch_name);
+  Serial.print(F(", limit_position: "));
+  Serial.print(limit_position);
+  Serial.print(F(", last_acs_value_f "));
+  Serial.print(last_acs_value_f, 5);
+  Serial.print(F(", acs_value_f "));
+  Serial.print(acs_value_f, 5);
+  Serial.print(F(", is_at_limit: "));
+  Serial.println(bool_tostr(is_at_limit));
+}
 
 
 ///////////////////////////////////////////////////////////
 //
-// Class to manage limit switches
+// Class to manage a collection of limit switches
+//  there are three: left, right, center
+//  Center switch may be a real limit switch  
+//  just a pointer to left or right limit switch
 //
 ///////////////////////////////////////////////////////////
 
 class Limits {
    
    public:
-      void update( void );
-      boolean isMaxLeft( void );
-      boolean isMaxRight( void );
-      boolean isCentered( void );
-      int sumLimits( void ); 
-      void print();
-      boolean center_passed;      // have we passed the center since the last reverse
-      boolean dance_extended;     // was the dance extended....
-      Limits(int l_pin, int r_pin, int d_c_pin, int a_c_pin, GenericMotor* my_motor, GenericDancer* my_dancer) : 
-        left_pin(l_pin), right_pin(r_pin), d_center_pin(d_c_pin), a_center_pin(a_c_pin), center_passed(false), _my_motor(my_motor), _my_dancer(my_dancer)
-        { update(); }  
+      void update( char motor_direction );
+      boolean is_max_left( void );
+      boolean is_max_right( void );
+      boolean is_centered( void );
+      char center_is(void);         // what postion is the center switch l,r,c
+      void status();
+      char    home_is;            // home position l,r,c (the position of the center_switch)
+      int     sum_limits( void ); // number of limit swtiches active (test for errors)
+
+      // p_limits_name        The name of this limits combo
+      // p_left_limit         The left limit switch structure
+      // p_right_limit        The right limit switch structure
+      // p_center_limit       The center limit swtich struct (AKA the home switch) can be a pointer to left_limit or right_limit if the represent home
+      Limits(String p_limits_name,
+             GenericLimitSwitch* p_left_limit, 
+             GenericLimitSwitch* p_right_limit,
+             GenericLimitSwitch* p_center_limit) :
+        limits_name(p_limits_name),
+        left_limit(p_left_limit), 
+        right_limit(p_right_limit), 
+        center_limit(p_center_limit) 
+        { home_is =  center_limit->get_limit_position(); }  
  
    private:
-      int left_pin;              // the pin number for the left pin
-      int right_pin;             // the pin number for the right pin
-      int d_center_pin;          // digital center pin
-      int a_center_pin;          // analog center pin
-      int last_left_read;        // the value the last time we peaked at the left pin
-      int last_right_read;       // the value the last time we peaked at the right pin
-      int last_a_center_read;    // the value the last time we peaked at the analong center pin 
-      int last_d_center_read;    // the value the last time we peaked at the digital center pin 
-      int last_center_read;      // normalize the value for the analog and digital center pin here
-      int last_acs_read;         // read from the acs sensor
+      String limits_name;
+      GenericLimitSwitch* left_limit;     //left limit switch 
+      GenericLimitSwitch* right_limit;    //left limit switch 
+      GenericLimitSwitch* center_limit;   //left limit switch 
       boolean left_limit_active;
       boolean right_limit_active;
       boolean center_limit_active;
-      GenericMotor* _my_motor;
-      GenericDancer* _my_dancer;
 };
 
-void Limits::update() {
+void Limits::update(char motor_direction) {
 
-  last_left_read = digitalRead(left_pin);   // set the left pin
-  
-  // set the right pin
-  if (RIGHT_LIMIT_TYPE == 'a') {      // acs712 device is active, but right side only
-    // when the left limit is on we turn off power, so this could create a false read
-    // just say it is not set when we have the left pin on.
-    if (last_left_read == SWITCH_CLOSED) { // if left limit switch active, then believe it
-      last_right_read = SWITCH_OPEN;
-    } else {
-      last_right_read = readACS712();
-    }
-  } else if (RIGHT_LIMIT_TYPE == 'b') {  // no limit switch either side, use current direction and ACS712
-    last_acs_read = readACS712();
-    #ifdef IS_CHATTY
-      Serial.println("Limits before we set 'b' type...");
-      _my_dancer->print();
-      print();
-      _my_motor->print();
-    #endif
-    _my_dancer->print();
-    Serial.print(F("dance_extended: "));
-    Serial.println(bool_tostr(_my_dancer->dance_extended));
-    if (_my_dancer->dance_extended == true ) { // we are neither left or right, just near left or right 
-      #ifdef IS_CHATTY
-        Serial.println("using 'b', dance_extended == true section...");
-      #endif
-      last_right_read = SWITCH_OPEN;   // right is set by ACS read
-      last_left_read = SWITCH_OPEN;       // we are not left            
-    } else {
-      // dance is not extended...
-      #ifdef IS_CHATTY
-        Serial.println("using 'b', dance_extended == false section...");
-      #endif        
-      if (_my_motor->current_direction() == 'l') {
-        last_left_read = last_acs_read;   // left is set by ACS read
-        last_right_read = SWITCH_OPEN;     // we are not right
-      } else {
-        last_right_read = last_acs_read;   // right is set by ACS read
-        last_left_read = SWITCH_OPEN;       // we are not left      
+  left_limit->update();
+  right_limit->update();
+  center_limit->update();
+
+  left_limit_active = left_limit->get_is_at_limit();
+  right_limit_active = right_limit->get_is_at_limit();
+  center_limit_active = center_limit->get_is_at_limit();
+
+  // if we are using an acs for the motor left and right, power will be off when we reach either
+  // we must used the current motor direction to work this out.
+  if (right_limit->get_limit_type() == "acs712" && left_limit->get_limit_type() == "acs712") {
+      if (motor_direction == 'l') {  // was going left
+        right_limit_active = false;      // we are not right
+      } else { // was going right, must be right
+        left_limit_active = false;       // we are not left      
       }
-    }
-    #ifdef IS_CHATTY
-      Serial.println("Limits after right after we set 'b' type...");
-      _my_dancer->print();
-      print();
-      _my_motor->print();
-    #endif 
-  } else { // not analog, just read the switch
-    last_right_read = digitalRead(right_pin);
   }
 
-  // set the center pin read
-  if (CENTER_IS == 'r' || CENTER_IS == 'l') {
-      // center is set using right/left pin setting setting from above
-      last_a_center_read = 2000;  // we use digital pin read for l/r communication
-      last_d_center_read = SWITCH_OPEN;
-      if (RIGHT_LIMIT_TYPE == 'b') {  
-        // hard to detect if we are centered, just know we made it left or right and then extended, we are centered...
-        last_center_read = SWITCH_OPEN;
-        if (_my_dancer->dance_extended == true ) { last_center_read = SWITCH_CLOSED; }
-      } else { // center just follows the digital reads for left and right
-        if (CENTER_IS == 'r' && _my_motor->current_direction() == 'r') { last_center_read = last_right_read; }
-        if (CENTER_IS == 'l' && _my_motor->current_direction() == 'l') { last_center_read = last_left_read; }
-      }
-  } else  if (CENTER_IS_ANALOG) {
-    // center is computed off analog pin
-    last_d_center_read = SWITCH_OPEN;
-    last_a_center_read = analogRead(a_center_pin);
-    last_center_read = SWITCH_OPEN;
-    if (last_a_center_read < CENTER_READ_CUTOFF) { last_center_read = SWITCH_CLOSED; center_passed = true; }
-  } else {
-    // center is computed off digital pin
-    last_a_center_read = 2000;   // set this to a value out of range for normal analog devices 0-1023
-    last_d_center_read = digitalRead(d_center_pin); 
-    if (last_d_center_read == SWITCH_CLOSED) { center_passed = true;}
-  }
-  
-  last_center_read = SWITCH_OPEN;  // this will get set later in the routine. Default to not set.
-  
-  left_limit_active = false; 
-  right_limit_active = false;
-  center_limit_active = false;
-  if (last_left_read == SWITCH_CLOSED) {left_limit_active = true; center_passed = false;}
-  if (last_right_read == SWITCH_CLOSED) { right_limit_active = true; center_passed = false;}
-  if (last_center_read == SWITCH_CLOSED && _my_dancer->dance_extended == true) { center_limit_active = true; }
 }
 
-int  Limits::sumLimits() {
+int  Limits::sum_limits() {
     int limits_active=0;
     if (left_limit_active) { limits_active++; }
     if (right_limit_active) { limits_active++; }
-    if (CENTER_IS != 'r' && CENTER_IS != 'l' && center_limit_active ) { limits_active++; }
+    // handle case where we re-use the left or right limit for home/center
+    if (center_limit_active && center_limit->get_limit_position() == 'c') { limits_active++; }
     return limits_active;
 }
 
-boolean Limits::isMaxLeft() {
+boolean Limits::is_max_left() {
     return left_limit_active;
 }
 
-boolean Limits::isMaxRight() {
+boolean Limits::is_max_right() {
     return right_limit_active;
 }
 
-boolean Limits::isCentered() {
-    if (CENTER_IS == 'l') {
-      return left_limit_active;
-    } else if (CENTER_IS == 'r') {
-      return right_limit_active;
-    } else {
-      return center_limit_active;
-    }
+boolean Limits::is_centered() {
+  return center_limit_active;
 }
 
-void Limits::print() {
-  Serial.print(F("Limits: atLeftMax="));
-  Serial.print(bool_tostr(isMaxLeft()));
-  Serial.print(F(" isCentered="));
-  Serial.print(bool_tostr(isCentered()));
-  Serial.print(F(", atRigtMax="));
-  Serial.println(bool_tostr(isMaxRight()));
-  Serial.print(F("        last_left_read="));
-  Serial.print(last_left_read);
-  Serial.print(F(", last_a_center_read="));
-  Serial.print(last_a_center_read);
-  Serial.print(F(", last_d_center_read="));
-  Serial.print(last_d_center_read);
-  Serial.print(F(", last_center_read(psuedo)="));
-  Serial.print(last_center_read);
-  Serial.print(F(", last_right_read="));
-  Serial.println(last_right_read);
-  Serial.print(F("        left_pin="));
-  Serial.print(left_pin);
-  Serial.print(F(", d_center_pin="));
-  Serial.print(d_center_pin);
-  Serial.print(F(", a_center_pin="));
-  Serial.print(a_center_pin);
-  Serial.print(F(", right_pin="));
-  Serial.print(right_pin);
-  Serial.print(F(", lastAcsValueF="));
-  Serial.println(lastAcsValueF);
-  Serial.print(F("        center_passed="));
-  Serial.println(bool_tostr(center_passed));
+char Limits::center_is() {
+  return center_limit->get_limit_position();
+}
+
+
+void Limits::status() {
+  if (! do_print) {
+    return;
+  }
+  // dump the limit switch info
+  Serial.print(F("L_LimitSwitch: "));
+  left_limit->status();
+  Serial.print(F("R_LimitSwitch: "));
+  right_limit->status();
+  Serial.print(F("C_LimitSwitch: "));
+  center_limit->status();
+
+  // dump the Limits info (group info)
+  Serial.print(F("Limits:: limits_name="));
+  Serial.print(limits_name);
+  Serial.print(F(", is_max_left="));
+  Serial.print(bool_tostr(is_max_left()));
+  Serial.print(F(" is_centered="));
+  Serial.print(bool_tostr(is_centered()));
+  Serial.print(F(", is_max_right="));
+  Serial.println(bool_tostr(is_max_right()));
 }
 
 
@@ -472,17 +423,44 @@ class HBridgeMotor: public GenericMotor {
     char current_direction();
     void enable();
     void disable();
-    void print();
-    int speed = 0;
+    void status();
+    String get_motor_name();
+    void new_speed(unsigned int new_target_speed);
+
+    // ARCHIVED:
+    // p_stop_delay               delay this many milliseconds every_nth itteration (starting and stopping), smooths out start and stop
+    // p_stop_delay_every_n_left  during start() delay(p_stop_delay) after this many increments
+    // p_stop_delay_every_n_right during stop() delay(p_stop_delay) after this many increments
+
     
-    HBridgeMotor(int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right) :
+    // p_motor_name                 name of this motor (for status messages)
+    // m_speed_left                 max speed when going left
+    // m_speed_right                max_speed when going right
+    // p_speed                      pwm speed pin
+    // p_standby                    stand by pin (high=enabled, low=disabled)
+    // p_left                       pin for left direction 
+    // p_right                      pin for right direction
+    // p_motor_start_speed          start() uses this as the first pmw speed when starting, must be *LESS* then m_speed_(left|right)
+    // p_speed_increment            increment the pmw by this ammount when starting the motor
+    // p_speed_up_increment_delay   delay to add between increments to make speedup smoother
+    // p_slow_down_increment_delay  delay to add between increments to make slowdown smoother
+    // p_reverse_delay_millis       wait this many milliseconds when reversing direction   
+    HBridgeMotor(String p_motor_name, int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right,
+        int p_motor_start_speed, int p_speed_increment, 
+        int p_speed_up_increment_delay, int p_slow_down_increment_delay,
+        unsigned long p_reverse_delay_millis) :
+      motor_name(p_motor_name),
       max_speed_left(m_speed_left), 
       max_speed_right(m_speed_right),
       pin_speed(p_speed),
+      pin_standby(p_standby),
       pin_left(p_left),
       pin_right(p_right),
-      pin_standby(p_standby),
-      _is_disabled(false)
+      motor_start_speed(p_motor_start_speed),
+      speed_increment(p_speed_increment),
+      speed_up_increment_delay(p_speed_up_increment_delay),
+      slow_down_increment_delay(p_slow_down_increment_delay),
+      reverse_delay_millis(p_reverse_delay_millis)
       { 
           pinMode(p_left, OUTPUT);
           digitalWrite(p_left, 0);
@@ -492,78 +470,159 @@ class HBridgeMotor: public GenericMotor {
           digitalWrite(p_speed, 0);
           pinMode(p_standby, OUTPUT);
           digitalWrite(p_standby, 0);
-          disable(); go_left(); 
+
+          Serial.print(F("CONSTRUCTOR::HBridgeMotor: motor_name="));
+          Serial.print(motor_name);
+          Serial.print(F(", max_speed_left="));
+          Serial.print(max_speed_left);
+          Serial.print(F(", max_speed_right="));
+          Serial.print(max_speed_right);
+          Serial.print(F(", pin_speed="));
+          Serial.print(pin_speed);
+          Serial.print(F(" pin_left="));
+          Serial.print(pin_left);
+          Serial.print(F(", pin_right="));
+          Serial.print(pin_right);
+          Serial.print(F(", pin_standby="));
+          Serial.println(pin_standby);
+          Serial.print(F("        motor_start_speed="));
+          Serial.print(motor_start_speed);
+          Serial.print(F(", speed_increment="));
+          Serial.print(speed_increment);
+          Serial.print(F(", speed_up_increment_delay="));
+          Serial.print(speed_up_increment_delay);          
+          Serial.print(F(", slow_down_increment_delay="));
+          Serial.print(p_slow_down_increment_delay);
+          Serial.print(F(", reverse_delay_millis="));
+          Serial.println(reverse_delay_millis);
+
+          // set other local variables
+          target_speed=0;
+          enable();
+          go_left();
+          Serial.println(F("end CONSTRUCTOR::HBridgeMotor"));
        }
     
   private:
-    int pin_speed;
-    int pin_left;
-    int pin_right;
-    int pin_standby;
-    int max_speed;
-    int max_speed_left;
-    int max_speed_right;
-    boolean _is_disabled = 0;
-    int stop_delay_every_n = 50;
+    String motor_name;                  // name of this motor for status messages
+    int pin_speed;                      // motor pmw speed pin
+    int pin_left;                       // move motor left pin (HIGH=enabled) 
+    int pin_right;                      // move motor right pin (HIGH=enabled)
+    int pin_standby;                    // the standby pin
+    int max_speed;                      // current max speed, coppied speed left and right
+    int max_speed_left;                 // max speed left
+    int max_speed_right;                // max speed right
+    boolean motor_is_disabled = true;  // is the motor disabled?
 
-    int move_left = 0;
-    int move_right = 0;
+    int move_left = 0;        // move left enable/disable
+    int move_right = 0;       // move right enable/disable
+    int speed = 0;            // pmw speed
+    int target_speed=0;       // new target PMW speed
+    
+    // new variables this edit
+    int speed_up_increment_delay;         // delay after each increment when speeding up
+    int slow_down_increment_delay;        // delay after each increment when slowing down
+//    int stop_delay;                       // milliseconds to after each n itterations
+//    int stop_delay_every_n_left;          // delay after this many itternations
+//    int stop_delay_every_n_right;         // delay after this many itternations
+//    int stop_delay_every_n = 50;          // delay this many milliseconds after each n itterations on stop, set from n_left and n_right
+    int motor_start_speed;                // speed to use on start(), must be *LESS* then max_speed_(left|right)
+    int speed_increment;                  // increment for increasing pwm speed
+    unsigned long reverse_delay_millis;   // milliseconds to delay on reverse
+
 };
+
+String HBridgeMotor::get_motor_name() {return motor_name; }
+
+// run the motor by just chaning the speed
+void HBridgeMotor::new_speed(unsigned int new_target_speed)
+{
+  Serial.print(F("HBridgeMotor::new_speed motor_name="));
+  Serial.print(motor_name);
+  Serial.print(F(", Speed="));
+  Serial.print(speed);
+  Serial.print(F(", new_speed="));
+  Serial.println(new_target_speed);
+
+  speed = new_target_speed;
+
+  // make sure our direction pins are both enabled
+  digitalWrite(pin_left, move_left);
+  digitalWrite(pin_right, move_right);
+}
 
 // bring the motor down in a controlled manor
 void HBridgeMotor::stop() {
   
   boolean motor_was_running = false;
 
-  Serial.println("HBridgeMotor::stop");
-  Serial.print("Speed=");
-  Serial.println(speed);
-  
-  for (int i=speed; i!=0; i--) {
-    motor_was_running = true;
-    analogWrite(pin_speed, i);
-    if ((i % stop_delay_every_n) == 0) {
-      Serial.println(i);
-      delay(STOP_DELAY);
-    }
-    if (speed < MOTOR_START_SPEED) { break; }
-  }
-  // only do this final dealy when really stoppin the motor
-  analogWrite(pin_speed, 0);
-  if (motor_was_running) {
-    delay(30);
-  }
-  speed = 0;
+  Serial.print(F("HBridgeMotor::stop motor_name="));
+  Serial.print(motor_name);
+  Serial.print(F(", speed="));
+  Serial.print(speed);
+  Serial.println(F(", new_target_speed=0"));
+
+  target_speed=0;
+  while (speed != 0 ) { run(); }
+
 }
 
 void HBridgeMotor::start() { 
     
-    Serial.println("HBridgeMotor::start");
-    Serial.print("Speed=");
-    Serial.println(speed); 
-  
-    if (speed == 0) {
-      digitalWrite(pin_left, move_left);
-      digitalWrite(pin_right, move_right);
-      digitalWrite(pin_speed, max_speed);
-    }
+    Serial.print(F("HBridgeMotor::start motor_name="));
+    Serial.print(motor_name);
+    Serial.print(F(", speed="));
+    Serial.print(speed); 
+    Serial.print(F(", target_speed="));
+    Serial.println(max_speed);
     
-    if (speed < MOTOR_START_SPEED) {
-      speed = MOTOR_START_SPEED;
-    }
+    target_speed=max_speed;
+
+    // make sure our direction pins are both enabled
+    digitalWrite(pin_left, move_left);
+    digitalWrite(pin_right, move_right);
+    run();
 }
 
-// keep increasing the motor speed until max speed
+// keep increasing/decrease the motor speed until target_speed reached
 void HBridgeMotor::run() {
-  if ( ! start_delay_complete ) { return; } // do not run while we are in delay 
+  
   if ( ! is_disabled() ) {
-    if (speed < max_speed) {
-      speed += SPEED_INCREMENT;
-      if (speed > max_speed) { speed = max_speed; } 
+
+    // make sure our pins are active if we are going to changing speed
+    if (speed != target_speed) {
+      digitalWrite(pin_left, move_left);
+      digitalWrite(pin_right, move_right);
+    }
+    
+    // some bounds checking on target speed
+    if (target_speed > 0 && target_speed < motor_start_speed) { target_speed = motor_start_speed; } // can't have a target (other then 0, below start speed 
+    if (target_speed > max_speed) {target_speed = max_speed; }                          // can't have a target speed greater then max_speed
+    if (target_speed < 0) { target_speed = 0; }                                         // can't have a target < 0
+
+    // increment speed
+    if (speed < target_speed) {
+      speed += speed_increment;
+      if (speed < motor_start_speed) { speed = motor_start_speed; }   // always start at a minimum here
+      if (speed > target_speed) { speed = target_speed; } // don't go above max
       analogWrite(pin_speed, speed);
-      if ((speed % 1) == 0) {
-        delay(50);
-      }
+      delay(speed_up_increment_delay);
+      Serial.print(F("HBridgeMotor::run motor_name="));
+      Serial.print(motor_name);
+      Serial.print(F("speed INCREASED to: "));
+      Serial.println(speed);
+    }
+
+    // decrement speed
+    if (speed > target_speed) {
+      speed -= speed_increment;
+      if (speed < motor_start_speed) { speed = 0; }
+      analogWrite(pin_speed, speed);
+      delay(slow_down_increment_delay);
+      Serial.print(F("HBridgeMotor::run motor_name="));
+      Serial.print(motor_name);
+      Serial.print(F("speed DECREASED to: "));
+      Serial.println(speed);
     }
   }
 }
@@ -572,15 +631,17 @@ void HBridgeMotor::run() {
 void HBridgeMotor::go_left() {
   int orig_speed = speed;
   if (current_direction() != 'l') {
-    Serial.println("HBridgeMotor::go_left: reversing direction");
+    Serial.print(F("HBridgeMotor::go_left: motor_name="));
+    Serial.print(motor_name);
+    Serial.println(F(" reversing direction"));
+    
     stop();
     move_left = 1;
     move_right = 0;
     max_speed = max_speed_left;
-    stop_delay_every_n = STOP_DELAY_EVERY_N_L;
     if (orig_speed != 0) {
-      delay(REVERSE_DELAY);
-      start();
+      delay(reverse_delay_millis);
+      new_speed(target_speed);
     }
   }
 }
@@ -589,15 +650,16 @@ void HBridgeMotor::go_left() {
 void HBridgeMotor::go_right() {
   int orig_speed = speed;
   if (current_direction() != 'r') {
-    Serial.println("HBridgeMotor::go_right: reversing direction");
+    Serial.print(F("HBridgeMotor::go_right: motor_name="));
+    Serial.print(motor_name);
+    Serial.println(F(" reversing direction"));
     stop();
     move_left = 0;
     move_right = 1;
     max_speed = max_speed_right;
-    stop_delay_every_n = STOP_DELAY_EVERY_N_R;
     if (orig_speed != 0) {
-      delay(REVERSE_DELAY);
-      start();
+      delay(reverse_delay_millis);
+      new_speed(target_speed);
     }  
   }
 }
@@ -612,40 +674,47 @@ char HBridgeMotor::current_direction() {
 }
 
 void HBridgeMotor::enable() {
-  if (_is_disabled == true) {
-    Serial.println("enabeling motor");
-    digitalWrite(pin_standby, 1);
-    start();
-    _is_disabled = false;
-  }
+  Serial.print(F("HBridgeMotor::enable() motor_name="));
+  Serial.println(motor_name);
+  digitalWrite(pin_standby, 1);
+  motor_is_disabled = false;
 }
 
 void HBridgeMotor::disable() {
-  if (_is_disabled == false) {
-    Serial.println("disabeling motor");
-    stop();
-    digitalWrite(pin_standby, 0);
-    _is_disabled = true;
-  }
+//  if (motor_is_disabled == false) {
+//    Serial.println("disabeling motor");
+//    stop();
+//    digitalWrite(pin_standby, 0);
+//    motor_is_disabled = true;
+//  }
 }
 
 boolean HBridgeMotor::is_disabled() {
-  return _is_disabled;
+  return motor_is_disabled;
 }
 
 boolean HBridgeMotor::is_stopped() {
   return (speed == 0);
 }
 
-void HBridgeMotor::print() {
-  Serial.print(F("HBridgeMotor: is_disabled="));
+// print our motor status (moving values)
+void HBridgeMotor::status() {
+  Serial.print(F("HBridgeMotor:: motor_name="));
+  Serial.print(motor_name);
+  Serial.print(F(", is_disabled="));
   Serial.print(bool_tostr(is_disabled()));
+  Serial.print(F(", move_left="));
+  Serial.print(move_left);
+  Serial.print(F(", move_right="));
+  Serial.print(move_right);
   Serial.print(F(", is_stopped="));
   Serial.print(bool_tostr(is_stopped()));
   Serial.print(F(", direction="));
   Serial.print(current_direction());
   Serial.print(F(", max_speed="));
   Serial.print(max_speed);
+  Serial.print(F(", target_speed="));
+  Serial.print(target_speed);  
   Serial.print(F(", speed="));
   Serial.println(speed);  
 }
@@ -662,7 +731,7 @@ void HBridgeMotor::print() {
 /////////////////////////////////////////////////////////// 
 class IBT2Motor: public GenericMotor {
   public:
-    void stop();                // stop the motor by bring pmw down to 0
+    void stop();                // stop the motor by bring pwm down to 0
     void start();               // if current speed is less then start speed, make it start speed
     void run();                 // increment motor speed to max speed in SPEED_INCREMENT jumps over multiple calls, does nothing if motor is disabled
     void go_left();
@@ -672,53 +741,152 @@ class IBT2Motor: public GenericMotor {
     char current_direction();
     void enable();
     void disable();
-    void print();
+    void status();
     int speed = 0;
-    
-    IBT2Motor(int m_speed_left, int m_speed_right,  int p_pmwr, int p_pmwl) :
+    String get_motor_name();
+
+    // p_motor_name                         name of this motor (for status messages)
+    // m_speed_left                         max speed going left
+    // m_speed_right                        max speed going right
+    // p_pwml                               left pwm pin
+    // p_pwmr                               right pwm pin
+    // p_motor_start_speed                  start speed when start() is called
+    // p_speed_increment                    pmw increment when starting the motor
+    // p_stop_delay                         delay this many milliseconds when every n th itteration
+    // p_stop_delay_every_n_left            number of itterations going left to wait before delaying p_stop_delay
+    // p_stop_delay_every_n_right           number of itterations going right to wait before delaying p_stop_delay  
+    // p_reverse_delay_millis               delay this number of milliseconds when reversing direction
+    // p_needs_jumpstart_left               do we jump start when going left (add extra power, and then wind down)
+    // p_needs_jumpstart_right              do we jump start when going right (add extra pwer, and then slow down)
+    // p_jump_millis_duration1              amount of time to run at higher faster speed during jumpstart period 1
+    // p_jumpstart_speed1                   max speed to run during jumpstart1
+    // p_jump_millis_duration2              amount of time to run at higher faster speed during jumpstart period 2, must be larger then p_jump_millis_duration1
+    // p_jumpstart_speed2                   max speed to run during jumpstart2, should be less then or equal to p_jumpstart_speed1
+    // p_max_time_to_limit_switch_seconds   max seconds we expect to reach opssite limit switch, allows us to reserver if motor is stuck
+    IBT2Motor(String p_motor_name, 
+        int m_speed_left, int m_speed_right,  
+        int p_pwml, int p_pwmr, 
+        int p_motor_start_speed, int p_speed_increment,
+        int p_stop_delay, int p_stop_delay_every_n_left, int p_stop_delay_every_n_right, 
+        unsigned long p_reverse_delay_millis,
+        boolean p_needs_jumpstart_left, boolean p_needs_jumpstart_right,
+        unsigned long p_jump_millis_duration1, int p_jumpstart_speed1,
+        unsigned long p_jump_millis_duration2, int p_jumpstart_speed2,
+        unsigned int p_max_time_to_limit_switch_seconds ) :
+      motor_name(p_motor_name),
       max_speed_left(m_speed_left),
       max_speed_right(m_speed_right),
-      pin_pmwr(p_pmwr),
-      pin_pmwl(p_pmwl),
-      _is_disabled(false)
+      pin_pwml(p_pwml),
+      pin_pwmr(p_pwmr),
+      motor_start_speed(p_motor_start_speed),
+      speed_increment(p_speed_increment),
+      stop_delay(p_stop_delay),
+      stop_delay_every_n_left(p_stop_delay_every_n_left),
+      stop_delay_every_n_right(p_stop_delay_every_n_right),
+      reverse_delay_millis(p_reverse_delay_millis),
+      needs_jumpstart_left(p_needs_jumpstart_left),
+      needs_jumpstart_right(p_needs_jumpstart_right),
+      jump_millis_duration1(p_jump_millis_duration1),
+      jumpstart_speed1(p_jumpstart_speed1),
+      jumpstart_speed2(p_jumpstart_speed2),
+      jump_millis_duration2(p_jump_millis_duration2)
       { 
-          pinMode(pin_pmwr, OUTPUT);
-          digitalWrite(pin_pmwr, 0);
-          pinMode(pin_pmwl, OUTPUT);
-          digitalWrite(pin_pmwl, 0);
-          current_pmw_pin = pin_pmwl;
-          alt_pmw_pin = pin_pmwr;
+          pinMode(pin_pwmr, OUTPUT);
+          digitalWrite(pin_pwmr, 0);
+          pinMode(pin_pwml, OUTPUT);
+          digitalWrite(pin_pwml, 0);
+          
+          max_time_to_limit_switch_millis = 1000 * p_max_time_to_limit_switch_seconds;   // number of milliseconds to have passed before we reset motor
+          
+          Serial.print(F("CONSTRUCTOR::IBT2Motor motor_name"));
+          Serial.print(motor_name);
+          Serial.print(F(", max_speed_left="));
+          Serial.print(max_speed_left);
+          Serial.print(F(", max_speed_right="));
+          Serial.print(max_speed_right);
+          Serial.print(F(", pin_pwml="));
+          Serial.print(pin_pwml);
+          Serial.print(F(", pin_pwmr="));
+          Serial.print(pin_pwmr);
+          Serial.print(F(", motor_start_speed="));
+          Serial.print(motor_start_speed);
+          Serial.print(F(", speed_increment="));
+          Serial.println(speed_increment);
+          
+          Serial.print(F("        stop_delay="));
+          Serial.print(stop_delay);
+          Serial.print(F(", stop_delay_every_n_left="));
+          Serial.print(stop_delay_every_n_left);
+          Serial.print(F(", stop_delay_every_n_right="));
+          Serial.print(stop_delay_every_n_right);
+          Serial.print(F(", reverse_delay_millis="));
+          Serial.print(reverse_delay_millis);
+          Serial.print(F(", needs_jumpstart_left="));
+          Serial.print(bool_tostr(needs_jumpstart_left));
+          Serial.print(F(", needs_jumpstart_right="));
+          Serial.println(bool_tostr(needs_jumpstart_right));
+          
+          Serial.print(F("        jump_millis_duration1="));
+          Serial.print(jump_millis_duration1);
+          Serial.print(F(", jumpstart_speed1="));
+          Serial.print(jumpstart_speed1);
+          Serial.print(F(", jumpstart_speed2="));
+          Serial.print(jumpstart_speed2);
+          Serial.print(F(", jump_millis_duration2="));
+          Serial.print(jump_millis_duration2);
+          Serial.print(F(", max_time_to_limit_switch_millis="));
+          Serial.println(max_time_to_limit_switch_millis);
+
+          // initialize some initial state in the motor
+          current_pwm_pin = pin_pwml;
+          alt_pwm_pin = pin_pwmr;
+          motor_is_disabled = false,
           max_speed = 0;
-          disable(); go_left(); 
+          disable(); 
+          go_left(); 
        }
     
   private:
-    int pin_pmwr;                         // right pin
-    int pin_pmwl;                         // left pin
-    int current_pmw_pin;                  // current_pin switches between the two above
-    int alt_pmw_pin;                      // the other pin, this pin will be set to 0 while we use the current to drive the motor
+    String motor_name;                    // name of this motor printed during status messages
+    int pin_pwml;                         // left pin
+    int pin_pwmr;                         // right pin  
+    int current_pwm_pin;                  // current_pin switches between the two above
+    int alt_pwm_pin;                      // the other pin, this pin will be set to 0 while we use the current to drive the motor
     int max_speed;                        // max speed for the current direction, set in go_left and go_right from max_speed_left/right
-    int max_speed_left;                   // max speed to go when going right, set with MOTOR_SPEED_RIGHT
-    int max_speed_right;                  // max speed to go when going left, set with MOTOR_SPEED_LEFT
-    bool needs_jump_start;                // mapped from NEEDS_JUMP_START_LEFT and NEEDS_JUMP_START_RIGHT in go_left and go_right
+    int max_speed_left;                   // max speed to go when going right
+    int max_speed_right;                  // max speed to go when going left
+    bool needs_jumpstart;                 // mapped from needs_jumpstart_left and needs_jumpstart_right in go_left and go_right
+    boolean needs_jumpstart_left;         // do we jumpstart when going left
+    boolean needs_jumpstart_right;        // do we jumpstart when going right
+
+    boolean motor_is_disabled = 0;        // has disable() been called, cleared by enable()
+
     unsigned long jump_enabled_millis=0;  // set in run() to the current milliseconds value millis()
     unsigned long jump_diff_millis=0;     // how long has the current jump window been active.
-    unsigned long jump_millis_duration1=JUMP_START_MILLIS_DURATION1;          // number of milliseconds to run jump window 1
-    int jump_start_speed1=MOTOR_JUMP_START_SPEED1;                            // jump window 1 max speed, mapped into max_speed during this window
-    unsigned long jump_millis_duration2=JUMP_START_MILLIS_DURATION2;          // number of milliseconds to run jump window 1, must be large then window 1 to run. 
-    int jump_start_speed2=MOTOR_JUMP_START_SPEED2;                            // jump window 1 max speed, mapped into max_speed during this window, 
-                                                                              //     jump start speed 2 (should be less then or equal to speed1)
-    boolean _is_disabled = 0;             // has disable() been called, cleared by enable()
-    int stop_delay_every_n = 10;          // when we have decrement the speed this many points, delay for STOP_DELAY milliseconds
-    unsigned long max_time_to_limit_switch = 1000L * MAX_SECONDS_TO_LIMIT_SWITCH;   // number of seconds to have passed before we reset motor
-                                                                                    // add b/c the time piece would get stuck sometimes, this was just
-                                                                                    // a fix re-execute the jump start values.
-    unsigned long millis_motor_start=0;   // millis when motor was last started
-    unsigned long millis_since_start=0;   // number of millis since motor was last started
+    
+    unsigned long jump_millis_duration1;  // number of milliseconds to run jump window 1
+    int jumpstart_speed1;                 // jump window 1 max speed, mapped into max_speed during this window
+    unsigned long jump_millis_duration2;  // number of milliseconds to run jump window 2, must be larger then window 1 to run. 
+    int jumpstart_speed2;                 // jump window 1 max speed, mapped into max_speed during this window, should be less then or equal to jumpstart_speed1
+
+    int stop_delay;                         
+    int stop_delay_every_n = 10;                    // when we are stopping the speed after this many itters, delay for stop_delay milliseconds, mapped from n_left, n_right
+    unsigned long max_time_to_limit_switch_millis;  // number of seconds to have passed before we reset motor
+    unsigned long stop_delay_every_n_left;          // delay after this many itterations going left
+    unsigned long stop_delay_every_n_right;         // delay after this many itterations going right
+                                                                                     
+    unsigned long millis_motor_start=0;   // millis when motor was last started, fixed some bug, review...
+    unsigned long millis_since_start=0;   // number of millis since motor was last started, fixed some bug, review...
 
     int move_left = 0;                    // we are moving left,  move_right should be 0, set in go_left, cleared in go_right, returned by current_direction
     int move_right = 0;                   // we are moving right, move_left should be 0,  set in go_right, cleared go_left, returned by current_direction
+
+    int motor_start_speed;                // speed to start motor at, set in go_left, go_right, also used for jumpstart1, jumpstart2
+    int speed_increment;                  // speed increment, set in go_left, go_right, also used for jumpstart1, jumpstart2
+    unsigned long reverse_delay_millis;   // number of milliseconds to delay when reversing
 };
+
+String IBT2Motor::get_motor_name() {return motor_name; }
 
 // bring the motor down in a controlled manor
 void IBT2Motor::stop() {
@@ -727,10 +895,10 @@ void IBT2Motor::stop() {
 
   Serial.println("IBT2Motor::stop");
   #ifdef IS_CHATTY
-    Serial.print("debug before stop: current_pmw_pin=");
-    Serial.print(current_pmw_pin);
-    Serial.print(", alt_pmw_pin=");
-    Serial.print(alt_pmw_pin);
+    Serial.print("debug before stop: current_pwm_pin=");
+    Serial.print(current_pwm_pin);
+    Serial.print(", alt_pwm_pin=");
+    Serial.print(alt_pwm_pin);
     Serial.print(", Speed=");
     Serial.println(speed);
   #endif
@@ -738,16 +906,16 @@ void IBT2Motor::stop() {
   // trim down the motor speed; if speed > 0
   for (int i=speed; i!=0; i--) {
     motor_was_running = true;
-    analogWrite(current_pmw_pin, i);
-    digitalWrite(alt_pmw_pin, 0);
+    analogWrite(current_pwm_pin, i);
+    digitalWrite(alt_pwm_pin, 0);
     if ((i % stop_delay_every_n) == 0) {
       Serial.println(i);
-      delay(STOP_DELAY);
+      delay(stop_delay);
     }
-    if (i < MOTOR_START_SPEED) { break; }
+    if (i < motor_start_speed) { break; }
   }
-  digitalWrite(current_pmw_pin, 0);
-  digitalWrite(alt_pmw_pin, 0);
+  digitalWrite(current_pwm_pin, 0);
+  digitalWrite(alt_pwm_pin, 0);
   // only do this final dealy when really stoppin the motor
   if (motor_was_running) {
     delay(100);
@@ -755,10 +923,10 @@ void IBT2Motor::stop() {
   speed = 0;
 
   #ifdef IS_CHATTY
-    Serial.print("debug after stop: current_pmw_pin=");
-    Serial.print(current_pmw_pin);
-    Serial.print(", alt_pmw_pin=");
-    Serial.print(alt_pmw_pin);
+    Serial.print("debug after stop: current_pwm_pin=");
+    Serial.print(current_pwm_pin);
+    Serial.print(", alt_pwm_pin=");
+    Serial.print(alt_pwm_pin);
     Serial.print(", Speed=");
     Serial.println(speed);
   #endif
@@ -771,8 +939,8 @@ void IBT2Motor::start() {
     Serial.print("before start Speed=");
     Serial.println(speed); 
     
-    if (speed < MOTOR_START_SPEED) {
-      speed = MOTOR_START_SPEED;
+    if (speed < motor_start_speed) {
+      speed = motor_start_speed;
     }
 
     Serial.print("after start Speed=");
@@ -788,17 +956,15 @@ void IBT2Motor::run() {
     Serial.println(F("IBT2Motor::run() starting"));
   #endif
 
-  // do not run the motor while in start delay
-  if (!start_delay_complete) { return; }
   
   if ( ! is_disabled() ) {
     
     run_max_speed = max_speed; // default the current normal max speed
 
     // check if we need to override max speed for a jump start 
-    if (needs_jump_start == true) { 
+    if (needs_jumpstart == true) { 
       // this motor is just getting started, let's jump start it!
-      if (speed <= MOTOR_START_SPEED ) { 
+      if (speed <= motor_start_speed ) { 
         jump_enabled_millis=millis();   // start the jump start duration timer
       }
       
@@ -812,12 +978,12 @@ void IBT2Motor::run() {
       
       // are we still in the jump start window?, use the higher speed
       if (jump_diff_millis < jump_millis_duration1) {
-        run_max_speed = jump_start_speed1;
+        run_max_speed = jumpstart_speed1;
         #ifdef IS_CHATTY
           Serial.print(F("In jump start1"));
         #endif 
       } else if (jump_diff_millis < jump_millis_duration2) {
-         run_max_speed = jump_start_speed2;
+         run_max_speed = jumpstart_speed2;
         #ifdef IS_CHATTY
           Serial.print(F("In jump start2"));
         #endif       
@@ -841,7 +1007,7 @@ void IBT2Motor::run() {
       Serial.println(run_max_speed);
     }  
     
-    if (speed <= MOTOR_START_SPEED) {
+    if (speed <= motor_start_speed) {
       millis_motor_start=millis();
     }
     current_millis=millis();
@@ -850,7 +1016,7 @@ void IBT2Motor::run() {
       millis_motor_start=current_millis;
     }
     millis_since_start = current_millis -  millis_motor_start; 
-    if (millis_since_start > max_time_to_limit_switch) {
+    if (millis_since_start > max_time_to_limit_switch_millis) {
       // something is wrong we have taken way too long to reach the current switch
       // reset and let the main routine sort it all out.
       Serial.println(F("WARNING: Taking too long to reach limit switch, restarting motor..."));
@@ -862,18 +1028,18 @@ void IBT2Motor::run() {
 //    Serial.println(run_max_speed);
     
     if (speed < run_max_speed) {
-      speed += SPEED_INCREMENT;
+      speed += speed_increment;
       if (speed > run_max_speed) { speed = run_max_speed; } 
-      digitalWrite(alt_pmw_pin, 0);
-      analogWrite(current_pmw_pin, speed);
+      digitalWrite(alt_pwm_pin, 0);
+      analogWrite(current_pwm_pin, speed);
       if ((speed % 1) == 0) {
         delay(50);
       }
     } else if (speed > run_max_speed) {
-      speed -= SPEED_INCREMENT;
+      speed -= speed_increment;
       if (speed < run_max_speed) { speed = run_max_speed; } 
-      digitalWrite(alt_pmw_pin, 0);
-      analogWrite(current_pmw_pin, speed);
+      digitalWrite(alt_pwm_pin, 0);
+      analogWrite(current_pwm_pin, speed);
       if ((speed % 1) == 0) {
         delay(50);
       }
@@ -884,7 +1050,7 @@ void IBT2Motor::run() {
   #endif
 }
 
-// continues left if alrady going left, else stops and restart left
+// continues left if already going left, else stops and restart left
 void IBT2Motor::go_left() {
   int orig_speed = speed;
   if (current_direction() != 'l') {
@@ -892,13 +1058,13 @@ void IBT2Motor::go_left() {
     stop();
     move_left = 1;
     move_right = 0;
-    current_pmw_pin = pin_pmwl;
-    alt_pmw_pin = pin_pmwr;
+    current_pwm_pin = pin_pwml;
+    alt_pwm_pin = pin_pwmr;
     max_speed = max_speed_left;
-    needs_jump_start=NEEDS_JUMP_START_LEFT;
-    stop_delay_every_n = STOP_DELAY_EVERY_N_L;
+    needs_jumpstart=needs_jumpstart_left;
+    stop_delay_every_n = stop_delay_every_n_left;
     if (orig_speed != 0) {
-      delay(REVERSE_DELAY);
+      delay(reverse_delay_millis);
       start();
     }
   }
@@ -912,13 +1078,13 @@ void IBT2Motor::go_right() {
     stop();
     move_left = 0;
     move_right = 1;
-    current_pmw_pin = pin_pmwr;
-    alt_pmw_pin = pin_pmwl;
+    current_pwm_pin = pin_pwmr;
+    alt_pwm_pin = pin_pwml;
     max_speed = max_speed_right;
-    needs_jump_start=NEEDS_JUMP_START_RIGHT;
-    stop_delay_every_n = STOP_DELAY_EVERY_N_R;
+    needs_jumpstart=needs_jumpstart_right;
+    stop_delay_every_n = stop_delay_every_n_right;
     if (orig_speed != 0) {
-      delay(REVERSE_DELAY);
+      delay(reverse_delay_millis);
       start();
     }  
   }
@@ -936,31 +1102,33 @@ char IBT2Motor::current_direction() {
 }
 
 void IBT2Motor::enable() {
-  if (_is_disabled == true) {
+  if (motor_is_disabled == true) {
     Serial.println("enabeling motor");
-    start();
-    _is_disabled = false;
+    // start();
+    motor_is_disabled = false;
   }
 }
 
 void IBT2Motor::disable() {
-  if (_is_disabled == false) {
+  if (motor_is_disabled == false) {
     Serial.println("disabeling motor");
     stop();
-    _is_disabled = true;
+    motor_is_disabled = true;
   }
 }
 
 boolean IBT2Motor::is_disabled() {
-  return _is_disabled;
+  return motor_is_disabled;
 }
 
 boolean IBT2Motor::is_stopped() {
   return (speed == 0);
 }
 
-void IBT2Motor::print() {
-  Serial.print(F("IBT2Motor: is_disabled="));
+void IBT2Motor::status() {
+  Serial.print(F("IBT2Motor:: motor_name="));
+  Serial.print(motor_name);
+  Serial.print(F(", is_disabled="));
   Serial.print(bool_tostr(is_disabled()));
   Serial.print(F(", is_stopped="));
   Serial.print(bool_tostr(is_stopped()));
@@ -970,14 +1138,15 @@ void IBT2Motor::print() {
   Serial.print(move_right);
   Serial.print(F(", direction="));
   Serial.println(current_direction());
+  
   Serial.print(F("        max_speed="));
   Serial.print(max_speed);
   Serial.print(F(", needs_jumpstart="));
-  Serial.print(bool_tostr(needs_jump_start));
+  Serial.print(bool_tostr(needs_jumpstart));
   Serial.print(F(", jump_diff_millis="));
   Serial.print(jump_diff_millis);
-  Serial.print(F(", max_time_to_limit_switch="));
-  Serial.print((unsigned long) max_time_to_limit_switch);
+  Serial.print(F(", max_time_to_limit_switch_millis="));
+  Serial.print((unsigned long) max_time_to_limit_switch_millis);
   Serial.print(F(", millis_since_start="));
   Serial.print(millis_since_start);
   Serial.print(F(", speed="));
@@ -992,172 +1161,451 @@ void IBT2Motor::print() {
 // Class to manage remote dancer stack input 
 //
 /////////////////////////////////////////////////////////// 
-class Dancer: public GenericDancer {
+class Dancer {
 
   public:
-    Dancer( int p_dancer, GenericMotor *motor) : pin_dancer(p_dancer), _motor(motor) {update(); stop_dancing();}
-    void update();
-    boolean i_am_dancing;         // the motor should be moving....
-    void stop_dancing();
-    void extend_dance();
-    void dance();
-    void print();
-    boolean remote_is_dancing();
+
+    void update();                      // update the pin state
+    void dance();                       // check the limits and motor setting and decide how to direct the motor
+    void status();                      // dump the Dancer status
+
+    // p_dancer_name  name of this dancer, for status messages
+    // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
+    // p_motor        pointer to our motor structure
+    // p_left_limit   left limit switch
+    // p_right_limit  right limit switch
+    // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
+    // p_dancer_delay_seconds   Number of seconds to delay motor start after remote starts dancing
+    // p_dancer_extend_seconds  Number of seconds to run motor after center resting position has been reached
+    Dancer( String p_dancer_name,
+            int p_dancer_pin, 
+            GenericMotor *p_motor, 
+            GenericLimitSwitch *p_left_limit,
+            GenericLimitSwitch *p_right_limit,
+            GenericLimitSwitch *p_center_limit,
+            int p_dancer_delay_seconds,
+            int p_dancer_extend_seconds) : 
+      dancer_name(p_dancer_name),
+      dancer_pin(p_dancer_pin), 
+      motor(p_motor)
+      { 
+        pinMode(dancer_pin, INPUT);
+
+        is_home = false;
+        is_centered = false;
+        remote_is_dancing = false;
+        center_passed = false;
+        
+        delay_dance_millis = 1000L * p_dancer_delay_seconds;
+        start_delay_complete = false;
+        extend_dance_millis = 1000L * p_dancer_extend_seconds;
+        is_extended = false;
+
+        current_limits = new Limits(
+            String("L_chair_limits"), // p_limits_name        The name of this limits combo
+            p_left_limit,             // p_left_limit         The left limit switch structure
+            p_right_limit,            // p_right_limit        The right limit switch structure
+            p_center_limit            // p_center_limit       The center limit swtich struct (AKA the home switch) can be a pointer to left_limit or right_limit if the represent home
+          );
+
+        center_is = current_limits->center_is();
+
+        Serial.print(F("CONSTRUCTOR::Dancer dancer_name="));
+        Serial.print(dancer_name);
+        Serial.print(F(", dancer_pin="));
+        Serial.print(dancer_pin);
+        Serial.print(F(" motor_name="));
+        Serial.print(motor->get_motor_name());
+        Serial.print(F(", left_limit_name="));
+        Serial.print(p_left_limit->get_switch_name());
+        Serial.print(F(", right_limit_name="));
+        Serial.print(p_right_limit->get_switch_name());
+        Serial.print(F(", center_limit_name="));
+        Serial.println(p_center_limit->get_switch_name());
+        Serial.print(F("        delay_dance_millis="));
+        Serial.print(delay_dance_millis);
+        Serial.print(F(", extend_dance_millis="));
+        Serial.print(extend_dance_millis);
+        Serial.print(F(", center_is="));
+        Serial.println(center_is);       
+
+        update();       // lets set the pins for the first time
+      }
+      
 
   private:
-    int     pin_dancer;
-    boolean remote_is_dancing_;
-    GenericMotor  *_motor;
-    int     extend_seconds = DANCER_EXTEND_SECONDS;
+    String dancer_name;                 // dancer name
+    char home_position;                 // home is what position l,r,c (left, right, center)  
+    Limits *current_limits;             // left right center limits for this dancer
+    GenericMotor *motor;                // the motor attached to this dancer,  A dancer can only control one motor so we have two dancers
+    int     dancer_pin;                 // pin to check for remote dancer
+    boolean remote_is_dancing;          // is the remote asking for us to dance?
+    char    center_is;                  // what positoin is the center position l,r,c
+    boolean is_centered;                // have we reached the center switch after remote stopped dancing
+    boolean center_passed;              // have we passed the center
+    boolean is_home;                    // did we reach home while remote_is_dancing=false and extend our dance?
+    long    current_millis;             // number of milliseconds at last update call
+    boolean dance_just_started;         // signals a new dance was started (remote_is_dancing switched to state on);
+    boolean dance_just_ended;            // a dance just completed (remote_is_dancing switched to state off)
+    
+    unsigned long delay_dance_millis;    // number of millis to delay after remote_is_dancing is set;
+    unsigned long delay_start_millis;    // time that the remote started dancing
+    boolean start_delay_complete;       // have enough milliseconds passed to complete the start delay
+
+    unsigned long extend_dance_millis;   // number of seconds to extend the dance remote stops dancing
+    unsigned long extend_start_millis;   // millisonds when we are finally home (extend beyond home position)
+    boolean is_extended;                // run a bit longer after we are home (to strech out fabric of instance)
+
 };
 
-boolean Dancer::remote_is_dancing() {
-  return remote_is_dancing_;
-}
 
 void Dancer::update() {
-  remote_is_dancing_ = (digitalRead(pin_dancer) == 1);
+
+  int current_remote_status;
+  
+  // check our remote status
+  current_remote_status = (digitalRead(dancer_pin) == 1);
+
   #ifdef ALWAYS_BE_DANCING
-    remote_is_dancing_ = true;
+    current_remote_status = true;
   #endif
 
   #ifdef NEVER_BE_DANCING
-    remote_is_dancing_ = false;
+    current_remote_status = false;
   #endif
-  
-  if (remote_is_dancing_ || dance_extended == false) {
-    dance_extended = false;
-    i_am_dancing = true;
-  } else {
-    i_am_dancing = false;
+
+  current_limits->update(motor->current_direction());
+
+  if (remote_is_dancing != current_remote_status) {
+    if (current_remote_status) {
+      Serial.print(F("Dancer::update "));
+      Serial.print(dancer_name);
+      Serial.println(F(" remote dancer STARTED dancing"));
+      dance_just_started=true;            // signal the dance() routine we had a status change
+    } else {
+      dance_just_ended=true;              // signal the dance() routine we had a status change
+      Serial.print(F("Dancer::update "));
+      Serial.print(dancer_name);
+      Serial.println(F(" remote dancer STOPPED dancing"));
+    }
   }
-  
+
+  remote_is_dancing = current_remote_status;
+  current_millis = millis();
 }
 
 void Dancer::dance() {
   
-  if (i_am_dancing && _motor->is_disabled()) {
-    _motor->enable();
-    _motor->start();
+  boolean reverse_motor=false;  // assume we are going the correct way before we check
+
+  if (current_limits->sum_limits() > 1) {
+    if (!motor->is_stopped()) {
+      motor->stop();    
+    }
+    if (do_print) {
+          Serial.print(F("ERROR: Dancer::dance() dancer_name="));
+          Serial.print(dancer_name);
+          Serial.print(F(" too_many_limits_active stopping motors"));
+    }
+    return;
   }
-  _motor->run();
+
+  //////////////////////////////////////////////
+  // remote is dancing, first we delay then we really start to dance
+  //////////////////////////////////////////////
+  if (remote_is_dancing == true) {
+    
+    // remote started dancing, but we are home, so we need clear
+    // the wind up starts: delay dance if necessary
+    if (dance_just_started) {
+      dance_just_started=false;
+      is_home=false;
+      is_extended=false;
+      start_delay_complete=false;
+      delay_start_millis = current_millis;
+      Serial.print(F("Dancer::dance() dancer_name="));
+      Serial.print(dancer_name);
+      Serial.println(F(" was was HOME, starting a whole new dance now"));
+      Serial.print(F("Dancer::dance() dancer_name="));
+      Serial.print(dancer_name);
+      Serial.print(F(" was was START_DELAY BEGINNING delay_dance_seconds="));
+      Serial.println(delay_dance_millis/1000);
+    }
+
+    // check if the extend delay has passed
+    if (current_millis - delay_start_millis >= delay_dance_millis) {
+      if (!start_delay_complete) {
+        start_delay_complete = true;
+        Serial.print(F("Dancer::dance() dancer_name="));
+        Serial.print(dancer_name);
+        Serial.println(F(" START_DELAY COMPLETE!"));
+      }
+    }
+  }
+
+  //////////////////////////////////////////////
+  // wind it down, 
+  // first get to center, then extend dance
+  //////////////////////////////////////////////
+  if (remote_is_dancing == false) {
+
+    start_delay_complete = true;  // we don't delay when remote stops dancing
+
+    if (dance_just_ended) {
+      dance_just_ended = false;
+      is_centered = false;
+      is_extended = false; 
+      Serial.print(F("Dancer::dance() dancer_name="));
+      Serial.print(dancer_name); 
+      Serial.println(F(" CENTERING!")); 
+    }
+    
+    // are we centered yet? 
+    if (!is_centered) {
+      // have we made to centered postion?
+      if (current_limits->is_centered()) {
+        is_centered=true;
+        extend_start_millis = current_millis; 
+        Serial.print(F("Dancer::dance "));
+        Serial.print(dancer_name);
+        Serial.println(" is now centered!");     
+        if (center_is != 'c') { // setup the motor for the extend operation
+          reverse_motor= true;      
+        }
+        Serial.print(F("Dancer::dance() dancer_name="));
+        Serial.print(dancer_name); 
+        Serial.println(F(" CENTERING COMPLETE!")); 
+        Serial.print(F("Dancer::dance() dancer_name="));
+        Serial.print(dancer_name); 
+        Serial.print(F(" EXTENDING SECONDS=")); 
+        Serial.println(extend_dance_millis/1000);
+      }
+    }
+    
+    // still not centered, are we moving in the correct direction?
+    if (!is_centered) {
+      // are we going the wrong direction?
+      if (center_is == 'c' && center_passed) {
+        reverse_motor=true;
+      } else if (motor->current_direction() != center_is) { // center is l/r and we are not going in the direction, then go back
+        reverse_motor=true;
+      }
+    }
+
+    // we are centered, now check if we are extended
+    if (is_centered && !is_extended) {
+      if (current_millis - extend_start_millis >= extend_dance_millis) {
+        is_extended = true;
+        is_home = true;   // this stops the motor
+        Serial.print(F("Dacner::dance ")); 
+        Serial.print(dancer_name);
+        Serial.println(F(" EXTEND COMPLETE, IS_HOME=true"));
+      }
+    }
+  }
+    
+  //////////////////////////////////////////////
+  // run the motor unless have successfull come home
+  //////////////////////////////////////////////
+  if (is_home) {
+    if (!motor->is_stopped()) {
+      Serial.println("Dancer::dance is_home=true, stopping motor...");
+      motor->stop();
+    }
+  } else { // not home so keep running the motor
+    if (start_delay_complete) {
+      
+      if (current_limits->is_centered()) {
+        center_passed = true;
+      }
+
+      // if revsrse called for from above do it.
+      if (reverse_motor == true) {
+        center_passed = !center_passed; // reversing, if we have not passsed center, now we have else it is still ahead
+        if (motor->current_direction() == 'l') {
+          motor->go_right();
+        } else {
+          motor->go_left();
+        }
+      }
+      
+      if (current_limits->is_max_left()) {
+        motor->go_right();
+        center_passed = false;
+      }
+      
+      if(current_limits->is_max_right()) {
+        motor->go_left();
+        center_passed = false;
+      }
+  
+      if (motor->is_stopped()) {
+        motor->start();
+      }
+
+      motor->run();   // this takes care of things like variable speeds etc
+            
+    } // start_delay == true
+  }  // is_home == false
 }
 
-void Dancer::stop_dancing() {
-  if (_motor->is_disabled() == false) {
-    Serial.println("Stopping dance");
-    _motor->disable();
+void Dancer::status() {
+  if (! do_print) {
+    return;
   }
-}
-
-void Dancer::extend_dance() {
-  int i = extend_seconds;
-  
-  Serial.println(F("Extending dance, if necessary..."));
-
-  while ( i > 0 ) {
-    Serial.print(F("Extended dance seconds remaining: "));
-    Serial.println(i);
-    do_print = true;
-    print_status();
-    dance();
-    delay(1000);
-    i = i - 1;
-  }
-  
-  dance_extended = true;
-  start_delay_started = false; // when we are fully reset we need a new delay
-  print_status();
-  
-  Serial.println(F("Extending dance, complete..."));
-
-}
-
-void Dancer::print() {
-  Serial.print(F("Dancer: i_am_dancing="));
-  Serial.print(bool_tostr(i_am_dancing));
+  Serial.println("----- Dancer status() Group Start ---");
+  motor->status();
+  current_limits->status();
+  Serial.print(F("Dancer: name="));
+  Serial.print(dancer_name);
   Serial.print(F(", remote_is_dancing="));
-  Serial.print(bool_tostr(remote_is_dancing_));
-  Serial.print(F(", extend_seconds="));
-  Serial.print(extend_seconds);
-  Serial.print(F(", dance_extended="));
-  Serial.println(bool_tostr(dance_extended));
+  Serial.print(bool_tostr(remote_is_dancing));
+  Serial.print(F(", is_home="));
+  Serial.print(bool_tostr(is_home));
+  Serial.print(F(", is_centered="));
+  Serial.print(bool_tostr(is_centered));
+  Serial.print(F(", center_passed="));
+  Serial.print(bool_tostr(center_passed)); 
+  Serial.print(F(", is_extended="));
+  Serial.println(bool_tostr(is_extended));
   
-  Serial.print(F("        start_delay_started="));
-  Serial.print(bool_tostr(start_delay_started));
+  Serial.print(F("        current_millis="));
+  Serial.print(current_millis);  
   Serial.print(F(", start_delay_complete="));
-  Serial.print(bool_tostr(start_delay_complete));
-  Serial.print(F(", MOTOR_START_DELAY="));
-  Serial.print(MOTOR_START_DELAY);
-  Serial.print(F(", target_ms="));
-  Serial.println(MOTOR_START_DELAY * 1000);
-  Serial.print(F("        start_delay_begin_ms="));
-  Serial.print(start_delay_begin_ms);
-  Serial.print(F(", start_delay_current_ms="));
-  Serial.print(start_delay_current_ms);
-  Serial.print(F(", start_delay_ms_diff="));
-  Serial.print(start_delay_ms_diff);
-  Serial.print(F(", start_delay_seconds_diff="));
-  Serial.println(start_delay_seconds_diff);
+  Serial.print(bool_tostr(start_delay_complete));  
+  Serial.print(F(", delay_dance_millis="));
+  Serial.print(delay_dance_millis); 
+  Serial.print(F(", delay_start_millis-current_millis="));
+  Serial.println(delay_start_millis-current_millis);
+  
+  Serial.print(F("        is_extended="));
+  Serial.print(bool_tostr(is_extended)); 
+  Serial.print(F(", extend_start_millis="));
+  Serial.print(extend_start_millis);  
+  Serial.print(F(", extend_start_millis-current_millis="));
+  Serial.print(extend_start_millis-current_millis);
+  Serial.print(F(", dance_just_started="));
+  Serial.print(bool_tostr(dance_just_started));
+  Serial.print(F(", dance_just_ended="));
+  Serial.println(bool_tostr(dance_just_ended));
 
 }
 
 ////////////////////// end Dancer //////////////////////////
 
-Limits *current_limits;
+// Suggested pin layout, but some older scupltures will have different layouts, check the older code for the exact layout in github
+#define M1_LEFT_LIMIT_PIN 2      // input from left limit switch, expects a NO (normally open) switch
+#define M1_RIGHT_LIMIT_PIN 3     // input from right limit switch, expects a NO (normally open) switch
+#define M1_CENTER_LIMIT_PIN A0   // for digital or analog devices
+#define M1_ACS712_LIMIT_PIN A1   // using with ACS271
 
-GenericMotor * my_motor;
+// Sparkfun TB6612FNG (class HBridgeMotor) Motor1
+#define M1_HGRIDGE_LEFT_PIN 4    // output to move left pin on h-bridge shield
+#define M1_HGRIDGE_RIGHT_PIN 5   // output to move right pin on h-bridge shield
+#define M1_HGRIDGE_PWM_PIN 6     // output speed/on-off must be a PWM pin
 
-Dancer *my_dancer;
+// pins to control the motor IBT_2  (class IBT2Motor) Motor1
+#define M1_IBT2_PWMR  5   // PWM pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
+#define M1_IBT2_PWML  6   // PWM pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
+
+
+/////// MOTOR 2 PINS FOR
+#define M2_LEFT_LIMIT_PIN 7      // input from left limit switch, expects a NO (normally open) switch
+#define M2_RIGHT_LIMIT_PIN 8     // input from right limit switch, expects a NO (normally open) switch
+#define M2_CENTER_LIMIT_PIN A2   // for digital or analog devices
+#define M2_ACS712_LIMIT_PIN A3   // using with ACS271
+
+// Sparkfun TB6612FNG (class HBridgeMotor) Motor1
+#define M2_HGRIDGE_LEFT_PIN 9    // output to move left pin on h-bridge shield
+#define M2_HGRIDGE_RIGHT_PIN 10   // output to move right pin on h-bridge shield
+#define M2_HGRIDGE_PWM_PIN 11     // output speed/on-off must be a PWM pin
+
+// pins to control the motor IBT_2  (class IBT2Motor) Motor1
+#define M2_IBT2_PWMR  9   // PWM pin from 0 - 1024 when > 0 moves montor to Right (left must be 0)
+#define M2_IBT2_PWML  10   // PWM pin from 0 - 2014 when > 0 moves motor to Left (right must be 0)
+
+#define DANCER_INPUT_PIN A4     // pin to read dancer input
+#define HBRIDGE_MOTOR_STDBY 12  // enable the motor card HBRIDGE only use for both MOTOR1 and MOTOR2
+
+GenericMotor *my_motor1;
+Dancer *my_dancer1;
+GenericLimitSwitch *m1_left_limit_switch;
+GenericLimitSwitch *m1_right_limit_switch;
+GenericLimitSwitch *m1_center_limit_switch;
+
+GenericMotor *my_motor2;
+Dancer *my_dancer2;
+GenericLimitSwitch *m2_left_limit_switch;
+GenericLimitSwitch *m2_right_limit_switch;
+GenericLimitSwitch *m2_center_limit_switch;
+
+#define NUM_DANCERS 1
+// Dancer* dancers[NUM_DANCERS] = {my_dancer1, my_dancer2};
+Dancer* dancers[NUM_DANCERS];
 
 void setup() {
 
   Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
-  Serial.println("Start setup");
+  Serial.println(F("\nStart setup"));
+  Serial.println(F("PingPongMotorCentered.ino"));
   
-  pinMode(LEFT_LIMIT_PIN, INPUT_PULLUP);
-  pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
-  pinMode(D_CENTER_PIN, INPUT_PULLUP);
-  
+  pinMode(HBRIDGE_MOTOR_STDBY, OUTPUT);
+  digitalWrite(HBRIDGE_MOTOR_STDBY, LOW);
+
   pinMode(DANCER_INPUT_PIN, INPUT);
+
+  // SITX2 piece
+  my_motor1 = new HBridgeMotor(    
+    String("L_chair"),            // p_motor_name               name of this motor (for status messages)
+    255,                   // m_speed_left               max speed when going left
+    255,                   // m_speed_right              max_speed when going right
+    M1_HGRIDGE_PWM_PIN,    // p_speed                    pwm speed pin
+    HBRIDGE_MOTOR_STDBY,   // p_standby                  stand by pin (high=enabled, low=disabled)
+    M1_HGRIDGE_LEFT_PIN,   // p_left                     pin for left direction 
+    M1_HGRIDGE_RIGHT_PIN,  // p_right                    pin for right direction
+    100,                   // p_motor_start_speed        start() uses this as the first pmw speed when starting, must be *LESS* then m_speed_left, m_speed_right
+    25,                     // p_speed_increment          increment the pmw by this ammount when starting the motor
+    50,                    // p_speed_up_increment_delay   delay to add between increments to make speedup smoother
+    50,                     // p_slow_down_increment_delay  delay to add between increments to make slowdown smoother
+    500                    // p_reverse_delay_millis     wait this many milliseconds when reversing direction 
+    );
+
+  // SITX2 piece
+  m1_left_limit_switch = new DigitalLimitSwitch(
+    String("L_chair_left_limit"), // p_digital_pin            digital pin that limit switch is attached to (can be analog but we read it with digitalRead), will be set to INPUT_PULLUP, tie to ground
+    M1_LEFT_LIMIT_PIN,    // p_limit_name             name for this limit switch
+    'l',  // p_limit_position         l,r,c where are we physically located (NOTE a center switch can be l or r to signal that center is same as l)
+    String("NC")  // p_normally_open_closed   is either String "NC" normally closed or "NO" normally open, most are NC 
+    );
+  m1_right_limit_switch = new DigitalLimitSwitch(
+    String("L_chair_right_limit"), // p_digital_pin            digital pin that limit switch is attached to (can be analog but we read it with digitalRead), will be set to INPUT_PULLUP, tie to ground
+    M1_RIGHT_LIMIT_PIN,    // p_limit_name             name for this limit switch
+    'r',  // p_limit_position         l,r,c where are we physically located (NOTE a center switch can be l or r to signal that center is same as l)
+    String("NC")  // p_normally_open_closed   is either String "NC" normally closed or "NO" normally open, most are NC 
+    ); 
+  m1_center_limit_switch = m1_left_limit_switch; // the left limit is the center/home
+
   
-  Serial.print("MOTOR_CLASS=");
-  Serial.println(MOTOR_CLASS);
-  if (MOTOR_CLASS == "HBridgeMotor") {
-    my_motor = new HBridgeMotor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_PMW_PIN, MOTOR_STDBY_PIN, MOTOR_LEFT_PIN,  MOTOR_RIGHT_PIN);
-  } else if (MOTOR_CLASS == "IBT2Motor") {
-    my_motor = new IBT2Motor(MOTOR_SPEED_LEFT, MOTOR_SPEED_RIGHT, MOTOR_IBT2_PMWR, MOTOR_IBT2_PMWL);
-  } else {
-    Serial.println("ERROR: unknown motor class");
-  }
+  // SITX2 piece
+  my_dancer1 = new Dancer(
+    String("L_chair"),       // p_dancer_name  name of this dancer, for status messages
+    DANCER_INPUT_PIN,       // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
+    my_motor1,              // p_motor        pointer to our motor structure
+    m1_left_limit_switch,   // p_left_limit   left limit switch
+    m1_right_limit_switch,  // p_right_limit  right limit switch
+    m1_center_limit_switch, // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
+    0,                      // p_dancer_delay_seconds   Number of seconds to delay motor start after remote starts dancing
+    0                       // p_dancer_extend_seconds  Number of seconds to run motor after center resting position has been reached
+    );
 
-  my_dancer = new Dancer(DANCER_INPUT_PIN, my_motor);  
+    dancers[0] = my_dancer1;
 
-  current_limits = new Limits(LEFT_LIMIT_PIN, RIGHT_LIMIT_PIN, D_CENTER_PIN, A_CENTER_PIN, my_motor, my_dancer);
+    do_print = true;      // make sure the calls to status prints 
+    my_dancer1->update();
+    my_dancer1->status();
+    
+    Serial.println(F("End Setup"));
 
-  start_delay_complete = false;
-  start_delay_started = false;
-  Serial.print("Motor Start Delay is: ");
-  Serial.println(MOTOR_START_DELAY);
-
-  Serial.print("Center is=");
-  Serial.print(CENTER_IS);
-  Serial.print(" Center_IS_ANALOG=");
-  Serial.println(CENTER_IS_ANALOG);
-  Serial.println("End setup");
-}
-
-
-// dump the status of the limit pins
-void print_status() {
-  
-  if (! do_print) {
-    return;
-  }
-  my_dancer->print();
-  current_limits->print();
-  my_motor->print();
-  Serial.println(' ');
 }
 
 // only print every so often, becaus it is really to much every loop...
@@ -1176,110 +1624,15 @@ void slow_down_prints() {
 
 // watch for limits and request to enable/disable the motor
 void loop() {
-    
-  slow_down_prints();
-  current_limits->update();
-  my_dancer->update();
-  print_status();
-
-  // always allow the motor to run when the remote has stopped requesting a dance (we may need to get back home etc...)
-  // start_delay_started only gets reset back to false after we complete a center + extend event
-  // montor running only checks that start_delay_complete is true;
-  if (!my_dancer->remote_is_dancing()) { start_delay_complete = true; }
-
-  // remote new request, reset the time to 0 and delay complete to false
-  if (my_dancer->remote_is_dancing()  && !start_delay_started ) {
-    start_delay_begin_ms = millis();
-    start_delay_started = true;
-    start_delay_complete = false;
-  }
-
-  // we are in delay mode but not yet completed the delay, is it over yet?
-  if (start_delay_started && !start_delay_complete) {
-    // grab the current time
-    start_delay_current_ms = millis(); 
-    // check for wrap around, extreemly rare
-    if (start_delay_current_ms < start_delay_begin_ms) { start_delay_begin_ms = start_delay_current_ms; } 
-    // we have passed our start delay wait, release the hounds
-    start_delay_ms_diff = start_delay_current_ms - start_delay_begin_ms;
-    start_delay_seconds_diff = (start_delay_ms_diff / 1000);
-    if (start_delay_ms_diff >=  (MOTOR_START_DELAY * 1000)) { start_delay_complete = true; }
-  }
-
- 
-  // 0 switches actives = 3, 1 switches active = 2, 2 switches active 1, 3 switches active = 0 
-  if (current_limits->sumLimits() > 1) {
-    // something is very wrong stop the motor....
-    if (do_print) {
-      Serial.println("ERROR: 2 or more limts are active at the same time, motor is stopped...");
-    }    
-    my_dancer->stop_dancing();
-    return;
-  } 
-
-  // if remote is stopped and we are not at start, go back to start
-  if (my_dancer->remote_is_dancing() == false && my_dancer->dance_extended == false) {
-    if (do_print) {
-      Serial.println("Not dancing, going home...");
-    }
-    // if we have passed the center on this run, then home is behind us
-    if (CENTER_IS == 'l') {
-      if (my_motor->current_direction() == 'r') {
-        my_motor->go_left();
-      }
-    } else if (CENTER_IS == 'r') {
-      if (my_motor->current_direction() == 'l') {
-        my_motor->go_right();
-      }
-    } else {
-      if (current_limits->center_passed) {
-        if (my_motor->current_direction() == 'l') {
-          my_motor->go_right();
-        } else {
-          my_motor->go_left();
-        }
-      }
-    }
-  }
-
-  // if remote is stopped and we are back at start position and not extended... extend!
-  if (my_dancer->remote_is_dancing() == false && current_limits->isCentered() && my_dancer->dance_extended == false) {
-    if (do_print) { 
-      Serial.println("restart complete, stopping...");
-    }
-    if (my_motor->current_direction() == 'l') {
-      Serial.print("Moving Left delaying: ");
-      Serial.println(CENTER_MOVING_LEFT_DELAY);
-      delay(CENTER_MOVING_LEFT_DELAY);
-    } else { 
-      Serial.print("Moving Right delaying: ");
-      Serial.println(CENTER_MOVING_RIGHT_DELAY);
-      delay(CENTER_MOVING_RIGHT_DELAY);
-    }
-    if (current_limits->isMaxLeft()) {
-      my_motor->go_right();
-    } else if (current_limits->isMaxRight()) {
-      my_motor->go_left();
-    }
-    my_dancer->extend_dance();  // will only move if DANCER_EXTEND_SECONDS > 0
-    my_dancer->stop_dancing();
-    my_dancer->update();
-    current_limits->update();
-    print_status();
-    Serial.println("Dancer is centered!");
-  }  
   
-  if (my_dancer->i_am_dancing) {
-    if (current_limits->isMaxLeft()) {
-      my_motor->go_right();
-    } else if (current_limits->isMaxRight()) {
-      my_motor->go_left();
-    }
-    
-    my_dancer->dance();
-  } else {
-    my_dancer->stop_dancing();
+  slow_down_prints();
+  for (int i = 0; i < NUM_DANCERS; i++) {
+      dancers[i]->update();
+      dancers[i]->status();
   }
-
+  
+  for (int i = 0; i < NUM_DANCERS; i++) {
+      dancers[i]->dance();
+    }
 }
 

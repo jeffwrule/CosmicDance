@@ -1,4 +1,3 @@
-
 using namespace std;
 
 // PingPong montor that returns to a center switch when switched off
@@ -57,16 +56,17 @@ class GenericMotor {
     virtual void stop() =0;
     virtual void start() =0;
     virtual void run() =0;
+    virtual void reverse() =0;
     virtual void go_left() =0;
     virtual void go_right() =0;
     virtual boolean is_stopped() =0;
     virtual boolean is_disabled() =0;
     virtual char current_direction() =0;
     virtual void enable() =0;
-    virtual void disable() =0;
     virtual void status() =0;
     virtual String get_motor_name() =0;
-    virtual void new_speed(unsigned int new_target_speed) =0;
+    virtual void set_target_speed(unsigned int new_target_speed) =0;
+    virtual unsigned int get_target_speed();
 };
 
 
@@ -166,7 +166,6 @@ void DigitalLimitSwitch::status() {
 class ACS712LimitSwitch: public GenericLimitSwitch {
   public:
   
-    
     void update()=0;
     void status()=0;
     String get_limit_type();
@@ -416,16 +415,17 @@ class HBridgeMotor: public GenericMotor {
     void stop();
     void start();
     void run();
+    void reverse();
     void go_left();
     void go_right();
     boolean is_stopped();
     boolean is_disabled();
     char current_direction();
     void enable();
-    void disable();
     void status();
     String get_motor_name();
-    void new_speed(unsigned int new_target_speed);
+    void set_target_speed(unsigned int new_target_speed);
+    unsigned int get_target_speed();
 
     // ARCHIVED:
     // p_stop_delay               delay this many milliseconds every_nth itteration (starting and stopping), smooths out start and stop
@@ -535,21 +535,25 @@ class HBridgeMotor: public GenericMotor {
 String HBridgeMotor::get_motor_name() {return motor_name; }
 
 // run the motor by just chaning the speed
-void HBridgeMotor::new_speed(unsigned int new_target_speed)
+void HBridgeMotor::set_target_speed(unsigned int new_target_speed)
 {
-  Serial.print(F("HBridgeMotor::new_speed motor_name="));
+  Serial.print(F("HBridgeMotor::set_target_speed motor_name="));
   Serial.print(motor_name);
   Serial.print(F(", Speed="));
   Serial.print(speed);
-  Serial.print(F(", new_speed="));
+  Serial.print(F(", old_target_speed="));
+  Serial.print(target_speed);
+  Serial.print(F(", new_target_speed="));
   Serial.println(new_target_speed);
 
-  speed = new_target_speed;
+  target_speed = new_target_speed;
 
   // make sure our direction pins are both enabled
   digitalWrite(pin_left, move_left);
   digitalWrite(pin_right, move_right);
 }
+
+unsigned int HBridgeMotor::get_target_speed() { return target_speed; }
 
 // bring the motor down in a controlled manor
 void HBridgeMotor::stop() {
@@ -627,41 +631,57 @@ void HBridgeMotor::run() {
   }
 }
 
+void HBridgeMotor::reverse() {
+  if (current_direction() == 'l') {
+    go_right(); 
+  } else {
+    go_left();
+  }
+}
+
 // continues left if already going left, else stops and restart left
 void HBridgeMotor::go_left() {
   int orig_speed = speed;
+  int orig_target = target_speed;
   if (current_direction() != 'l') {
     Serial.print(F("HBridgeMotor::go_left: motor_name="));
     Serial.print(motor_name);
+    Serial.print(F(", current_speed="));
+    Serial.print(speed);
+    Serial.print(F(", current_target_speed="));
+    Serial.print(target_speed);
     Serial.println(F(" reversing direction"));
-    
-    stop();
+
+    if (speed > 0 ) { stop(); }
     move_left = 1;
     move_right = 0;
     max_speed = max_speed_left;
-    if (orig_speed != 0) {
-      delay(reverse_delay_millis);
-      new_speed(target_speed);
-    }
+    if (orig_speed != 0) { delay(reverse_delay_millis); }
+    set_target_speed(orig_target);
   }
+  Serial.println(F("HBridgeMotor::go_left: end"));
 }
 
 // contines right if already going right, else stops and restarts rights
 void HBridgeMotor::go_right() {
   int orig_speed = speed;
+  int orig_target = target_speed;
   if (current_direction() != 'r') {
     Serial.print(F("HBridgeMotor::go_right: motor_name="));
     Serial.print(motor_name);
+    Serial.print(F(", current_speed="));
+    Serial.print(speed);
+    Serial.print(F(", current_target_speed="));
+    Serial.print(target_speed);
     Serial.println(F(" reversing direction"));
-    stop();
+    if (speed > 0 ) { stop();}
     move_left = 0;
     move_right = 1;
     max_speed = max_speed_right;
-    if (orig_speed != 0) {
-      delay(reverse_delay_millis);
-      new_speed(target_speed);
-    }  
+    if (orig_speed != 0) { delay(reverse_delay_millis); }
+    set_target_speed(orig_target); 
   }
+  Serial.println(F("HBridgeMotor::go_left: end"));
 }
 
 // the current direction of the motor 
@@ -678,15 +698,6 @@ void HBridgeMotor::enable() {
   Serial.println(motor_name);
   digitalWrite(pin_standby, 1);
   motor_is_disabled = false;
-}
-
-void HBridgeMotor::disable() {
-//  if (motor_is_disabled == false) {
-//    Serial.println("disabeling motor");
-//    stop();
-//    digitalWrite(pin_standby, 0);
-//    motor_is_disabled = true;
-//  }
 }
 
 boolean HBridgeMotor::is_disabled() {
@@ -1155,6 +1166,185 @@ void IBT2Motor::status() {
 
 ////////////////////// end IBT2Motor //////////////////////////
 
+///////////////////////////////////////////////////////////
+//
+// Class to create a dance move
+//
+/////////////////////////////////////////////////////////// 
+
+class DanceMove {
+
+  public: 
+    void update(unsigned long current_millis);    // update the current dance move and status  
+    void reset();                                 // clear all the values back to starting value 
+    void status();                                // print the current DanceMove status
+
+    // NOTE: You must periodically call dance() to update these booleans
+    boolean is_new;                                           // is ready to execute  
+    boolean is_delayed;                                       // are we in the middle of the daly     
+    boolean is_moving;                                        // delay passed and we are now moving
+    boolean is_complete;                                      // start delay and move duration have completed
+    
+    char get_move_direction();                                // what direction is this move
+    int get_move_speed();                                     // what speed is this move
+
+    unsigned long get_delay_amount_millis();                  //  accumulated delay time 
+    unsigned long get_move_amount_millis();                   //  accumulated move time 
+    
+    unsigned long get_delay_duration_millis();                // dealy 
+    unsigned long get_move_duration_millis();                 // how long are we supposed to move
+
+    unsigned long get_current_delay_millis();                 // how long have we been delaying
+    unsigned long geet_current_move_duration_millis();        // how long have we been moving
+
+
+    // move_name              internal name for debug messages
+    // move_delay_seconds     number of seconds to delay before we start moving
+    // move_direction         l,r (l is typically up)
+    // move_speed             speed to run motor 0-255
+    // move_duration_seconds  how long to run the motor
+    DanceMove(
+        String  move_name,
+        int     delay_amount_seconds,
+        char    move_direction,
+        int     move_speed,
+        int     move_amount_seconds) :
+      move_name(move_name),
+      delay_amount_millis(delay_amount_seconds*1000L),
+      move_direction(move_direction),
+      move_speed(move_speed),
+      move_amount_millis(move_amount_seconds*1000L) {
+        reset(); 
+
+        Serial.print(F("CONSTRUCTOR::DanceMove move_name: "));
+        Serial.print(move_name);
+        Serial.print(F(", delay_amount_millis: "));
+        Serial.print(delay_amount_millis);
+        Serial.print(F(", move_direction: "));
+        Serial.print(move_direction);
+        Serial.print(F(", move_speed: "));
+        Serial.print(move_speed);
+        Serial.print(F(", move_amount_millis: "));
+        Serial.println(move_amount_millis);
+      }
+
+  private:
+
+    String  move_name;                      // the name of this move, for status messages
+
+    boolean delay_is_complete();            // has delay duration passed?
+    boolean move_is_complete();             // has move seconds passed?
+
+    char move_direction;                    // direction to move the motor l,r (typically l=dow, r=up)
+    int  move_speed;                        // speed to move at 0-255 (pwm speed)
+
+    unsigned long delay_amount_millis;      // total time to delay
+    unsigned long move_amount_millis;       // total time to move (in this direction)
+    
+    unsigned long delay_duration_millis;    // accumulated delay time (only computed for actual delay).
+    unsigned long move_duration_millis;     // accumulated move time (only computed while moving)
+    
+    unsigned long delay_start_millis;       // when did the dealy start
+    unsigned long move_start_millis;        // when did the move start
+
+};
+
+// dump a status line for this move
+void DanceMove::status() {
+  Serial.print(F(" DanceMove::status move_name: "));
+  Serial.print(move_name);
+  Serial.print(F("  is_new: "));
+  Serial.print(bool_tostr(is_new));
+  Serial.print(F(", is_delayed: "));
+  Serial.print(bool_tostr(is_delayed));
+  Serial.print(F(", is_moving: "));
+  Serial.print(bool_tostr(is_moving));
+  Serial.print(F(", is_complete: "));
+  Serial.print(bool_tostr(is_complete));
+  Serial.print(F(", move_direction: "));
+  Serial.print(move_direction);
+  Serial.print(F(", move_speed: "));
+  Serial.println(move_speed);
+  Serial.print(F("        delay_amount_millis: "));
+  Serial.print(delay_amount_millis);
+  Serial.print(F(", delay_start_millis: "));
+  Serial.print(delay_start_millis);
+  Serial.print(F(", delay_duration_millis: "));
+  Serial.print(delay_duration_millis);
+  Serial.print(F(", move_amount_millis: "));
+  Serial.print(move_amount_millis);
+  Serial.print(F(", move_start_millis: "));
+  Serial.print(move_start_millis);
+  Serial.print(F(", move_duration_millis: "));
+  Serial.println(move_duration_millis);
+}
+
+char DanceMove::get_move_direction() { return move_direction; }
+int DanceMove::get_move_speed() { return move_speed; }
+unsigned long DanceMove::get_delay_amount_millis() { return delay_amount_millis; }
+unsigned long DanceMove::get_move_amount_millis() { return move_amount_millis; }
+unsigned long DanceMove::get_delay_duration_millis() { return delay_duration_millis; }
+unsigned long DanceMove::get_move_duration_millis() { return move_duration_millis; }
+
+boolean DanceMove::delay_is_complete() {
+  return delay_duration_millis >= delay_amount_millis;
+}
+
+boolean DanceMove::move_is_complete() {
+  return move_duration_millis >= move_amount_millis;
+}
+
+void DanceMove::update(unsigned long current_millis) {
+
+  // reset happened, but have not started delay 
+  if (is_new) {
+    is_new = false;
+    is_delayed = false;
+    delay_start_millis = current_millis;
+    Serial.print(F("DanceMove::dance move_name="));
+    Serial.print(move_name);
+    Serial.println(F(" STARTED, now delaying..."));
+  }
+
+  // track the total delay time
+  if (is_delayed == false) {
+    delay_duration_millis = current_millis - delay_start_millis;
+    if (delay_is_complete()) {
+      is_delayed = true;
+      is_moving = true;
+      move_start_millis = current_millis;
+      Serial.print(F("DanceMove::dance  move_name="));
+      Serial.print(move_name);
+      Serial.println(F(" DELAY COMPLETE, now moving..."));
+    }
+  }
+
+  // track total moving time as long as wel are moving
+  if (is_moving) {
+    move_duration_millis = current_millis - move_start_millis;
+    if (move_is_complete()) {
+      is_moving = false;
+      is_complete = true;
+      Serial.print(F("DanceMove::dance move_name="));
+      Serial.print(move_name);
+      Serial.println(F(" COMPLETE"));
+    }
+  }
+}
+
+void DanceMove::reset() {
+    is_new=true;            // is ready to execute
+    is_delayed=false;       // is the delay complete
+    is_moving=false;        // is in flight 
+    is_complete=false;      // move is fully complete
+
+    delay_start_millis = 0;
+    move_start_millis=0;
+
+    delay_duration_millis = 0;
+    move_duration_millis=0;
+}
+
 
 ///////////////////////////////////////////////////////////
 //
@@ -1165,42 +1355,58 @@ class Dancer {
 
   public:
 
-    void update();                      // update the pin state
-    void dance();                       // check the limits and motor setting and decide how to direct the motor
-    void status();                      // dump the Dancer status
-
+    void update();      // update the pin state
+    void dance();       // check the limits and motor setting and decide how to direct the motor
+    void status();      // dump the Dancer status
+    void next_move();   // queue up the next move
+    void move_dancer(); // if we are running, do the limit switch checks etc
+    
     // p_dancer_name  name of this dancer, for status messages
     // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
     // p_motor        pointer to our motor structure
     // p_left_limit   left limit switch
     // p_right_limit  right limit switch
     // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
-    // p_dancer_delay_seconds   Number of seconds to delay motor start after remote starts dancing
-    // p_dancer_extend_seconds  Number of seconds to run motor after center resting position has been reached
+    // p_my_dance_moves       list of dance moves to execute
+    // p_num_dance_moves      number of dance moves
+    // p_delay_dance_seconds  one time delay at beginning of dance 
+    // p_extend_dance_seconds number of seconds to extend the dance when remote is done and home
+    // p_extend_speed         speed to run the extend opearation at
+    // p_center_speed         speed to run the motor when centering
     Dancer( String p_dancer_name,
             int p_dancer_pin, 
             GenericMotor *p_motor, 
             GenericLimitSwitch *p_left_limit,
             GenericLimitSwitch *p_right_limit,
             GenericLimitSwitch *p_center_limit,
-            int p_dancer_delay_seconds,
-            int p_dancer_extend_seconds) : 
+            DanceMove **p_my_dance_moves,
+            unsigned short p_num_dance_moves,
+            unsigned long p_delay_dance_seconds,
+            unsigned long p_extend_dance_seconds,
+            unsigned int  p_extend_speed,
+            unsigned int  p_center_speed) :
       dancer_name(p_dancer_name),
       dancer_pin(p_dancer_pin), 
-      motor(p_motor)
+      motor(p_motor),
+      num_dance_moves(p_num_dance_moves),
+      dance_move_index(0),
+      my_dance_moves(p_my_dance_moves),
+      delay_dance_millis(p_delay_dance_seconds * 1000L),
+      extend_dance_millis(p_extend_dance_seconds * 1000L),
+      extend_speed(p_extend_speed),
+      center_speed(p_center_speed)
       { 
         pinMode(dancer_pin, INPUT);
-
-        is_home = false;
-        is_centered = false;
-        remote_is_dancing = false;
-        center_passed = false;
         
-        delay_dance_millis = 1000L * p_dancer_delay_seconds;
-        start_delay_complete = false;
-        extend_dance_millis = 1000L * p_dancer_extend_seconds;
-        is_extended = false;
-
+        // make it look like the remote dance just ended, reset and extend on power
+        remote_is_dancing=false;       // is the remote asking for us to dance?
+        dance_just_ended=false;       // this lets it switch the value when it is done
+        is_complete=false;             // make sure it looks like we are not home
+        center_passed = false;
+                
+        current_move = my_dance_moves[dance_move_index];
+        current_move->reset();
+                
         current_limits = new Limits(
             String("L_chair_limits"), // p_limits_name        The name of this limits combo
             p_left_limit,             // p_left_limit         The left limit switch structure
@@ -1222,42 +1428,106 @@ class Dancer {
         Serial.print(p_right_limit->get_switch_name());
         Serial.print(F(", center_limit_name="));
         Serial.println(p_center_limit->get_switch_name());
-        Serial.print(F("        delay_dance_millis="));
-        Serial.print(delay_dance_millis);
+        Serial.print(F("        dance_delay_millis="));
+        Serial.print(current_move->get_delay_duration_millis()/1000);
+        Serial.print(F(", dance_move_millis="));
+        Serial.print(current_move->get_move_duration_millis()/1000);
+        Serial.print(F(", num_dance_moves"));
+        Serial.print(num_dance_moves);
         Serial.print(F(", extend_dance_millis="));
         Serial.print(extend_dance_millis);
+        Serial.print(F(", extend_speed="));
+        Serial.print(extend_speed);
+        Serial.print(F(", center_speed="));
+        Serial.print(center_speed);
         Serial.print(F(", center_is="));
-        Serial.println(center_is);       
+        Serial.println(center_is);     
 
-        update();       // lets set the pins for the first time
+        do_print=true;
+        update();       // lets read the pins and set status for the first time
+        remote_is_dancing = !remote_is_dancing;  // swap states to get a full reset
+        status();
+        Serial.println(F("CONSTRUCTOR::Dancer end"));
       }
       
 
   private:
-    String dancer_name;                 // dancer name
-    char home_position;                 // home is what position l,r,c (left, right, center)  
-    Limits *current_limits;             // left right center limits for this dancer
-    GenericMotor *motor;                // the motor attached to this dancer,  A dancer can only control one motor so we have two dancers
-    int     dancer_pin;                 // pin to check for remote dancer
-    boolean remote_is_dancing;          // is the remote asking for us to dance?
-    char    center_is;                  // what positoin is the center position l,r,c
-    boolean is_centered;                // have we reached the center switch after remote stopped dancing
-    boolean center_passed;              // have we passed the center
-    boolean is_home;                    // did we reach home while remote_is_dancing=false and extend our dance?
     long    current_millis;             // number of milliseconds at last update call
+
+    // initialization values
+    String dancer_name;                 // dancer name
+    int     dancer_pin;                 // pin to check for remote dancer
+    char    center_is;                  // what positoin is the center position l,r,c
+    char home_position;                 // home is what position l,r,c (left, right, center)  
+
+    // dancer states in this order
+    boolean remote_is_dancing;          // is the remote asking for us to dance?
     boolean dance_just_started;         // signals a new dance was started (remote_is_dancing switched to state on);
-    boolean dance_just_ended;            // a dance just completed (remote_is_dancing switched to state off)
-    
-    unsigned long delay_dance_millis;    // number of millis to delay after remote_is_dancing is set;
-    unsigned long delay_start_millis;    // time that the remote started dancing
-    boolean start_delay_complete;       // have enough milliseconds passed to complete the start delay
+    boolean dance_just_ended;           // a dance just completed (remote_is_dancing switched to state off)
+    boolean is_delaying;                // one time dance delay is complete
+    boolean is_delayed;
+    boolean is_dancing;                 // delay complete and we now executing dance moves
+    // the following states are only reached after we stop dancing
+    boolean is_centering;               // remote stopped dancing and we are looking for our center switch
+    boolean is_centered;                // we found our center
+    boolean is_extending;               // actively extending
+    boolean is_extended;                // have we completed the extend
+    boolean is_complete;                // this dance is totally and completely done
 
-    unsigned long extend_dance_millis;   // number of seconds to extend the dance remote stops dancing
-    unsigned long extend_start_millis;   // millisonds when we are finally home (extend beyond home position)
-    boolean is_extended;                // run a bit longer after we are home (to strech out fabric of instance)
+    // manage the limit switches
+    Limits *current_limits;             // left right center limits for this dancer
+    boolean center_passed;              // have we passed the center
 
+    // handle to our motor
+    GenericMotor *motor;                // the motor attached to this dancer,  A dancer can only control one motor to have  more motors requires more dancers 
+
+    // manage the dance delay values 
+    unsigned long delay_dance_millis;       // number of millis to delay after remote_is_dancing is set;
+    unsigned long delay_start_millis;       // time that the remote started dancing
+    unsigned long delay_dance_total_millis; // total number of millis we were actually delayed
+
+    // manage the center step
+    unsigned int center_speed;               // the speed to run the motor when centering 0-255
+
+    // manage the extend dance 
+    unsigned long extend_dance_millis;        // number of seconds to extend the dance remote stops dancing
+    unsigned long extend_start_millis;        // millisonds when we are finally home (extend beyond home position)
+    unsigned long extend_dance_total_millis;  // total number of millis we actually extended
+    unsigned int extend_speed;                // speed to run the final extend at
+
+    // manage the list of dance moves to execute
+    DanceMove **my_dance_moves;         // pointer to an array/list of dance moves 
+    unsigned short num_dance_moves=0;   // number of dance moves in the array
+    unsigned short dance_move_index;  // the current move in the list we are executing.
+    DanceMove *current_move;            // pointer in the the list of the current dance move
 };
 
+
+// start the next move in the dance move list
+void Dancer::next_move() {
+  // move on to the next move
+  dance_move_index++;
+  if (dance_move_index >= num_dance_moves) { dance_move_index = 0;}
+  current_move=my_dance_moves[dance_move_index];
+  current_move->reset();
+
+  // stop the motor between moves, the new move has a delay
+  if (current_move->get_delay_amount_millis() > 0) {
+    motor->stop();
+  }
+
+  // set the move direction
+  if (motor->current_direction() != current_move->get_move_direction()) {
+    if (current_move->get_move_direction() == 'l' ) {
+      motor->go_left();
+    }
+    if (current_move->get_move_direction() == 'r') {
+      motor->go_right();
+    }
+  }
+  // we don't want to move until we have passed the delay check
+  motor->set_target_speed(0);
+}
 
 void Dancer::update() {
 
@@ -1282,7 +1552,9 @@ void Dancer::update() {
       Serial.print(dancer_name);
       Serial.println(F(" remote dancer STARTED dancing"));
       dance_just_started=true;            // signal the dance() routine we had a status change
+      dance_just_ended=false;             // these can not both be true at the same time
     } else {
+      dance_just_started=false;           // this can not both be true at the same time
       dance_just_ended=true;              // signal the dance() routine we had a status change
       Serial.print(F("Dancer::update "));
       Serial.print(dancer_name);
@@ -1292,6 +1564,7 @@ void Dancer::update() {
 
   remote_is_dancing = current_remote_status;
   current_millis = millis();
+
 }
 
 void Dancer::dance() {
@@ -1305,150 +1578,204 @@ void Dancer::dance() {
     if (do_print) {
           Serial.print(F("ERROR: Dancer::dance() dancer_name="));
           Serial.print(dancer_name);
-          Serial.print(F(" too_many_limits_active stopping motors"));
+          Serial.println(F(" too_many_limits_active stopping motors"));
     }
     return;
   }
 
-  //////////////////////////////////////////////
-  // remote is dancing, first we delay then we really start to dance
-  //////////////////////////////////////////////
-  if (remote_is_dancing == true) {
-    
-    // remote started dancing, but we are home, so we need clear
-    // the wind up starts: delay dance if necessary
-    if (dance_just_started) {
-      dance_just_started=false;
-      is_home=false;
-      is_extended=false;
-      start_delay_complete=false;
-      delay_start_millis = current_millis;
-      Serial.print(F("Dancer::dance() dancer_name="));
-      Serial.print(dancer_name);
-      Serial.println(F(" was was HOME, starting a whole new dance now"));
-      Serial.print(F("Dancer::dance() dancer_name="));
-      Serial.print(dancer_name);
-      Serial.print(F(" was was START_DELAY BEGINNING delay_dance_seconds="));
-      Serial.println(delay_dance_millis/1000);
-    }
+  
+  // remote started dancing, but we are home, so we need clear
+  // the wind up starts: delay dance if necessary
+  if (dance_just_started) {
+    dance_move_index = num_dance_moves; // forces next_move() in the next command to reset to beginning of dance move list
+    next_move();
+    dance_just_started=false;
+    is_delaying=true;                 // one time dance delay is is progress
+    is_delayed=false;                 // we have not completed the extend
+    is_dancing=false;                 // delay complete and we now executing dance moves
+    is_centering=false;               // remote stopped dancing and we are looking for our center switch
+    is_centered=false;                // we found our center
+    is_extending=false;               // motor is being run to extend the dance 
+    is_extended=false;                // extend is complete
+    is_complete=false;                // this dance is totally and completely done
 
-    // check if the extend delay has passed
-    if (current_millis - delay_start_millis >= delay_dance_millis) {
-      if (!start_delay_complete) {
-        start_delay_complete = true;
-        Serial.print(F("Dancer::dance() dancer_name="));
-        Serial.print(dancer_name);
-        Serial.println(F(" START_DELAY COMPLETE!"));
-      }
-    }
+    delay_start_millis = current_millis;       // time that the remote started dancing
+    
+    Serial.print(F("Dancer::dance() dancer_name="));
+    Serial.print(dancer_name);
+    Serial.print(F(" NEW_DANCE starting; START_DELAY BEGINNING delay_dance_seconds="));
+    Serial.println(current_move->get_delay_amount_millis()/1000);
+  }
+  
+  // remote just stopped dancing, setup for a finish
+  if (dance_just_ended) {
+    dance_just_ended=false;           // we don't want to do this multiple times
+    is_delaying=false;                // one time dance delay is complete
+    is_delayed=true;                  // our delay is considered complete when we are stopped
+    is_dancing=false;                 // delay complete and we now executing dance moves
+    is_centering=true;                // remote stopped dancing and we are looking for our center switch
+    is_centered=false;                // center is not completed
+    is_extending=false;               // motor was run for extended duration after centered 
+    is_extended=false;                // extend complete
+    is_complete=false;                // this dance is totally and completely done
+
+    Serial.print(F("Dancer::dance() dancer_name="));
+    Serial.print(dancer_name);
+    Serial.println(F(" CURRENT_DANCE ENDING; STARTED_CENTERING"));
   }
 
-  //////////////////////////////////////////////
-  // wind it down, 
-  // first get to center, then extend dance
-  //////////////////////////////////////////////
-  if (remote_is_dancing == false) {
-
-    start_delay_complete = true;  // we don't delay when remote stops dancing
-
-    if (dance_just_ended) {
-      dance_just_ended = false;
-      is_centered = false;
-      is_extended = false; 
+  // if we are in our one-time startup delay, has it ended?
+  if (is_delaying) {
+    delay_dance_total_millis = current_millis - delay_start_millis;
+  
+    if (delay_dance_total_millis >= delay_dance_millis) {
       Serial.print(F("Dancer::dance() dancer_name="));
-      Serial.print(dancer_name); 
-      Serial.println(F(" CENTERING!")); 
+      Serial.print(dancer_name);
+      Serial.println(F(" DANCER STARTUP DELAY COMPLETE, starting to apply moves"));
+      is_delaying = false;
+      is_dancing = true;
     }
+  }
+ 
+  // skip the run block during delays, then run until complete
+  if (is_delaying==false && is_complete == false) {
     
-    // are we centered yet? 
-    if (!is_centered) {
-      // have we made to centered postion?
-      if (current_limits->is_centered()) {
-        is_centered=true;
-        extend_start_millis = current_millis; 
-        Serial.print(F("Dancer::dance "));
-        Serial.print(dancer_name);
-        Serial.println(" is now centered!");     
-        if (center_is != 'c') { // setup the motor for the extend operation
-          reverse_motor= true;      
+    // remote is dancing and delay complete, update our move info and switch if it is time.
+    if (is_dancing) {
+      
+      // apply the current dance move
+      current_move->update(current_millis);
+
+      // set our target speed for this move 
+      if (current_move->is_moving && motor->get_target_speed() != current_move->get_move_speed()) { 
+        motor->set_target_speed(current_move->get_move_speed()); 
         }
+
+      // is our move completed yet?
+      if (current_move->is_complete) {
         Serial.print(F("Dancer::dance() dancer_name="));
-        Serial.print(dancer_name); 
-        Serial.println(F(" CENTERING COMPLETE!")); 
-        Serial.print(F("Dancer::dance() dancer_name="));
-        Serial.print(dancer_name); 
-        Serial.print(F(" EXTENDING SECONDS=")); 
-        Serial.println(extend_dance_millis/1000);
-      }
-    }
-    
-    // still not centered, are we moving in the correct direction?
-    if (!is_centered) {
-      // are we going the wrong direction?
-      if (center_is == 'c' && center_passed) {
-        reverse_motor=true;
-      } else if (motor->current_direction() != center_is) { // center is l/r and we are not going in the direction, then go back
-        reverse_motor=true;
+        Serial.print(dancer_name);
+        Serial.println(F("current MOVE COMPLETE"));
+        Serial.print(F("    DanceMove ENDING "));
+        current_move->status();
+        next_move();
+        current_move->update(current_millis);
+        Serial.print(F("    DanceMove STARTING "));
+        current_move->status(); 
       }
     }
 
-    // we are centered, now check if we are extended
-    if (is_centered && !is_extended) {
-      if (current_millis - extend_start_millis >= extend_dance_millis) {
-        is_extended = true;
-        is_home = true;   // this stops the motor
-        Serial.print(F("Dacner::dance ")); 
+    // are we centering? is it complete, are we headed in the correct direction?
+    if (is_centering) {
+
+      // set our target speed for centerning. 
+      if (motor->get_target_speed() != center_speed) { 
+        motor->set_target_speed(center_speed); 
+        }
+
+      // have we reached the center yet?
+      if (current_limits->is_centered()) {
+        is_centering=false;
+        is_centered=true;
+        is_extending=true;
+        extend_start_millis = current_millis;
+        Serial.print(F("Dancer::dance() dancer_name="));
         Serial.print(dancer_name);
-        Serial.println(F(" EXTEND COMPLETE, IS_HOME=true"));
+        Serial.println(F(" is_centered=true, starting to EXTEND DANCE"));
       }
+      
+      // not centered are we headed in the right direction?
+      if (!is_centered) {
+        // are we going the wrong direction?
+        if (center_is == 'c' && center_passed) {
+          motor->reverse();
+        } else if (motor->current_direction() != center_is) { // center is l/r and we are not going in the direction, then go back
+          motor->reverse();
+        }
+      } // !is_centered
     }
-  }
+
+    // are we extending
+    if (is_extending) {
+      extend_dance_total_millis = current_millis - extend_start_millis;
+
+      // set our taret speed for extending.
+      if (motor->get_target_speed() != extend_speed) { 
+        motor->set_target_speed(extend_speed); 
+        }
+
+
+      // note if we extend so long we hit the limit switch, it will continue to extend back in the other direction       
+      if (extend_dance_total_millis >= extend_dance_millis) {
+        is_extending = false;
+        is_extended = true;
+        is_complete = true;
+        Serial.print(F("Dancer::dance() dancer_name="));
+        Serial.print(dancer_name);
+        Serial.println(F(" EXTENDED DANCE IS_COMPLETE"));
+        if (!motor->is_stopped()) {
+          motor->stop();
+        }
+      } // is extended?
+    }  // still extending? 
+
+    // makes the motor go with some conditation if we are not in a comlete state
+    if (!is_complete) {
+      
+      // if remote stopped and not complete we need to go
+      if (remote_is_dancing==false) {
+        move_dancer();
+      }
+      
+      // if remote_is_dancing and primary delay passed; and current_move delay passed; we dance!
+      if (is_dancing && current_move->is_moving) {
+        move_dancer();
+      }  
+           
+    }
     
-  //////////////////////////////////////////////
-  // run the motor unless have successfull come home
-  //////////////////////////////////////////////
-  if (is_home) {
+  } // delaying == false && is_complete == false 
+}  // dance 
+
+// we are free to move
+void Dancer::move_dancer() {
+
+  // check the left limit first
+  if (current_limits->is_max_left() && motor->current_direction() == 'l') {
+    Serial.println(F("WARNING: Dancer::move_dancer() current_move direction is left and at max left, skpping to next move"));
     if (!motor->is_stopped()) {
-      Serial.println("Dancer::dance is_home=true, stopping motor...");
+      do_print=true;
+      motor->status();
       motor->stop();
     }
-  } else { // not home so keep running the motor
-    if (start_delay_complete) {
-      
-      if (current_limits->is_centered()) {
-        center_passed = true;
-      }
+    // motor->go_right();
+    center_passed = false;
+    next_move();  // keep looking for moves until we get one going back the other direction
+  }
 
-      // if revsrse called for from above do it.
-      if (reverse_motor == true) {
-        center_passed = !center_passed; // reversing, if we have not passsed center, now we have else it is still ahead
-        if (motor->current_direction() == 'l') {
-          motor->go_right();
-        } else {
-          motor->go_left();
-        }
-      }
-      
-      if (current_limits->is_max_left()) {
-        motor->go_right();
-        center_passed = false;
-      }
-      
-      if(current_limits->is_max_right()) {
-        motor->go_left();
-        center_passed = false;
-      }
+  // check the right limit next
+  if(current_limits->is_max_right() && motor->current_direction() == 'r') {
+    Serial.println(F("WARNING: Dancer::move_dancer() current_move direction is right and at max right, skpping to next move"));
+    if (!motor->is_stopped()) {
+      do_print=true;
+      motor->status();
+      motor->stop();
+    }
+    // motor->go_left();
+    center_passed = false;
+    next_move();
+  }  
+
+//  // we should be running in this section
+//  if (motor->is_stopped()) {
+//    motor->start();
+//  }
   
-      if (motor->is_stopped()) {
-        motor->start();
-      }
+  motor->run();   // this takes care of things like variable speeds etc
 
-      motor->run();   // this takes care of things like variable speeds etc
-            
-    } // start_delay == true
-  }  // is_home == false
 }
 
+// print the current dancer status
 void Dancer::status() {
   if (! do_print) {
     return;
@@ -1460,35 +1787,53 @@ void Dancer::status() {
   Serial.print(dancer_name);
   Serial.print(F(", remote_is_dancing="));
   Serial.print(bool_tostr(remote_is_dancing));
-  Serial.print(F(", is_home="));
-  Serial.print(bool_tostr(is_home));
-  Serial.print(F(", is_centered="));
-  Serial.print(bool_tostr(is_centered));
+  Serial.print(F(", current_millis="));
+  Serial.println(current_millis); 
+  
+  Serial.print(F("        dance_just_started="));
+  Serial.print(bool_tostr(dance_just_started)); 
+  Serial.print(F(", is_delaying="));
+  Serial.print(is_delaying);
+  Serial.print(F(", delay_dance_millis="));
+  Serial.print(delay_dance_millis);  
+  Serial.print(F(", delay_start_millis="));
+  Serial.print(delay_start_millis);  
+  Serial.print(F(", delay_dance_total_millis="));
+  Serial.print(delay_dance_total_millis);
+  Serial.print(F(", is_delayed="));
+  Serial.println(bool_tostr(is_delayed));
+
+  // finally print our extended info
+  Serial.print(F("        dance_just_ended="));
+  Serial.print(bool_tostr(dance_just_ended)); 
+  Serial.print(F(", is_centering="));
+  Serial.print(bool_tostr(is_centering)); 
   Serial.print(F(", center_passed="));
   Serial.print(bool_tostr(center_passed)); 
-  Serial.print(F(", is_extended="));
-  Serial.println(bool_tostr(is_extended));
-  
-  Serial.print(F("        current_millis="));
-  Serial.print(current_millis);  
-  Serial.print(F(", start_delay_complete="));
-  Serial.print(bool_tostr(start_delay_complete));  
-  Serial.print(F(", delay_dance_millis="));
-  Serial.print(delay_dance_millis); 
-  Serial.print(F(", delay_start_millis-current_millis="));
-  Serial.println(delay_start_millis-current_millis);
-  
-  Serial.print(F("        is_extended="));
-  Serial.print(bool_tostr(is_extended)); 
+  Serial.print(F(", is_centered="));
+  Serial.println(bool_tostr(is_centered)); 
+
+  Serial.print(F("        is_exending="));
+  Serial.print(bool_tostr(is_extending));
+  Serial.print(F("        extend_dance_millis="));
+  Serial.print(extend_dance_millis);  
   Serial.print(F(", extend_start_millis="));
   Serial.print(extend_start_millis);  
-  Serial.print(F(", extend_start_millis-current_millis="));
-  Serial.print(extend_start_millis-current_millis);
-  Serial.print(F(", dance_just_started="));
-  Serial.print(bool_tostr(dance_just_started));
-  Serial.print(F(", dance_just_ended="));
-  Serial.println(bool_tostr(dance_just_ended));
+  Serial.print(F(", extend_dance_total_millis="));
+  Serial.print(extend_dance_total_millis);
+  Serial.print(F(", is_extended="));
+  Serial.print(bool_tostr(is_extended)); 
+  Serial.print(F(", is_complete="));
+  Serial.println(bool_tostr(is_complete)); 
 
+  // print the current dance move info
+  Serial.print(F("Current DanceMove#: "));
+  Serial.print(dance_move_index);
+  if (remote_is_dancing) {
+    current_move->status();
+  } else {
+    Serial.println(F(" remote_is_dancing=false, skipping current_move status..."));
+  }
 }
 
 ////////////////////// end Dancer //////////////////////////
@@ -1543,6 +1888,9 @@ GenericLimitSwitch *m2_center_limit_switch;
 // Dancer* dancers[NUM_DANCERS] = {my_dancer1, my_dancer2};
 Dancer* dancers[NUM_DANCERS];
 
+#define D1_NUM_DANCE_MOVES 4
+DanceMove *d1_dance_moves[D1_NUM_DANCE_MOVES];
+
 void setup() {
 
   Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
@@ -1556,7 +1904,7 @@ void setup() {
 
   // SITX2 piece
   my_motor1 = new HBridgeMotor(    
-    String("L_chair"),            // p_motor_name               name of this motor (for status messages)
+    String("L_chair"),     // p_motor_name               name of this motor (for status messages)
     255,                   // m_speed_left               max speed when going left
     255,                   // m_speed_right              max_speed when going right
     M1_HGRIDGE_PWM_PIN,    // p_speed                    pwm speed pin
@@ -1564,10 +1912,10 @@ void setup() {
     M1_HGRIDGE_LEFT_PIN,   // p_left                     pin for left direction 
     M1_HGRIDGE_RIGHT_PIN,  // p_right                    pin for right direction
     100,                   // p_motor_start_speed        start() uses this as the first pmw speed when starting, must be *LESS* then m_speed_left, m_speed_right
-    25,                     // p_speed_increment          increment the pmw by this ammount when starting the motor
+    25,                    // p_speed_increment          increment the pmw by this ammount when starting the motor
     50,                    // p_speed_up_increment_delay   delay to add between increments to make speedup smoother
-    50,                     // p_slow_down_increment_delay  delay to add between increments to make slowdown smoother
-    500                    // p_reverse_delay_millis     wait this many milliseconds when reversing direction 
+    50,                    // p_slow_down_increment_delay  delay to add between increments to make slowdown smoother
+    200                    // p_reverse_delay_millis     wait this many milliseconds when reversing direction 
     );
 
   // SITX2 piece
@@ -1585,17 +1933,52 @@ void setup() {
     ); 
   m1_center_limit_switch = m1_left_limit_switch; // the left limit is the center/home
 
+  d1_dance_moves[0] = new DanceMove(
+        String("L_chair_move1_up"),
+        5,    // move_delay_seconds     seconds to delay before we start moving the motor
+        'r',  // move_direction         motor direction l,r (l=down, r=up typically)
+        255,  // move_speed             pwm speed to run the motor at, 0-255
+        10    // move_duration_seconds  number of seconds to run the motor for
+        ); 
   
+   d1_dance_moves[1] = new DanceMove(
+      String("L_chair_move2_down"),
+      5,    // move_delay_seconds     seconds to delay before we start moving the motor
+      'l',  // move_direction         motor direction l,r (l=down, r=up typically)
+      255,  // move_speed             pwm speed to run the motor at, 0-255
+      10    // move_duration_seconds  number of seconds to run the motor for
+      ); 
+  
+  d1_dance_moves[2] = new DanceMove(
+   String("L_chair_move3_up"),
+    5,    // move_delay_seconds     seconds to delay before we start moving the motor
+    'r',  // move_direction         motor direction l,r (l=down, r=up typically)
+    255,  // move_speed             pwm speed to run the motor at, 0-255
+    20    // move_duration_seconds  number of seconds to run the motor for
+    ); 
+    
+  d1_dance_moves[3] = new DanceMove(
+   String("L_chair_move4_down"),
+    5,    // move_delay_seconds     seconds to delay before we start moving the motor
+    'l',  // move_direction         motor direction l,r (l=down, r=up typically)
+    255,  // move_speed             pwm speed to run the motor at, 0-255
+    20    // move_duration_seconds  number of seconds to run the motor for
+    ); 
+    
   // SITX2 piece
   my_dancer1 = new Dancer(
-    String("L_chair"),       // p_dancer_name  name of this dancer, for status messages
-    DANCER_INPUT_PIN,       // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
-    my_motor1,              // p_motor        pointer to our motor structure
-    m1_left_limit_switch,   // p_left_limit   left limit switch
-    m1_right_limit_switch,  // p_right_limit  right limit switch
-    m1_center_limit_switch, // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
-    0,                      // p_dancer_delay_seconds   Number of seconds to delay motor start after remote starts dancing
-    0                       // p_dancer_extend_seconds  Number of seconds to run motor after center resting position has been reached
+    String("L_chair"),        // p_dancer_name  name of this dancer, for status messages
+    DANCER_INPUT_PIN,         // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
+    my_motor1,                // p_motor        pointer to our motor structure
+    m1_left_limit_switch,     // p_left_limit   left limit switch
+    m1_right_limit_switch,    // p_right_limit  right limit switch
+    m1_center_limit_switch,   // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
+    d1_dance_moves,           // p_my_dance_moves       list of dance moves to execute
+    D1_NUM_DANCE_MOVES,       // p_num_dance_moves      number of dance moves
+    0,                        // p_delay_dance_seconds  one time delay at beginning of dance
+    25,                       // p_extend_dance_seconds number of seconds to extend the dance when done
+    255,                      // p_extend_speed speed to run the PMW at when extending
+    255                       // p_center_speed   speed to run motor at when centering
     );
 
     dancers[0] = my_dancer1;

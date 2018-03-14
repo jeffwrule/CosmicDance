@@ -29,6 +29,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define PASTPRESENTFUTURE 0x42              // three clocks
 #define NOSTAY 0x44                         // no stay, small book shelf
 #define SITX2 0x46                          // SITX2, 2 chairs piece
+#define THUNDER 0x48                         // the thunder piano
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -64,8 +65,9 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {STRINGRIPPLE, SCOLLISION, SSINGLUARITY, LIFE, SFLUID, CONCENTRATION, CONTENPLATION, all_dancers};  // Taiwan Summer 2017 National Museum
 //unsigned int dance_order[]  = {LONGINGCLOUD};  // Taiwan Summer 2017 Cloud Gate install, second director box.
 // unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
-unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
+//unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
 //unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
+unsigned int dance_order[]  = {THUNDER, all_dancers};  // bench testing march 2018
 
 
                                

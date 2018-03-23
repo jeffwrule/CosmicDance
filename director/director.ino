@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 
 #define SERIAL_SPEED 250000
+//#define isMega
 
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
@@ -67,7 +68,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
 //unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
 //unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
-unsigned int dance_order[]  = {THUNDER, all_dancers};  // bench testing march 2018
+unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
 
 
                                
@@ -79,7 +80,12 @@ unsigned int timeout_seconds = 40;           // number of seconds to wait before
  * Note the pins jumpers on the xbee shield are configured just the opposite
  * Tx=5, Rx=10
  */
-const unsigned int RxD = 5;
+#ifdef isMega
+  const unsigned int RxD = 11;
+#else
+  const unsigned int RxD = 5;
+#endif
+
 const unsigned int TxD = 10;
 
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
@@ -286,6 +292,14 @@ void setup() {
   pinMode(TxD, OUTPUT);
   xbeeSerial.begin(9600);
   xbee.setSerial(xbeeSerial);
+
+  #ifdef isMega
+    Serial.print(F("Using Mega RxD pin="));
+    Serial.println(RxD);
+  #else
+    Serial.print(F("Using Uno RxD pin="));
+    Serial.println(RxD);
+  #endif
   
   current_dancer_position = -1;
   is_dancing = false;

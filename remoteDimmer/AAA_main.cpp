@@ -10,28 +10,73 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
 
 // initialize the different dimmers 
 // these were the dimmers for nostay (the book shelf)
+  
+// initialize the different dimmers 
 
-  // p_dimm_start         The value between dimm_min/max where you want to start
-  // p_dimm_end           The value between dimm_min/max where you want to end
-  // p_dimm_min           The bottom setting on the dimmer scale
-  // p_dimm_max           Full on step on the dimmer scale
-Dimmer bookshelf1(
-    String("bookshelf"),  // p_dimmer_name        The name of this dimmer for debug
-    PMW1,                 // p_pwm_pin            The pwm pin assigned to this dimmer
-    0,                    // p_switch_after_sec   Time to wait after dance starts before we start dimming up
-    6,                    // p_dimm_duration_sec  The amount of time to take between start and end dimming
-    40,                   // p_dimm_start         The value between dimm_min/max where you want to start
-    100,                  // p_dimm_end           The value between dimm_min/max where you want to end
-    0,                    // p_dimm_min           The bottom setting on the dimmer scale
-    100                   // p_dimm_max           Full on value on the dimmer scale
+////// PAST DIMMERS //////
+  Dimmer past_pend(
+      "past_pend",    // p_dimmer_name
+      PMW2,           // p_pwm_pin 
+      33,             // p_switch_after_sec
+      4,              // p_dimm_duration_sec 
+      100,            // p_dimm_start  
+      0               // p_dimm_end
+      );
+  Dimmer past_clock(
+      "past_clock",     // p_dimmer_name
+      PMW1,             // p_pwm_pin 
+      38,               // p_switch_after_sec
+      4,                // p_dimm_duration_sec 
+      0,                // p_dimm_start  
+      100               // p_dimm_end
+      );
+
+////// PRESENT DIMMERS //////
+  Dimmer present_pend(
+      "present_pend",    // p_dimmer_name
+      PMW4,           // p_pwm_pin 
+      90,             // p_switch_after_sec
+      4,              // p_dimm_duration_sec 
+      100,            // p_dimm_start  
+      0               // p_dimm_end
+      );
+  Dimmer present_clock(
+      "present_clock",     // p_dimmer_name
+      PMW3,             // p_pwm_pin 
+      96,               // p_switch_after_sec
+      4,                // p_dimm_duration_sec 
+      0,                // p_dimm_start  
+      100               // p_dimm_end
+      );
+
+////// FUTURE DIMMERS //////
+Dimmer future_pend(
+    "future_pend",    // p_dimmer_name
+    PMW6,           // p_pwm_pin 
+    145,             // p_switch_after_sec
+    4,              // p_dimm_duration_sec 
+    100,            // p_dimm_start  
+    0               // p_dimm_end
+    );
+Dimmer future_clock(
+    "future_clock",     // p_dimmer_name
+    PMW5,             // p_pwm_pin 
+    152,               // p_switch_after_sec
+    4,                // p_dimm_duration_sec 
+    0,                // p_dimm_start  
+    100               // p_dimm_end
     );
 
 // create a list of all the dimmers to make the code easier to work with
-#define NUM_DIMMERS 1
-Dimmer dimmer_list[NUM_DIMMERS] = { bookshelf1 };
+#define NUM_DIMMERS 6
+Dimmer dimmer_list[NUM_DIMMERS] = { 
+            past_clock , past_pend, 
+            present_clock, present_pend, 
+            future_clock, future_pend
+            };
 
 Dancer *my_dancer = new Dancer (    
-                          String("nostay"), // dancer_name      name this dancer
+                          "nostay", // dancer_name      name this dancer
                           DANCER_PIN,       // dance_pin        pin to read if remote is dancing
                           dimmer_list,      // dimmer_list      list of dimmer strings to control
                           NUM_DIMMERS       // num_dummers      number of dimmers in the list

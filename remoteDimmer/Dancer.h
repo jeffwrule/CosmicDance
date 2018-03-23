@@ -4,7 +4,7 @@
 class Dancer {
 
   public:
-    String  dancer_name;                // The current dancer name
+    const char*  dancer_name;           // The current dancer name
     status(PrintTimer *pt);             // print the current dancer status
     init_values();                      // print the init values for this object
     update(unsigned long current_ms);   // update the dancer pin read
@@ -13,7 +13,7 @@ class Dancer {
     // dance_pin        pin to read if remote is dancing
     // dimmer_list      list of dimmer strings to control
     // num_dummers      number of dimmers in the list
-    Dancer(String dancer_name, int dancer_pin, Dimmer *dimmer_list, int num_dimmers) :
+    Dancer(const char *dancer_name, int dancer_pin, Dimmer *dimmer_list, int num_dimmers) :
       dancer_name(dancer_name),   
       dancer_pin(dancer_pin), 
       dimmer_list(dimmer_list),

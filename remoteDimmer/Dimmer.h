@@ -9,7 +9,7 @@ class Dimmer {
     void reset(unsigned long current_ms);
     void start(unsigned long current_ms);
     void update(unsigned long current_ms);
-    String          dimmer_name;       // the name for this dimmed light source
+    const char* dimmer_name;                // the name for this dimmed light source
 
   // this entry point assumes the min/max and start/stop are the same
   // it is a fully on or fully dimmer
@@ -19,7 +19,7 @@ class Dimmer {
   // p_dimm_duration_sec  The amount of time to take between start and end dimming
   // p_dimm_start         Starting dimmer level 0-255 can dimm up or down
   // p_dimm_end           Ending dimmer leveo 0-255 can dimm up or down
-  Dimmer( String          p_dimmer_name,
+  Dimmer( const char*     p_dimmer_name,
           unsigned short  p_pwm_pin, 
           unsigned long   p_switch_after_sec, 
           unsigned int    p_dimm_duration_sec,
@@ -57,7 +57,7 @@ class Dimmer {
   // p_dimm_end           The value between dimm_min/max where you want to end
   // p_dimm_min           The bottom setting on the dimmer scale
   // p_dimm_max           Full on step on the dimmer scale
-  Dimmer( String          p_dimmer_name,
+  Dimmer( const char*     p_dimmer_name,
           unsigned short  p_pwm_pin, 
           unsigned long   p_switch_after_sec, 
           unsigned int    p_dimm_duration_sec,
@@ -104,7 +104,6 @@ class Dimmer {
     }
     
   private:
-    String bool_tostr(boolean input_bool);   // return true/false for 1/0
     // non-changing values
     unsigned short  pwm_pin;           // which pin are we controlling, should be a pwm enabled pin
     unsigned long   ms_switch_after;   // switch state after this many milliseconds 1 second = 1000 milliseconds
@@ -132,14 +131,6 @@ class Dimmer {
     void adjust_power();
 
 };
-
-String Dimmer::bool_tostr(boolean input_bool) {
-  if (input_bool) {
-    return("true");
-  } else {
-    return("false");
-  }
-}
 
 // send the dimmer back to it's start position
 void Dimmer::reset(unsigned long current_ms) {

@@ -1,6 +1,8 @@
 #ifndef DANCER_H
 #define DANCER_H
 
+#include </Users/jrule/Documents/Arduino/remoteDimmer/Dimmer.h>
+
 class Dancer {
 
   public:
@@ -22,6 +24,10 @@ class Dancer {
         pinMode(DANCER_PIN, INPUT);
         remote_is_dancing = digitalRead(dancer_pin) == 1; // peek at the remote pin
         is_dancing = !remote_is_dancing;      // ensure a mis-match on first update
+        #if ALWAYS_BE_DANCING == true
+          is_dancing = false;
+          remote_is_dancing = false;
+        #endif
       } 
 
   private:
@@ -84,6 +90,10 @@ Dancer::update(unsigned long current_millis) {
   } else {
     remote_is_dancing = false;
   }
+
+#if ALWAYS_BE_DANCING == true
+  remote_is_dancing = true;
+#endif
 
   #ifdef IS_CHATTY
     Serial.print(F("Dancer::update() pin status, pin_reads="));

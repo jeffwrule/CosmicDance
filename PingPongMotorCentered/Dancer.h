@@ -1,6 +1,8 @@
 #ifndef DANCER_H
 #define DANCER_H
 
+#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericMotor.h>
+
 ///////////////////////////////////////////////////////////
 //
 // Class to manage remote dancer stack input 
@@ -19,6 +21,7 @@ class Dancer {
     // p_dancer_name  name of this dancer, for status messages
     // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
     // p_motor        pointer to our motor structure
+    // p_limits_name  name to give the l/r/c Limits object
     // p_left_limit   left limit switch
     // p_right_limit  right limit switch
     // p_center_limit center limit switch (functions as home position), can be a pointer to left or right if home is left or right
@@ -28,10 +31,11 @@ class Dancer {
     // p_extend_dance_seconds number of seconds to extend the dance when remote is done and home
     // p_extend_speed         speed to run the extend opearation at
     // p_center_speed         speed to run the motor when centering
-    Dancer( String p_dancer_name,
+    Dancer( const char* p_dancer_name,
             int p_dancer_pin, 
             GenericMotor *p_motor, 
             PrintTimer *pt,
+            const char* p_limits_name,
             GenericLimitSwitch *p_left_limit,
             GenericLimitSwitch *p_right_limit,
             GenericLimitSwitch *p_center_limit,
@@ -62,10 +66,10 @@ class Dancer {
         center_passed = false;
                 
         current_move = my_dance_moves[dance_move_index];
-        current_move->reset();
+        current_move->reset(0);
                 
         current_limits = new Limits(
-            String("bookshelf"), // p_limits_name        The name of this limits combo
+            p_limits_name, // p_limits_name        The name of this limits combo
             p_left_limit,             // p_left_limit         The left limit switch structure
             p_right_limit,            // p_right_limit        The right limit switch structure
             p_center_limit            // p_center_limit       The center limit swtich struct (AKA the home switch) can be a pointer to left_limit or right_limit if the represent home
@@ -78,13 +82,17 @@ class Dancer {
         Serial.print(F(", dancer_pin="));
         Serial.print(dancer_pin);
         Serial.print(F(" motor_name="));
-        Serial.print(motor->get_motor_name());
+        Serial.println(motor->get_motor_name());
+        
+        Serial.print(F("        limits-name="));
+        Serial.print(p_limits_name);
         Serial.print(F(", left_limit_name="));
         Serial.print(p_left_limit->get_switch_name());
         Serial.print(F(", right_limit_name="));
         Serial.print(p_right_limit->get_switch_name());
         Serial.print(F(", center_limit_name="));
         Serial.println(p_center_limit->get_switch_name());
+        
         Serial.print(F("        dance_delay_millis="));
         Serial.print(current_move->get_delay_duration_millis()/1000);
         Serial.print(F(", dance_move_millis="));
@@ -113,7 +121,7 @@ class Dancer {
     PrintTimer *pt;                     // the current print timer
 
     // initialization values
-    String dancer_name;                 // dancer name
+    const char* dancer_name;                 // dancer name
     int     dancer_pin;                 // pin to check for remote dancer
     char    center_is;                  // what positoin is the center position l,r,c
     char home_position;                 // home is what position l,r,c (left, right, center)  
@@ -167,7 +175,7 @@ void Dancer::next_move() {
   dance_move_index++;
   if (dance_move_index >= num_dance_moves) { dance_move_index = 0;}
   current_move=my_dance_moves[dance_move_index];
-  current_move->reset();
+  current_move->reset(delay_start_millis);
 
   // stop the motor between moves, the new move has a delay
   if (current_move->get_delay_amount_millis() > 0) {
@@ -250,9 +258,12 @@ void Dancer::dance() {
     Serial.print(F(" NEW_DANCE starting; START_DELAY BEGINNING delay_dance_seconds="));
     Serial.println(delay_dance_millis/1000);
     
-
+    // other bits of the code depend on this being set, do it first.
+    delay_start_millis = pt->current_millis;       // time that the remote started dancing
+    
     dance_move_index = num_dance_moves; // forces next_move() in the next command to reset to beginning of dance move list
     next_move();
+    
     pt->print_now();
     current_move->status();
     dance_just_started=false;
@@ -265,7 +276,6 @@ void Dancer::dance() {
     is_extended=false;                // extend is complete
     is_complete=false;                // this dance is totally and completely done
 
-    delay_start_millis = pt->current_millis;       // time that the remote started dancing
     
   }
   

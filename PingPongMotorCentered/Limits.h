@@ -1,6 +1,8 @@
 #ifndef LIMITS_H
 #define LIMITS_H
 
+#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericLimitSwitch.h>
+
 ///////////////////////////////////////////////////////////
 //
 // Class to manage a collection of limit switches
@@ -26,7 +28,7 @@ class Limits {
       // p_left_limit         The left limit switch structure
       // p_right_limit        The right limit switch structure
       // p_center_limit       The center limit swtich struct (AKA the home switch) can be a pointer to left_limit or right_limit if the represent home
-      Limits(String p_limits_name,
+      Limits(const char* p_limits_name,
              GenericLimitSwitch* p_left_limit, 
              GenericLimitSwitch* p_right_limit,
              GenericLimitSwitch* p_center_limit) :
@@ -37,7 +39,7 @@ class Limits {
         { home_is =  center_limit->get_limit_position(); }  
  
    private:
-      String limits_name;
+      const char* limits_name;
       GenericLimitSwitch* left_limit;     //left limit switch 
       GenericLimitSwitch* right_limit;    //left limit switch 
       GenericLimitSwitch* center_limit;   //left limit switch 

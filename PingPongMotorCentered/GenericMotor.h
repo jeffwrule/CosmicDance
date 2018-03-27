@@ -20,7 +20,7 @@ class GenericMotor {
     virtual char current_direction() =0;
     virtual void enable() =0;
     virtual void status() =0;
-    virtual String get_motor_name() =0;
+    virtual char* get_motor_name() =0;
     virtual void set_target_speed(unsigned int new_target_speed) =0;
     virtual unsigned int get_target_speed();
     virtual unsigned int get_max_speed() =0;

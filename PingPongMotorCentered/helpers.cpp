@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/configs.h>
+#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/config.h>
 
-String bool_tostr(bool input_bool) {
+char* bool_tostr(bool input_bool) {
   if (input_bool) {
     return("true");
   } else {

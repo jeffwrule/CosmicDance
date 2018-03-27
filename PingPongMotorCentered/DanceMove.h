@@ -10,9 +10,9 @@
 class DanceMove {
 
   public: 
-    void update(unsigned long current_millis);    // update the current dance move and status  
-    void reset();                                 // clear all the values back to starting value 
-    void status();                                // print the current DanceMove status
+    void update(unsigned long current_millis);        // update the current dance move and status  
+    void reset(unsigned long dance_started_millis);   // clear all the values back to starting value 
+    void status();                                    // print the current DanceMove status
 
     // NOTE: You must periodically call dance() to update these booleans
     boolean is_new;                                           // is ready to execute  
@@ -39,17 +39,21 @@ class DanceMove {
     // move_speed             speed to run motor 0-255
     // move_duration_seconds  how long to run the motor
     DanceMove(
-        String  move_name,
-        int     delay_amount_seconds,
-        char    move_direction,
-        int     move_speed,
-        int     move_amount_seconds) :
+        const char*  move_name,            // move_name            The name to use for debugging
+        int     delay_amount_seconds, // delay_amount_seconds The number of seconds to delay  
+        char    move_direction,       // move_direction       Direction to spin motor
+        int     move_speed,           // move_spped           How fast to spin the motor
+        int     move_amount_seconds,  // move_amount_seconds  How long to move the motor (will also stop if limit is reached)
+        unsigned char delay_type      // delay_type           DELAY_TYPE_DANCE (delay_amount_seconds) is from start of dance, DELAY_TYPE_MOVE (dealy is from start of move) 
+        ) :
       move_name(move_name),
       delay_amount_millis(delay_amount_seconds*1000L),
       move_direction(move_direction),
       move_speed(move_speed),
-      move_amount_millis(move_amount_seconds*1000L) {
-        reset(); 
+      move_amount_millis(move_amount_seconds*1000L),
+      delay_type(delay_type) {
+        
+        reset(0); 
 
         Serial.print(F("CONSTRUCTOR::DanceMove move_name: "));
         Serial.print(move_name);
@@ -60,12 +64,14 @@ class DanceMove {
         Serial.print(F(", move_speed: "));
         Serial.print(move_speed);
         Serial.print(F(", move_amount_millis: "));
-        Serial.println(move_amount_millis);
+        Serial.print(move_amount_millis);
+        Serial.print(F(", delay_type="));
+        Serial.println((char)delay_type);
       }
 
   private:
 
-    String  move_name;                      // the name of this move, for status messages
+    const char*  move_name;                      // the name of this move, for status messages
 
     boolean delay_is_complete();            // has delay duration passed?
     boolean move_is_complete();             // has move seconds passed?
@@ -75,12 +81,13 @@ class DanceMove {
 
     unsigned long delay_amount_millis;      // total time to delay
     unsigned long move_amount_millis;       // total time to move (in this direction)
+    unsigned char delay_type;               // type of delay dance based 'd' or move based 'm'
     
-    unsigned long delay_duration_millis;    // accumulated delay time (only computed for actual delay).
-    unsigned long move_duration_millis;     // accumulated move time (only computed while moving)
+    unsigned long delay_duration_millis;          // accumulated delay time (only computed for actual delay).
+    unsigned long move_duration_millis;           // accumulated move time (only computed while moving)
     
-    unsigned long delay_start_millis;       // when did the dealy start
-    unsigned long move_start_millis;        // when did the move start
+    unsigned long delay_start_millis;             // when did the dealy start
+    unsigned long move_start_millis;              // when did the move start
 
 };
 
@@ -106,6 +113,8 @@ void DanceMove::status() {
   Serial.print(delay_start_millis);
   Serial.print(F(", delay_duration_millis: "));
   Serial.print(delay_duration_millis);
+  Serial.print(F(", delay_type="));
+  Serial.print((char)delay_type);
   Serial.print(F(", move_amount_millis: "));
   Serial.print(move_amount_millis);
   Serial.print(F(", move_start_millis: "));
@@ -135,7 +144,10 @@ void DanceMove::update(unsigned long current_millis) {
   if (is_new) {
     is_new = false;
     is_delayed = false;
-    delay_start_millis = current_millis;
+    // if DELAY_TYPE_DANCE; set during reset()
+    if (delay_type == DELAY_TYPE_MOVE) {
+      delay_start_millis = current_millis;      
+    }
     Serial.print(F("DanceMove::dance move_name="));
     Serial.print(move_name);
     Serial.println(F(" STARTED, now delaying..."));
@@ -167,13 +179,13 @@ void DanceMove::update(unsigned long current_millis) {
   }
 }
 
-void DanceMove::reset() {
+void DanceMove::reset(unsigned long dance_start_millis) {
     is_new=true;            // is ready to execute
     is_delayed=false;       // is the delay complete
     is_moving=false;        // is in flight 
     is_complete=false;      // move is fully complete
 
-    delay_start_millis = 0;
+    delay_start_millis = dance_start_millis;
     move_start_millis=0;
 
     delay_duration_millis = 0;

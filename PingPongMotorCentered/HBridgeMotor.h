@@ -1,6 +1,8 @@
 #ifndef HBRIDGEMOTOR_H
 #define HBRIDGEMOTOR_H
 
+#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericMotor.h>
+
 ///////////////////////////////////////////////////////////
 //
 // Class to manage motor H-BRIDGE break out board 
@@ -20,7 +22,7 @@ class HBridgeMotor: public GenericMotor {
     char current_direction();
     void enable();
     void status();
-    String get_motor_name();
+    char* get_motor_name();
     void set_target_speed(unsigned int new_target_speed);
     unsigned int get_target_speed();
     unsigned int get_max_speed();
@@ -43,7 +45,7 @@ class HBridgeMotor: public GenericMotor {
     // p_speed_up_increment_delay   delay to add between increments to make speedup smoother
     // p_slow_down_increment_delay  delay to add between increments to make slowdown smoother
     // p_reverse_delay_millis       wait this many milliseconds when reversing direction   
-    HBridgeMotor(String p_motor_name, int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right,
+    HBridgeMotor(const char* p_motor_name, int m_speed_left,int  m_speed_right, int p_speed, int p_standby, int p_left, int p_right,
         int p_motor_start_speed, int p_speed_increment, 
         int p_speed_up_increment_delay, int p_slow_down_increment_delay,
         unsigned long p_reverse_delay_millis) :
@@ -102,7 +104,7 @@ class HBridgeMotor: public GenericMotor {
        }
     
   private:
-    String motor_name;                  // name of this motor for status messages
+    const char* motor_name;                  // name of this motor for status messages
     int pin_speed;                      // motor pmw speed pin
     int pin_left;                       // move motor left pin (HIGH=enabled) 
     int pin_right;                      // move motor right pin (HIGH=enabled)
@@ -130,7 +132,7 @@ class HBridgeMotor: public GenericMotor {
 
 };
 
-String HBridgeMotor::get_motor_name() {return motor_name; }
+char* HBridgeMotor::get_motor_name() {return motor_name; }
 
 // run the motor by just chaning the speed
 void HBridgeMotor::set_target_speed(unsigned int new_target_speed)

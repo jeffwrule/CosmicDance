@@ -50,7 +50,7 @@ class Dancer {
         is_complete=false;             
         
         current_move = my_dance_moves[dance_move_index];
-        current_move->reset();
+        current_move->reset(0);
         
         Serial.print(F("CONSTRUCTOR::Dancer dancer_name="));
         Serial.print(dancer_name);
@@ -115,7 +115,7 @@ void Dancer::next_move() {
   dance_move_index++;
   if (dance_move_index >= num_dance_moves) { dance_move_index = 0;}
   current_move=my_dance_moves[dance_move_index];
-  current_move->reset();
+  current_move->reset(delay_start_millis);
 
   // stop the motor between moves, the new move has a delay
   if (current_move->get_delay_amount_millis() > 0) {
@@ -175,6 +175,9 @@ void Dancer::dance() {
     Serial.print(F(" NEW_DANCE starting; START_DELAY BEGINNING delay_dance_seconds="));
     Serial.println(delay_dance_millis/1000);
 
+    // need to do this first as the next_move depends on it being set correctly for the current dance move
+    delay_start_millis = pt->current_millis;                      // time that the remote started dancing    
+
     dance_move_index = num_dance_moves; // forces next_move() in the next command to reset to beginning of dance move list
     next_move();
     pt->print_now();
@@ -183,7 +186,6 @@ void Dancer::dance() {
     is_delaying=true;                                             // one time dance delay is is progress
     is_dancing=false;                                             // delay complete and we now executing dance moves
     is_complete=false;                                            // this dance is totally and completely done
-    delay_start_millis = pt->current_millis;                      // time that the remote started dancing    
   }
   
   // remote just stopped dancing, setup for a finish
@@ -240,9 +242,13 @@ void Dancer::dance() {
       }
 
       // is the dance move in a run mode (delay passed etc 
-      if (current_move->is_moving) { move_dancer(); }
+      if (current_move->is_moving) { 
+        if (motor->get_is_stopped() == true) {
+          motor->start();
+        }
+        move_dancer(); 
+      }
     }
-    
   } // delaying == false && is_complete == false 
 }  // dance 
 
@@ -281,8 +287,6 @@ void Dancer::status() {
   Serial.print(delay_start_millis);  
   Serial.print(F(", delay_dance_total_millis="));
   Serial.println(delay_dance_total_millis);
-
- 
 
   // print the current dance move info
   Serial.print(F("Current DanceMove#: "));

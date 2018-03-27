@@ -41,9 +41,9 @@ void pin3_handler(){
 class DanceMove {
 
   public: 
-    void update(unsigned long current_millis);    // update the current dance move and status  
-    void reset();                                 // clear all the values back to starting value 
-    void status();                                // print the current DanceMove status
+    void update(unsigned long current_millis);      // update the current dance move and status  
+    void reset(unsigned long dance_started_millis); // clear all the values back to starting value 
+    void status();                                  // print the current DanceMove status
 
     // NOTE: You must periodically call dance() to update these booleans
     boolean is_new;                                           // is ready to execute  
@@ -73,7 +73,8 @@ class DanceMove {
         int             delay_amount_seconds,   // move_delay_seconds     number of seconds to delay before we start moving
         unsigned int    start_speed,            // start_speed            speed to start the motor at
         unsigned int    move_speed,             // move_speed             speed to run motor 0-255
-        unsigned int    move_amount_seconds     // move_duration_seconds  how long to run the motor
+        unsigned int    move_amount_seconds,    // move_duration_seconds  how long to run the motor
+        unsigned char   delay_type              // delay_type              is this delay based dance_start 'd' or move_start 'm'
         ) :
       move_name(move_name),
       delay_amount_millis(delay_amount_seconds*1000L),
@@ -81,8 +82,10 @@ class DanceMove {
       move_speed(move_speed),
       move_amount_millis(move_amount_seconds*1000L),
       signal_pin(0), 
-      stop_after_rotations(0) {
-        reset();
+      stop_after_rotations(0),
+      delay_type(delay_type) {
+        
+        reset(0);
 
         Serial.print(F("CONSTRUCTOR1::DanceMove move_name: "));
         Serial.print(move_name);
@@ -97,7 +100,9 @@ class DanceMove {
         Serial.print(F(", signal_pin="));
         Serial.print(signal_pin);
         Serial.print(F(", stop_after_rotations="));
-        Serial.println(stop_after_rotations);
+        Serial.print(stop_after_rotations);
+        Serial.print(F(", delay_type="));
+        Serial.print((char)delay_type);
       }
 
     // move_name              internal name for debug messages
@@ -113,6 +118,7 @@ class DanceMove {
         unsigned int    start_speed,            // start_speed            speed to start the motor at
         unsigned int    move_speed,             // move_speed             speed to run motor 0-255
         int             move_amount_seconds,    // move_amount_seconds    how long to run the motor
+        unsigned char   delay_type,             // type of delay to use
         unsigned short  signal_pin,             //  which interrupt enabled pin is our rotation swith attached to
         unsigned int    stop_after_rotations    // number of rotations to execute before we stop
         ) :
@@ -122,8 +128,9 @@ class DanceMove {
       move_speed(move_speed),
       move_amount_millis(move_amount_seconds*1000L),
       signal_pin(signal_pin), 
-      stop_after_rotations(stop_after_rotations) {
-        reset(); 
+      stop_after_rotations(stop_after_rotations),
+      delay_type(delay_type) {
+        reset(0); 
 
         pinMode(signal_pin, INPUT_PULLUP);
 
@@ -140,7 +147,10 @@ class DanceMove {
         Serial.print(F(", signal_pin="));
         Serial.print(signal_pin);
         Serial.print(F(", stop_after_rotations="));
-        Serial.println(stop_after_rotations);
+        Serial.print(stop_after_rotations);
+        Serial.print(F(", delay_type="));
+        Serial.println((char)delay_type);
+
       }
       
   private:
@@ -156,6 +166,7 @@ class DanceMove {
 
     unsigned long delay_amount_millis;      // total time to delay
     unsigned long move_amount_millis;       // total time to move (in this direction)
+    unsigned char delay_type;               // base delay on dance start 'd' or move start 'm'
     
     unsigned long delay_duration_millis;    // accumulated delay time (only computed for actual delay).
     unsigned long move_duration_millis;     // accumulated move time (only computed while moving)
@@ -203,7 +214,10 @@ void DanceMove::status() {
   Serial.print(F(", move_start_millis: "));
   Serial.print(move_start_millis);
   Serial.print(F(", move_duration_millis: "));
-  Serial.println(move_duration_millis);
+  Serial.print(move_duration_millis);
+  Serial.print(F(", delay_type="));
+  Serial.println((char)delay_type);
+
   if (signal_pin != 0) {
     Serial.print(F("    rotations="));
     Serial.print(*rotations);
@@ -234,6 +248,10 @@ boolean DanceMove::move_is_complete() {
 boolean DanceMove::rotations_complete() {
   if (signal_pin != 0 ) {
     if (*rotations >= stop_after_rotations) {
+      Serial.print(F("ROTATIONS COMPLETE: number of rotations completed rotations="));
+      Serial.print(*rotations);
+      Serial.print(F(", bounces="));
+      Serial.println(*bounces);
       return true;
     }
   }
@@ -246,7 +264,10 @@ void DanceMove::update(unsigned long current_millis) {
   if (is_new) {
     is_new = false;
     is_delayed = false;
-    delay_start_millis = current_millis;
+    // the delay_start_millis set to start of dance in reset
+    if (delay_type == DELAY_TYPE_MOVE) {
+      delay_start_millis = current_millis;    
+    }
     Serial.print(F("DanceMove::dance move_name="));
     Serial.print(move_name);
     Serial.println(F(" STARTED, now delaying..."));
@@ -287,25 +308,25 @@ void DanceMove::update(unsigned long current_millis) {
   }
 }
 
-void DanceMove::reset() {
+void DanceMove::reset(unsigned long dance_started_millis) {
     is_new=true;            // is ready to execute
     is_delayed=false;       // is the delay complete
     is_moving=false;        // is in flight 
     is_complete=false;      // move is fully complete
 
-    delay_start_millis = 0;
+    delay_start_millis = dance_started_millis;
     move_start_millis=0;
 
     delay_duration_millis = 0;
     move_duration_millis=0;
 
     if (signal_pin == 2) {
-      attachInterrupt(digitalPinToInterrupt(signal_pin), pin2_handler, FALLING);
+      attachInterrupt(digitalPinToInterrupt(signal_pin), pin2_handler, RISING);
       rotations = &pin2_rotations;
       bounces = &pin2_bounces;
       last_interrupt_millis = pin2_last_interrupt_millis; 
     } else if (signal_pin == 3) {
-      attachInterrupt(digitalPinToInterrupt(signal_pin), pin3_handler, FALLING);
+      attachInterrupt(digitalPinToInterrupt(signal_pin), pin3_handler, RISING);
       rotations = &pin3_rotations;
       bounces = &pin3_bounces;
       last_interrupt_millis = pin3_last_interrupt_millis; 

@@ -59,7 +59,7 @@ class PWMMotor: public GenericMotor {
     unsigned short pwm_pin;
     const char *motor_name;
     boolean is_stopped;
-    unsigned int speed;               // the current motor speed
+    int       speed;               // the current motor speed
     unsigned int target_speed;        // the speed we want to get to
     unsigned int motor_start_speed;   // initial speed to start the motor at
     unsigned int  speed_increment;    // speed rate to increment the speed
@@ -87,6 +87,7 @@ void PWMMotor::stop() {
   increment_delay_millis = 0;
   while (speed != 0 ) { run(); }  
   increment_delay_millis = old_increment_delay_millis;
+  is_stopped = true;
 }
 
 // get this motor going
@@ -118,16 +119,24 @@ void PWMMotor::run() {
     if (speed != target_speed) {
       last_speed_change_millis = current_millis;
     }
+
+    // do we need a jump start
+    if (speed == 0 && target_speed > 0) {
+      Serial.print(F("JUMP_STARTING motor="));
+      Serial.print(motor_name);
+      Serial.println(F(", start_speed="));
+      speed = motor_start_speed;
+    }
     
     // some bounds checking on target speed
-    if (target_speed > 0 && target_speed < motor_start_speed) { target_speed = motor_start_speed; } // can't have a target (other then 0, below start speed 
-    if (target_speed > max_speed) {target_speed = max_speed; }                          // can't have a target speed greater then max_speed
+    if (target_speed > max_speed) {target_speed = max_speed; }  
+    if (target_speed < 0) { target_speed = 0; }
 
     // increment speed
     if (speed < target_speed) {
       speed += speed_increment;
-      if (speed < motor_start_speed) { speed = motor_start_speed; }   // always start at a minimum here
       if (speed > target_speed) { speed = target_speed; } // don't go above max
+      if (speed > 255) {speed = target_speed;}
       analogWrite(pwm_pin, speed);
       Serial.print(F("HBridgeMotor::run motor_name="));
       Serial.print(motor_name);
@@ -138,7 +147,8 @@ void PWMMotor::run() {
     // decrement speed
     if (speed > target_speed) {
       speed -= speed_increment;
-      if (speed < motor_start_speed) { speed = 0; }
+      if (speed < target_speed ) {speed = target_speed;}
+      if (speed < 0 ) { speed = 0; }
       analogWrite(pwm_pin, speed);
       Serial.print(F("HBridgeMotor::run motor_name="));
       Serial.print(motor_name);

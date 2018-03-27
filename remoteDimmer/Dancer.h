@@ -21,7 +21,7 @@ class Dancer {
       dimmer_list(dimmer_list),
       num_dimmers(num_dimmers)
       {
-        pinMode(DANCER_PIN, INPUT);
+        pinMode(dancer_pin, INPUT);
         remote_is_dancing = digitalRead(dancer_pin) == 1; // peek at the remote pin
         is_dancing = !remote_is_dancing;      // ensure a mis-match on first update
         #if ALWAYS_BE_DANCING == true

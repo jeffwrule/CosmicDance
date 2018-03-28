@@ -4,6 +4,7 @@
 #define SERIAL_SPEED 250000
 //#define isMega
 
+
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
 #define SINGULARITY 0x01
@@ -68,7 +69,8 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
 //unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
 //unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
-unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
+// unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
+unsigned int dance_order[]  = {SITX2, NOSTAY, PASTPRESENTFUTURE, THUNDER};  // March 2018 Asia Modern, DongHai Group Show
 
 
                                
@@ -90,10 +92,11 @@ const unsigned int TxD = 10;
 
 const int m_solo_delay_seconds = 5;        // number of seconds to delay for a solo in mini mode
 const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between ensemble play in mini mode
-//const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
+// const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
 const int l_solo_delay_seconds = 14;        // Taiwan National Theater Show
-//const int l_ensembl_delay_seconds = 100;    // number of seconds to wait between ensemble play long mode
-const int l_ensembl_delay_seconds = 280;     // National Taiwan Theater setting Jan-2018
+// const int l_ensembl_delay_seconds = 100;    // number of seconds to wait between ensemble play long mode
+const int l_ensembl_delay_seconds = 60;    // Spring 2018 Asia Modern
+//const int l_ensembl_delay_seconds = 280;     // National Taiwan Theater setting Jan-2018
                                             // number of seconds to wait between ensemble play long mode, extra long to allow
                                             // two pieces that play longer 1.5 min extra, plus another 2 minutes after they finish
 
@@ -346,9 +349,11 @@ void loop() {
       is_dancing = true;
       last_response = millis();
       whatchadoing_misses = 0;
-      switch(dance_type) {
-        case ensembl: delay_after_dance_seconds = ensembl_delay_seconds; break;
-        case solo: delay_after_dance_seconds = solo_delay_seconds; break;
+      // add extra long delay after the last dancer in the sequence dances, this can be a dancer or an ensemble
+      if (current_dancer_position == (num_dancers-1)) {
+        delay_after_dance_seconds = ensembl_delay_seconds;
+      } else {
+        delay_after_dance_seconds = solo_delay_seconds; 
       }
     }
     return;

@@ -39,7 +39,7 @@ void setup() {
   Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
   Serial.println(F("\n------------ Start setup ------------"));
   Serial.println(F("PingPongMotorCentered.ino"));
-  Serial.println(F("THUNDER Config"));
+  Serial.println(F("THUNDER CONFIG"));
 
   print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
   print_timer->init_values();

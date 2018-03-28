@@ -5,6 +5,7 @@
 // HERE IS WHERE WE INCLUDE THE AAB_devince name include to give this script it personality //
 //////////////////////////////////////////////////////////////////////////////////////////////
 #include </Users/jrule/Documents/Arduino/remoteDimmer/AAB_pastpresentfuture.h>
+//#include </Users/jrule/Documents/Arduino/remoteDimmer/AAB_nostay.h>
 
 void loop()
 {

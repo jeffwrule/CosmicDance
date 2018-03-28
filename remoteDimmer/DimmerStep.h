@@ -15,6 +15,7 @@ class DimmerStep {
     // dimm_target        Target dimm level for this step
     // switch_after_sec   Time to wait after dance starts before we start dimming up
     // dimm_duration_sec  The amount of time to take between start and end dimming
+    // wait_is_running    wait to execute this move until started (allows for indefinate delay in play) 
      DimmerStep(const char*  step_name,           // step_name          The name of this dimmer for debug
             unsigned short  dimm_target,          // dimm_end           The value between dimm_min/max where you want to end
             unsigned long   switch_after_sec,     // switch_after_sec   Time to wait after dance starts before we start dimming up

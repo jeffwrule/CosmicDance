@@ -2,6 +2,7 @@
 #define AAB_PASTPRESENTFUTURE_H
 
 #include </Users/jrule/Documents/Arduino/remoteDimmer/PrintTimer.h>
+#include </Users/jrule/Documents/Arduino/remoteDimmer/Dimmer.h>
 #include </Users/jrule/Documents/Arduino/remoteDimmer/Dancer.h>
 
 #include </Users/jrule/Documents/Arduino/remoteDimmer/AAB_pastpresentfuture_config.h>
@@ -13,50 +14,86 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
 // these were the dimmers for nostay (the book shelf)
   
 #define NUM_DIMMER_STATES 4
+DimmerStep *past_pend_steps[NUM_DIMMER_STATES]; 
+DimmerStep *past_object_steps[NUM_DIMMER_STATES]; 
+
+DimmerStep *present_pend_steps[NUM_DIMMER_STATES]; 
+DimmerStep *present_object_steps[NUM_DIMMER_STATES]; 
+
+DimmerStep *future_pend_steps[NUM_DIMMER_STATES]; 
+DimmerStep *future_object_steps[NUM_DIMMER_STATES]; 
 
 // with these dimmers basically the third dimmer never happens
 // they delay is much longer than the music so the dimmer never happens
 // when the music finishes we reset to step 1 and do not start the 
 // clock until the music starts; Step 1 is our steady state state when not playing.
 
-////////////////////////// 
-////// PAST DIMMERS //////
-////////////////////////// 
+
   
+// create a list of all the dimmers to make the code easier to work with
+#define NUM_DIMMERS 6
+Dimmer *dimmer_list[NUM_DIMMERS];
+Dancer *my_dancer;        
+  
+void setup()
+{
+  int i;
+  int j;
+  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
+  Serial.println(F("Start setup"));
+  Serial.println(F("remoteDimmer.ino"));
+  Serial.println(F("PASTPRESENTFUTURE CONFIG"));
+
+
+  // print the setup vaues for the timer and get set it's first value
+  print_timer->init_values();
+  print_timer->print_now();
+
+  ////////////////////////// 
+  ////// PAST DIMMERS //////
+  ////////////////////////// 
+
+  i=0;
   // past pendulum dimmer steps
-  DimmerStep *past_pend_steps[NUM_DIMMER_STATES] = { 
-      new DimmerStep(
+  past_pend_steps[i++] = new DimmerStep(
               "pp_init",       // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_target           The value between dimm_min/max where you want to end
               0,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               false                   // wait is running
-              ),
-      new DimmerStep(
+              );
+  past_pend_steps[i++] = new DimmerStep(
               "pp_down1",      // step_name          The name of this dimmer for debug
               DIMMER_OFF,             // dimm_target           The value between dimm_min/max where you want to end
               33,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ),
-      new DimmerStep(
+              );
+  past_pend_steps[i++] = new DimmerStep(
               "pp_up2",        // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_target           The value between dimm_min/max where you want to end
               231,                    // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-               ),
-      new DimmerStep(
+               );
+  past_pend_steps[i++] = new DimmerStep(
               "pp_down2",      // step_name          The name of this dimmer for debug
               DIMMER_ON,             // dimm_target           The value between dimm_min/max where you want to end
               60*60,                  // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ) 
-  };
+              );
+              
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
 
+  j=0;
   // past pendulum dimmer
-  Dimmer past_pend(
+  dimmer_list[j++] = new Dimmer (
       "past_pend",          // p_dimmer_name
       PMW2,                 // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -67,39 +104,45 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       
 
   // past object steps
-  DimmerStep *past_object_steps[NUM_DIMMER_STATES] = {
-      new DimmerStep(
+  i=0;
+  past_object_steps[i++] = new DimmerStep(
               "po_init",     // step_name          The name of this dimmer for debug
               DIMMER_OFF,             // dimm_target           The value between dimm_min/max where you want to end
               0,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               false                   // wait is running
-              ),
-      new DimmerStep(
+              );
+  past_object_steps[i++] = new DimmerStep(
               "po_up1",      // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_target           The value between dimm_min/max where you want to end
               38,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
               ),
-      new DimmerStep(
+  past_object_steps[i++] = new DimmerStep(
               "po_down2",    // step_name          The name of this dimmer for debug
               DIMMER_OFF,             // dimm_target           The value between dimm_min/max where you want to end
               225,                    // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
               ),
-      new DimmerStep(
+  past_object_steps[i++] = new DimmerStep(
               "po_up2",      // step_name          The name of this dimmer for debug
               DIMMER_OFF,              // dimm_target           The value between dimm_min/max where you want to end
               60*60,                  // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              )   
-  };
+              );  
+              
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
 
   // past object dimmer 
-  Dimmer past_object(
+  dimmer_list[j++] = new Dimmer (
       "past_object",      // p_dimmer_name
       PMW1,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -109,44 +152,50 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       );
 
 
-///////////////////////////////
-//////// PRESENT DIMMERS //////
-///////////////////////////////
+  ///////////////////////////////
+  //////// PRESENT DIMMERS //////
+  ///////////////////////////////
 
   // present pendulum dimmer states 
-  DimmerStep *present_pend_steps[NUM_DIMMER_STATES] = { 
-      new DimmerStep(
+  i=0;
+  present_pend_steps[i++] = new DimmerStep(
               "prp_init",    // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_start         The value between dimm_min/max where you want to start 
               0,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               false                   // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_pend_steps[i++] = new DimmerStep(
               "prp_down1",   // step_name          The name of this dimmer for debug
               DIMMER_OFF,             // dimm_start         The value between dimm_min/max where you want to start 
               90,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_pend_steps[i++] = new DimmerStep(
               "prp_up2",     // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_target           The value between dimm_min/max where you want to end
               231,                    // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_pend_steps[i++] = new DimmerStep(
               "prp_down2",   // step_name          The name of this dimmer for debug
               DIMMER_ON,             // dimm_end           The value between dimm_min/max where you want to end
               60*60,                   // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ) 
-  };
+              );
+              
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
 
   // present pendulum dimmer
-  Dimmer present_pend(
+  dimmer_list[j++] = new Dimmer (
       "present_pend",     // p_dimmer_name
       PMW4,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -156,39 +205,45 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       );
 
   // present object dimmer states
-  DimmerStep *present_object_steps[NUM_DIMMER_STATES] = {
-      new DimmerStep(
+  i=0;
+  present_object_steps[i++] = new DimmerStep(
               "pro_init",    // step_name          The name of this dimmer for debug
               DIMMER_OFF,               // dimm_target           The value between dimm_min/max where you want to end
               0,                        // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               false                     // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_object_steps[i++] = new DimmerStep(
               "pro_up1",     // step_name          The name of this dimmer for debug
               DIMMER_ON,                // dimm_target           The value between dimm_min/max where you want to end
               96,                       // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                      // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_object_steps[i++] = new DimmerStep(
               "pro_down2",   // step_name          The name of this dimmer for debug
               DIMMER_OFF,               // dimm_target           The value between dimm_min/max where you want to end
               225,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,        // dimm_duration_sec  The amount of time to take between start and end dimming
               true                      // wait is running
-              ),
-      new DimmerStep(
+              );
+  present_object_steps[i++] = new DimmerStep(
               "pro_up2",     // step_name          The name of this dimmer for debug
               DIMMER_OFF,                // dimm_target           The value between dimm_min/max where you want to end
               60*60,                    // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                      // wait is running
-              )   
-  };
+              );
 
-  // present object pendulum
-  Dimmer present_object(
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
+
+  // present object dimmer
+  dimmer_list[j++] = new Dimmer (
       "present_object",     // p_dimmer_name
       PMW3,                 // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -197,44 +252,50 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       NUM_DIMMER_STATES     // number of states in this dimmer list
       );
 
-//////////////////////////
-//// FUTURE DIMMERS //////
-//////////////////////////
+  //////////////////////////
+  //// FUTURE DIMMERS //////
+  //////////////////////////
 
   // future pendulum dimmer steps
-  DimmerStep *future_pend_steps[NUM_DIMMER_STATES] = { 
-      new DimmerStep(
+  i=0;
+  future_pend_steps[i++] = new DimmerStep(
               "fp_init",     // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_end           The value between dimm_min/max where you want to end
               0,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               false                   // wait for running
-              ),
+              );
       new DimmerStep(
               "fp_down1",               // step_name          The name of this dimmer for debug
               DIMMER_OFF,               // dimm_end           The value between dimm_min/max where you want to end
               145,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                      // wait for running
-              ),
+              );
       new DimmerStep(
               "fp_up2",      // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_end           The value between dimm_min/max where you want to end
               231,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait for running
-              ),
+              );
       new DimmerStep(
               "fp_down2",    // step_name          The name of this dimmer for debug
               DIMMER_ON,             // dimm_end           The value between dimm_min/max where you want to end
               60*60,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait for running
-              ) 
-  };
+              );
+
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
 
   // future pendulum dimmer
-  Dimmer future_pend(
+  dimmer_list[j++] = new Dimmer (
       "future_pend",      // p_dimmer_name
       PMW6,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -244,39 +305,45 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       );
 
   // future object dimmer steps
-  DimmerStep *future_object_steps[NUM_DIMMER_STATES] = {
-      new DimmerStep(
+  i=0;
+  future_object_steps[i++] = new DimmerStep(
               "fo_init",   // step_name          The name of this dimmer for debug
               DIMMER_OFF,             // dimm_end           The value between dimm_min/max where you want to end
               0,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               false                   // wait_is_running
-               ),
-      new DimmerStep(
+               );
+  future_object_steps[i++] = new DimmerStep(
               "fo_up1",    // step_name          The name of this dimmer for debug
               DIMMER_ON,              // dimm_end           The value between dimm_min/max where you want to end
               152,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_UP_SECONDS,    // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait_is_running
-               ),
-      new DimmerStep(
+               );
+  future_object_steps[i++] = new DimmerStep(
               "fo_down2",  // step_name          The name of this dimmer for debug
               DIMMER_OFF,                     // dimm_end           The value between dimm_min/max where you want to end
               225,                     // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,      // dimm_duration_sec  The amount of time to take between start and end dimming
               true                    // wait is running
-              ),
-      new DimmerStep(
+              );
+  future_object_steps[i++] = new DimmerStep(
               "fo_up2",                   // step_name          The name of this dimmer for debug
               DIMMER_OFF,                 // dimm_end           The value between dimm_min/max where you want to end
               60*60,                      // switch_after_sec   Time to wait after dance starts before we start dimming up
               DIMMER_DOWN_SECONDS,        // dimm_duration_sec  The amount of time to take between start and end dimming
               true                        // wait is running
-              )   
-  };
+              );
+
+   if (NUM_DIMMER_STATES != i) {
+    Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
+    Serial.print(NUM_DIMMER_STATES);
+    Serial.print(F(", i="));
+    Serial.println(i);
+   }
 
   // future object dimmer
-  Dimmer future_object(
+  dimmer_list[j++] = new Dimmer (
       "future_object",      // p_dimmer_name
       PMW5,                 // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
@@ -285,38 +352,27 @@ PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
       NUM_DIMMER_STATES     // number of states in this dimmer list
       );
 
-// create a list of all the dimmers to make the code easier to work with
-#define NUM_DIMMERS 6
-Dimmer dimmer_list[NUM_DIMMERS] = { 
-            past_object, past_pend, 
-            present_object, present_pend, 
-            future_object, future_pend
-            };
+   if (NUM_DIMMERS != j) {
+    Serial.print(F("ERROR: NUM_DIMMERS != j,  NUM_DIMMERS="));
+    Serial.print(NUM_DIMMERS);
+    Serial.print(F(", j="));
+    Serial.println(j);
+   }
 
-Dancer *my_dancer = new Dancer (    
-                          "PastPresentFuture",         // dancer_name      name this dancer
-                          DANCER_PIN,       // dance_pin        pin to read if remote is dancing
-                          dimmer_list,      // dimmer_list      list of dimmer strings to control
-                          NUM_DIMMERS       // num_dummers      number of dimmers in the list
-                          );
-                          
-  
-void setup()
-{
-  Serial.begin(SERIAL_SPEED);          // setup the interal serial port for debug messages
-  Serial.println(F("Start setup"));
-  Serial.println(F("remoteDimmer.ino"));
-
-  // print the setup vaues for the timer and get set it's first value
-  print_timer->init_values();
-  print_timer->print_now();
-
+  // OUR DANCER TO CONTROL EVERYTING
+  my_dancer = new Dancer (    
+                    "PastPresentFuture",         // dancer_name      name this dancer
+                    DANCER_PIN,       // dance_pin        pin to read if remote is dancing
+                    dimmer_list,      // dimmer_list      list of dimmer strings to control
+                    NUM_DIMMERS       // num_dummers      number of dimmers in the list
+                    );
+                    
   // print the setup values for the dancer
   my_dancer->init_values();
   
   // print the setup values for each dimmer
   for (int i=0; i<NUM_DIMMERS; i++) {
-    dimmer_list[i].init_values();
+    dimmer_list[i]->init_values();
   }
 
   // print the dimmer status as we star
@@ -327,7 +383,7 @@ void setup()
  
   // dump the pwm tables (there was a bug) for each dimmer
   for (int i=0; i<NUM_DIMMERS; i++) {
-    dimmer_list[i].dump_pwm_values();
+    dimmer_list[i]->dump_pwm_values();
   }  
   Serial.println(F("End setup")); 
 }

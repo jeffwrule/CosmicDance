@@ -15,7 +15,7 @@ class Dancer {
     // dance_pin        pin to read if remote is dancing
     // dimmer_list      list of dimmer strings to control
     // num_dummers      number of dimmers in the list
-    Dancer(const char *dancer_name, int dancer_pin, Dimmer *dimmer_list, int num_dimmers) :
+    Dancer(const char *dancer_name, int dancer_pin, Dimmer **dimmer_list, int num_dimmers) :
       dancer_name(dancer_name),   
       dancer_pin(dancer_pin), 
       dimmer_list(dimmer_list),
@@ -34,7 +34,7 @@ class Dancer {
     int dancer_pin;             // pin to read for remote dancer status
     boolean is_dancing;         // are we dancing or not
     boolean remote_is_dancing;  // is the remote dancng 
-    Dimmer *dimmer_list;        // list of dimmers to work with
+    Dimmer **dimmer_list;        // list of dimmers to work with
     int num_dimmers;            // number of dimmers
 
 };
@@ -50,8 +50,8 @@ Dancer::init_values() {
     Serial.print(F("Dimmer# "));
     Serial.print(i);
     Serial.print(F(", name="));
-    Serial.println(dimmer_list[i].dimmer_name);
-    dimmer_list[i].init_values();
+    Serial.println(dimmer_list[i]->dimmer_name);
+    dimmer_list[i]->init_values();
   }
 }
 
@@ -70,7 +70,7 @@ Dancer::status(PrintTimer *pt) {
   Serial.print(F(", remote_is_dancing="));
   Serial.println(bool_tostr(remote_is_dancing));
   for (int i=0; i<num_dimmers; i++) {
-    dimmer_list[i].status(pt);
+    dimmer_list[i]->status(pt);
   }
 }
 
@@ -112,7 +112,7 @@ Dancer::update(unsigned long current_millis) {
       Serial.println(current_millis);
     #endif
     for (int i=0; i<num_dimmers; i++) {
-      dimmer_list[i].reset(current_millis);
+      dimmer_list[i]->reset(current_millis);
     }
     is_dancing = false;
   } else if (!is_dancing && remote_is_dancing == 1 ) {
@@ -122,14 +122,14 @@ Dancer::update(unsigned long current_millis) {
       Serial.println(current_millis);
     #endif
     for (int i=0; i<num_dimmers; i++) {
-      dimmer_list[i].start(current_millis);
+      dimmer_list[i]->start(current_millis);
     }
     is_dancing = true;
   }
 
   // update the power numbers for internal dimmers
   for (int i=0; i<num_dimmers; i++) {
-    dimmer_list[i].update(current_millis);
+    dimmer_list[i]->update(current_millis);
   }
 }
 

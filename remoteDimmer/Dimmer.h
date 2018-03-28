@@ -41,7 +41,8 @@ class Dimmer {
     {   
         pinMode(pwm_pin, OUTPUT);
         analogWrite(pwm_pin, 0);
-        last_target_level = dimmer_min;   // set current dimmer level to match pwm_pin level 
+        last_target_level = 0;          // set current dimmer level to match pwm_pin level 
+        dimm_target = 0;                // need to set this to get the correct level jump on init
         dimm_current = 0;               // the current dimmer step value
         pwm_current = 0;                // set the current pwm value 
 
@@ -108,14 +109,22 @@ void Dimmer::set_dimm_target(unsigned int new_dimm_target) {
   last_target_level = dimm_target;
   dimm_target = new_dimm_target;
 
+
   // how many steps betwen where we are and where we are going
-  num_levels = max(last_target_level, dimm_target) - min(last_target_level, dimm_target);
+  num_levels = max(last_target_level, new_dimm_target) - min(last_target_level, new_dimm_target);
   // the delay for each step
   if (num_levels == 0) { 
     ms_step_duration = 0; 
   } else {
     ms_step_duration = ms_dimm_duration / num_levels;
   }
+  
+  Serial.print(F("Dimmer::set_dimm_target() last_target_level="));
+  Serial.print(last_target_level);
+  Serial.print(F(", new_dimm_target="));
+  Serial.print(new_dimm_target);
+  Serial.print(F(", ms_step_duration="));
+  Serial.println(ms_step_duration);
    
 }
 
@@ -142,9 +151,9 @@ void Dimmer::next_dimmer() {
     dimmer_index = 0;
   }
   current_dimmer_step = dimmer_steps[dimmer_index];
-
+  
   // copy the input values for this step int the the dimmer
-  last_target_level = dimm_target;
+  // last_target_level = dimm_target;
   step_name = current_dimmer_step->step_name;
   ms_switch_after = current_dimmer_step->get_ms_swtch_after();    // set the new total delay before we dimm
   ms_dimm_duration = current_dimmer_step->get_ms_dimm_duration();  // set the new duration for the dimm  up / down
@@ -282,6 +291,12 @@ void Dimmer::init_values() {
   Serial.print(dimmer_max);
   Serial.print(F(", total_levels="));
   Serial.print(total_levels);
+  Serial.print(F(", last_target_level="));
+  Serial.print(total_levels);
+  Serial.print(F(", dimm_current="));
+  Serial.print(dimm_current);
+  Serial.print(F(", dimm_target="));
+  Serial.print(dimm_target);
   Serial.print(F(", R="));
   Serial.print(R,5);
   Serial.print(F(", num_dimmer_steps="));

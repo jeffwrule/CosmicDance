@@ -21,6 +21,7 @@ class Dancer {
     // p_dancer_name  name of this dancer, for status messages
     // p_dancer_pin   input from primary dancer remote_is_dancing, INPUT_PULLUP, can be Analong pin will be read with digitalRead
     // p_motor        pointer to our motor structure
+    // pt             PrinterTimer pointer
     // p_limits_name  name to give the l/r/c Limits object
     // p_left_limit   left limit switch
     // p_right_limit  right limit switch

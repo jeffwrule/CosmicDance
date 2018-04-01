@@ -163,7 +163,6 @@ void Dimmer::next_dimmer() {
   // new delay and new target
   is_delayed = false;     // set to true after the delay period has passed
   is_dimmed = false;     // set to true when the dimmer delay time has passed
-
 }
 
 // send the dimmer back to it's start position

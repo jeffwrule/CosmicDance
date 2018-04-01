@@ -1,7 +1,7 @@
 #ifndef LIMITS_H
 #define LIMITS_H
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericLimitSwitch.h>
+#include "GenericLimitSwitch.h"
 
 ///////////////////////////////////////////////////////////
 //

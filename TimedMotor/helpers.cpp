@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include </Users/jrule/Documents/Arduino/TimedMotor/config.h>
+#include "config.h"
 
 char *bool_tostr(boolean input_bool) {
   if (input_bool) {

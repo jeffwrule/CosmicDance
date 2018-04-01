@@ -1,16 +1,16 @@
 #ifndef AAB_NOSTAY_H
 #define AAB_NOSTAY_H
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/PrintTimer.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/Limits.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/DanceMove.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/Dancer.h>
+#include "PrintTimer.h"
+#include "Limits.h"
+#include "DanceMove.h"
+#include "Dancer.h"
 
 // include the limit switch and motor type for this build
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/HBridgeMotor.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/DigitalLimitSwitch.h>
+#include "HBridgeMotor.h"
+#include "DigitalLimitSwitch.h"
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/AAB_nostay_config.h>
+#include "AAB_nostay_config.h"
 
 // control the print speed
 PrintTimer *print_timer;

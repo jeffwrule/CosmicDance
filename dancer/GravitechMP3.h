@@ -1,7 +1,7 @@
 #ifndef GRAVITECHMP3_H
 #define GRAVITECHMP3_H
 
-#include </Users/jrule/Documents/Arduino/Dancer/GenericMP3.h>
+#include "GenericMP3.h"
 
 /// from setup()
 

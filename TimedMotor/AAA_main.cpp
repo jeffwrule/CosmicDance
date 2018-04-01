@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include </Users/jrule/Documents/Arduino/TimedMotor/config.h>
+#include "config.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // HERE IS WHERE WE INCLUDE THE BBB_devince name include to give this script it personality //

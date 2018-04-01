@@ -1,7 +1,7 @@
 #ifndef DIMMER_H
 #define DIMMER_H
 
-#include </Users/jrule/Documents/Arduino/remoteDimmer/DimmerStep.h>
+#include "DimmerStep.h"
 
 //
 //  A dimmer has an initial value, which is set when the dimmer is first activated.

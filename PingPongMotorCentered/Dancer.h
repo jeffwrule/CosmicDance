@@ -1,7 +1,7 @@
 #ifndef DANCER_H
 #define DANCER_H
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericMotor.h>
+#include "GenericMotor.h"
 
 ///////////////////////////////////////////////////////////
 //

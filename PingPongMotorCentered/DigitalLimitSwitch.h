@@ -1,7 +1,7 @@
 #ifndef DIGITALLIMITSWITCH_H
 #define DIGITALLIMITSWITCH_H
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericLimitSwitch.h>
+#include "GenericLimitSwitch.h"
 
 //////////////////////////////////////////////////////////////
 //

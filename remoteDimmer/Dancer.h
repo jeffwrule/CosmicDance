@@ -1,7 +1,7 @@
 #ifndef DANCER_H
 #define DANCER_H
 
-#include </Users/jrule/Documents/Arduino/remoteDimmer/Dimmer.h>
+#include "Dimmer.h"
 
 class Dancer {
 

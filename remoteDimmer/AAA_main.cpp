@@ -1,5 +1,5 @@
 #include <arduino.h>
-#include </Users/jrule/Documents/Arduino/remoteDimmer/config.h>
+#include "config.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // HERE IS WHERE WE INCLUDE THE AAB_devince name include to give this script it personality //

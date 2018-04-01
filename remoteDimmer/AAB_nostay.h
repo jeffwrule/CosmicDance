@@ -1,11 +1,11 @@
 #ifndef AAB_NOSTAY_H
 #define AAB_NOSTAY_H
 
-#include </Users/jrule/Documents/Arduino/remoteDimmer/PrintTimer.h>
-#include </Users/jrule/Documents/Arduino/remoteDimmer/Dimmer.h>
-#include </Users/jrule/Documents/Arduino/remoteDimmer/Dancer.h>
+#include "PrintTimer.h"
+#include "Dimmer.h"
+#include "Dancer.h"
 
-#include </Users/jrule/Documents/Arduino/remoteDimmer/AAB_nostay_config.h>
+#include "AAB_nostay_config.h"
 
 // control the print speed
 PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);

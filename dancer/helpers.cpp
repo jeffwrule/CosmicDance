@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include </Users/jrule/Documents/Arduino/Dancer/config.h>
+#include "config.h"
 
 String bool_tostr(bool input_bool) {
   if (input_bool) {

@@ -1,7 +1,7 @@
 #ifndef DIGITALONOFFDEVICE_H
 #define DIGITALONOFFDEVICE_H
 
-#include </Users/jrule/Documents/Arduino/Dancer/GenericDevice.h>
+#include "GenericDevice.h"
 
 // a device that is enabled/disable via a pin
 class DigitalOnOffDevice: public GenericDevice {

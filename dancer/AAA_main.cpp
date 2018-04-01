@@ -1,13 +1,13 @@
 #include <arduino.h>
-#include </Users/jrule/Documents/Arduino/Dancer/config.h>
+#include "config.h"
 
-#include </Users/jrule/Documents/Arduino/Dancer/PrintTimer.h>
-#include </Users/jrule/Documents/Arduino/Dancer/Fob.h>
-#include </Users/jrule/Documents/Arduino/Dancer/Xbee.h>
-#include </Users/jrule/Documents/Arduino/Dancer/SparkFunMP3.h>
-#include </Users/jrule/Documents/Arduino/Dancer/DigitalOnOffDevice.h>
-#include </Users/jrule/Documents/Arduino/Dancer/Director.h>
-#include </Users/jrule/Documents/Arduino/Dancer/Dancer.h>
+#include "PrintTimer.h"
+#include "Fob.h"
+#include "Xbee.h"
+#include "SparkFunMP3.h"
+#include "DigitalOnOffDevice.h"
+#include "Director.h"
+#include "Dancer.h"
 
 PrintTimer *print_timer;  // time to keep things moving
 Fob *my_fob;              // pointer to our fob device;

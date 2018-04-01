@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/config.h>
+#include "config.h"
 
 char* bool_tostr(bool input_bool) {
   if (input_bool) {

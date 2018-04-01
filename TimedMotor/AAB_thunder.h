@@ -1,12 +1,12 @@
 #ifndef BB_THUNDER_H
 #define BB_THUNDER_H
 // include the limit switch and motor type for this build
-#include </Users/jrule/Documents/Arduino/TimedMotor/PrintTimer.h>
-#include </Users/jrule/Documents/Arduino/TimedMotor/PWMMotor.h>
-#include </Users/jrule/Documents/Arduino/TimedMotor/DanceMove.h>
-#include </Users/jrule/Documents/Arduino/TimedMotor/Dancer.h>
+#include "PrintTimer.h"
+#include "PWMMotor.h"
+#include "DanceMove.h"
+#include "Dancer.h"
 
-#include </Users/jrule/Documents/Arduino/TimedMotor/AAB_thunder_config.h>
+#include "AAB_thunder_config.h"
 
 // control the print speed
 PrintTimer *print_timer;

@@ -1,10 +1,11 @@
 #ifndef SPARKFUNMP3_H
 #define SPARKFUNMP3_H
 
-#include </Users/jrule/Documents/Arduino/Dancer/GenericMP3.h>
 #include <SdFat.h>
 #include <SFEMP3Shield.h>
 #include <SPI.h>
+
+#include "GenericMP3.h"
 
 SdFat sd;
 

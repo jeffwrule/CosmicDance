@@ -1,7 +1,7 @@
 #ifndef ADAFRUITMP3_H
 #define ADAFRUITMP3_H
 
-#include </Users/jrule/Documents/Arduino/Dancer/GenericMP3.h>
+#include "GenericMP3.h"
 
   #ifdef HAS_ADAFRUIT_MP3
     #include <Adafruit_VS1053.h>

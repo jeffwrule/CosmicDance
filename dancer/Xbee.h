@@ -1,7 +1,7 @@
 #ifndef XBEE_H
 #define XBEE_H
 #include <SoftwareSerial.h>
-#include </Users/jrule/Documents/Arduino/Dancer/GenericXbee.h>
+#include "GenericXbee.h"
 
 class Xbee: public GenericXbee {
 

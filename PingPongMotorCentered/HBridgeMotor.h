@@ -1,7 +1,7 @@
 #ifndef HBRIDGEMOTOR_H
 #define HBRIDGEMOTOR_H
 
-#include </Users/jrule/Documents/Arduino/pingPongMotorCentered/GenericMotor.h>
+#include "GenericMotor.h"
 
 ///////////////////////////////////////////////////////////
 //

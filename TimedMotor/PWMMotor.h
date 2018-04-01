@@ -1,7 +1,7 @@
 #ifndef PWMMOTOR_H
 #define PWMMOTOR_H
 
-#include </Users/jrule/Documents/Arduino/TimedMotor/GenericMotor.h>
+#include "GenericMotor.h"
 
 class PWMMotor: public GenericMotor {
     public:

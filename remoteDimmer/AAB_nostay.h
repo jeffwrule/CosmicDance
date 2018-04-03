@@ -34,16 +34,16 @@ void setup()
             "ns_init",                  // step_name          The name of this dimmer for debug
             NOSTAY_DIMM,                // dimm_target           The value between dimm_min/max where you want to end
             0,                          // switch_after_sec   Time to wait after dance starts before we start dimming up
-            NOSTAY_DIMM_CHANGE_SECONDS, // dimm_duration_sec  The amount of time to take between start and end dimming
+            NOSTAY_DIMM_CHANGE_SECONDS_SHORT, // dimm_duration_sec  The amount of time to take between start and end dimming
             false                       // wait is running
             );
     
   notstay_steps[i++] = new DimmerStep(
-            "ns_on",                    // step_name          The name of this dimmer for debug
-            NOSTAY_BRIGHT,              // dimm_target           The value between dimm_min/max where you want to end
-            0,                          // switch_after_sec   Time to wait after dance starts before we start dimming up
-            NOSTAY_DIMM_CHANGE_SECONDS, // dimm_duration_sec  The amount of time to take between start and end dimming
-            true                        // wait is running
+            "ns_on",                         // step_name          The name of this dimmer for debug
+            NOSTAY_BRIGHT,                   // dimm_target           The value between dimm_min/max where you want to end
+            0,                               // switch_after_sec   Time to wait after dance starts before we start dimming up
+            NOSTAY_DIMM_CHANGE_SECONDS_LONG, // dimm_duration_sec  The amount of time to take between start and end dimming
+            true                             // wait is running
             );
   notstay_steps[i++] = new DimmerStep(
             "hold_on",        // step_name          The name of this dimmer for debug

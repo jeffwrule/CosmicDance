@@ -18,7 +18,7 @@ Dancer* dancers[NUM_DANCERS];
 //// motor 1 related instances and variables
 GenericMotor *my_motor1;
 Dancer *my_dancer1;
-#define D1_NUM_DANCE_MOVES 2
+#define D1_NUM_DANCE_MOVES 3
 DanceMove *d1_dance_moves[D1_NUM_DANCE_MOVES];
 
 // motor 2 related instances and variables
@@ -65,17 +65,26 @@ void setup() {
         99,                     // move_delay_seconds     seconds to delay before we start moving the motor
         THUNDER_ROLLERS_START,  // motor start speed      starting pwm speed
         THUNDER_ROLLERS_SLOW,   // move_speed             pwm speed to run the motor at, 0-255
-        82,                     // move_duration_seconds 
+        40,                     // move_duration_seconds 
         DELAY_TYPE_DANCE        // delay this move on the start of the move 'm'
         ); 
-  
+
+    d1_dance_moves[i++] = new DanceMove(
+        "rollers1",
+        0,                      // move_delay_seconds     seconds to delay before we start moving the motor
+        THUNDER_ROLLERS_START,  // motor start speed      starting pwm speed
+        THUNDER_ROLLERS_FAST,   // move_speed             pwm speed to run the motor at, 0-255
+        42,                     // move_duration_seconds 
+        DELAY_TYPE_DANCE        // delay this move on the start of the move 'm'
+        ); 
+        
   d1_dance_moves[i++] = new DanceMove(
-        "rollers2",       // move_name              name of this move for debug
-        60*60,            // move_delay_seconds     seconds to delay before we start moving the motor
-        0,                // motor start speed      starting pwm speed
-        0,                // move_speed             pwm speed to run the motor at, 0-255
-        0,                // move_duration_seconds  5 minutes, we just want to hit the limit to stop
-        DELAY_TYPE_MOVE   // delay this move on the start of the move 'm'
+        "rollers2",               // move_name              name of this move for debug
+        0,                        // move_delay_seconds     seconds to delay before we start moving the motor
+        THUNDER_ROLLERS_START,    // motor start speed      starting pwm speed
+        THUNDER_ROLLERS_SLOW,     // move_speed             pwm speed to run the motor at, 0-255
+        60*60,                    // move_duration_seconds  1 hour, will quit when the music stop
+        DELAY_TYPE_MOVE           // delay this move on the start of the move 'm'
         ); 
   
   if (i != D1_NUM_DANCE_MOVES) { 
@@ -165,11 +174,11 @@ void setup() {
   i=0;
   d3_dance_moves[i++] = new DanceMove(
         "treble1",
-        189,                           // move_delay_seconds     seconds to delay before we start moving the motor
-        THUNDER_HAMMER_START,   // motor start speed      starting pwm speed
-        THUNDER_HAMMER_SPEED_HAMMER,         // move_speed             pwm speed to run the motor at, 0-255
-        THUNDER_HAMMER_DURATION_TREBLE,
-        DELAY_TYPE_DANCE     // delay this move on the start of the move 'm'
+        189,                              // move_delay_seconds     seconds to delay before we start moving the motor
+        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
+        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
+        THUNDER_HAMMER_DURATION_TREBLE,   // move_duration_seconds 
+        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
         ); 
 
   d3_dance_moves[i++] = new DanceMove(
@@ -177,8 +186,8 @@ void setup() {
         60*60,                // move_delay_seconds     seconds to delay before we start moving the motor
         0,                    // motor start speed      starting pwm speed
         0,                    // move_speed             pwm speed to run the motor at, 0-255
-        0,                     // move_duration_seconds  60 minutes, we just want to hit the limit to stop
-        DELAY_TYPE_MOVE     // delay this move on the start of the move 'm'
+        0,                    // move_duration_seconds  60 minutes, we just want to hit the limit to stop
+        DELAY_TYPE_MOVE       // delay this move on the start of the move 'm'
         ); 
 
   if (i != D3_NUM_DANCE_MOVES) { 

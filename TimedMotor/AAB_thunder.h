@@ -62,10 +62,10 @@ void setup() {
   i=0;
   d1_dance_moves[i++] = new DanceMove(
         "rollers1",
-        99,                     // move_delay_seconds     seconds to delay before we start moving the motor
+        0,                     // move_delay_seconds     seconds to delay before we start moving the motor
         THUNDER_ROLLERS_START,  // motor start speed      starting pwm speed
         THUNDER_ROLLERS_SLOW,   // move_speed             pwm speed to run the motor at, 0-255
-        40,                     // move_duration_seconds 
+        99,                     // move_duration_seconds 
         DELAY_TYPE_DANCE        // delay this move on the start of the move 'm'
         ); 
 
@@ -74,7 +74,7 @@ void setup() {
         0,                      // move_delay_seconds     seconds to delay before we start moving the motor
         THUNDER_ROLLERS_START,  // motor start speed      starting pwm speed
         THUNDER_ROLLERS_FAST,   // move_speed             pwm speed to run the motor at, 0-255
-        42,                     // move_duration_seconds 
+        82,                     // move_duration_seconds 
         DELAY_TYPE_DANCE        // delay this move on the start of the move 'm'
         ); 
         

@@ -24,13 +24,13 @@ DanceMove *d1_dance_moves[D1_NUM_DANCE_MOVES];
 // motor 2 related instances and variables BASS
 GenericMotor *my_motor2;
 Dancer *my_dancer2;
-#define D2_NUM_DANCE_MOVES 3
+#define D2_NUM_DANCE_MOVES 4
 DanceMove *d2_dance_moves[D2_NUM_DANCE_MOVES];
 
 // motor 3 related instances and variables TREBLE
 GenericMotor *my_motor3;
 Dancer *my_dancer3;
-#define D3_NUM_DANCE_MOVES 5
+#define D3_NUM_DANCE_MOVES 1
 DanceMove *d3_dance_moves[D3_NUM_DANCE_MOVES];
 
 void setup() {
@@ -123,15 +123,24 @@ void setup() {
   i=0;
   d2_dance_moves[i++] = new DanceMove(
         "bass1",
+        165,                              // move_delay_seconds     seconds to delay before we start moving the motor
+        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
+        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
+        6,   // move_duration_seconds 
+        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
+        ); 
+  
+  d2_dance_moves[i++] = new DanceMove(
+        "bass2",
         180,                             // move_delay_seconds     seconds to delay before we start moving the motor
         THUNDER_HAMMER_START,           // motor start speed      starting pwm speed
         THUNDER_HAMMER_SPEED_HAMMER,    // move_speed             pwm speed to run the motor at, 0-255
         14,   // move duration
         DELAY_TYPE_DANCE     // delay this move on the start of the move 'm'
         ); 
-
+        
   d2_dance_moves[i++] = new DanceMove(
-        "bass2",
+        "bass3",
         199,                             // move_delay_seconds     seconds to delay before we start moving the motor
         THUNDER_HAMMER_START,           // motor start speed      starting pwm speed
         THUNDER_HAMMER_SPEED_HAMMER,    // move_speed             pwm speed to run the motor at, 0-255
@@ -140,7 +149,7 @@ void setup() {
         ); 
 
   d2_dance_moves[i++] = new DanceMove(
-        "bass3",
+        "bass4",
         60*60,                // move_delay_seconds     seconds to delay before we start moving the motor
         0,                    // motor start speed      starting pwm speed
         0,                    // move_speed             pwm speed to run the motor at, 0-255
@@ -181,44 +190,9 @@ void setup() {
   ////////////////////////////////////////////////////////
 
   i=0;
+
   d3_dance_moves[i++] = new DanceMove(
         "treble1",
-        165,                              // move_delay_seconds     seconds to delay before we start moving the motor
-        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
-        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
-        6,   // move_duration_seconds 
-        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
-        ); 
-
-  d3_dance_moves[i++] = new DanceMove(
-        "treble2",
-        180,                              // move_delay_seconds     seconds to delay before we start moving the motor
-        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
-        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
-        6,   // move_duration_seconds 
-        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
-        ); 
-        
-  d3_dance_moves[i++] = new DanceMove(
-        "treble3",
-        185,                              // move_delay_seconds     seconds to delay before we start moving the motor
-        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
-        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
-        6,   // move_duration_seconds 
-        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
-        ); 
-        
-  d3_dance_moves[i++] = new DanceMove(
-        "treble4",
-        210,                              // move_delay_seconds     seconds to delay before we start moving the motor
-        THUNDER_HAMMER_START,             // motor start speed      starting pwm speed
-        THUNDER_HAMMER_SPEED_HAMMER,      // move_speed             pwm speed to run the motor at, 0-255
-        6,   // move_duration_seconds 
-        DELAY_TYPE_DANCE                  // delay this move on the start of the move 'm'
-        ); 
-
-  d3_dance_moves[i++] = new DanceMove(
-        "treble5",
         60*60,                // move_delay_seconds     seconds to delay before we start moving the motor
         0,                    // motor start speed      starting pwm speed
         0,                    // move_speed             pwm speed to run the motor at, 0-255

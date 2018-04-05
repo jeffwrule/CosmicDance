@@ -9,6 +9,6 @@ char* bool_tostr(boolean input_bool);  /// forward declare bool_tostr;
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
-#define ALWAYS_BE_DANCING true
+#define ALWAYS_BE_DANCING false
 
 #endif

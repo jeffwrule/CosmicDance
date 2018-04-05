@@ -36,6 +36,7 @@ class Dancer {
     boolean remote_is_dancing;  // is the remote dancng 
     Dimmer **dimmer_list;        // list of dimmers to work with
     int num_dimmers;            // number of dimmers
+    int pin_reads=0;            // last number of pin reads...
 
 };
 
@@ -45,7 +46,9 @@ Dancer::init_values() {
   Serial.print(F(", dancer_pin="));
   Serial.print(dancer_pin); 
   Serial.print(F(", num_dimmers="));
-  Serial.println(num_dimmers); 
+  Serial.print(num_dimmers); 
+  Serial.print(F(", ALWAYS_BE_DANCING="));
+  Serial.println(bool_tostr(ALWAYS_BE_DANCING));
   for (int i=1; i<num_dimmers; i++) {
     Serial.print(F("Dimmer# "));
     Serial.print(i);
@@ -68,7 +71,9 @@ Dancer::status(PrintTimer *pt) {
   Serial.print(F(", is_dancing="));
   Serial.print(bool_tostr(is_dancing));
   Serial.print(F(", remote_is_dancing="));
-  Serial.println(bool_tostr(remote_is_dancing));
+  Serial.print(bool_tostr(remote_is_dancing));
+  Serial.print(F(", pin_reads="));
+  Serial.println(pin_reads);
   for (int i=0; i<num_dimmers; i++) {
     dimmer_list[i]->status(pt);
   }
@@ -76,9 +81,9 @@ Dancer::status(PrintTimer *pt) {
 
 Dancer::update(unsigned long current_millis) {
 
-  int  pin_reads;               // sum of multiple reads of the pin
   int  num_loops=5;             // number of reads to execute on the pin
 
+  pin_reads=0;
   // get an average read from the remote pin (helps w/ bouncing etc)
   for (int i=0; i<num_loops; i++) {
     pin_reads += digitalRead(dancer_pin);
@@ -120,6 +125,9 @@ Dancer::update(unsigned long current_millis) {
     #if defined IS_BRIEF
       Serial.print(F("DANCE_STARTED: current_ms: "));
       Serial.println(current_millis);
+      if (ALWAYS_BE_DANCING == true) {
+        Serial.println(F("WARNING: ALWAYS_BE_DANCING=true"));
+      }
     #endif
     for (int i=0; i<num_dimmers; i++) {
       dimmer_list[i]->start(current_millis);

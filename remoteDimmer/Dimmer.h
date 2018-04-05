@@ -98,7 +98,7 @@ class Dimmer {
     unsigned long   dimmer_start_ms = 0;    // the time we started this run.
 
     void adjust_power(unsigned long current_ms);          // change the power levels when in a running state
-    void next_dimmer();                                   // update to the next dimmer timeout and level
+    void next_dimmer(unsigned long current_ms);           // update to the next dimmer timeout and level
     void set_dimm_target(unsigned int new_dimm_target);   // update the dimmer target value and recompute associated values
 
 };
@@ -137,18 +137,19 @@ void Dimmer::reset(unsigned long current_ms) {
   is_dimmed = false;     // set to true when the dimmer delay time has passed
 
   dimmer_index = num_dimmer_steps;
-  next_dimmer();
-  
-  // put some initial values here
-  dimmer_start_ms = current_ms;
-  ms_last_update = current_ms;
-  ms_start_diff = 0;
+  next_dimmer(current_ms);
 }
 
-void Dimmer::next_dimmer() {
+// switch to the next dimmer step
+void Dimmer::next_dimmer(unsigned long current_ms) {
   dimmer_index++;
   if (dimmer_index >= num_dimmer_steps) {
     dimmer_index = 0;
+
+    // when starting back at zero reset the 'dance' start time and differences
+    dimmer_start_ms = current_ms;
+    ms_last_update = current_ms;
+    ms_start_diff = 0;
   }
   current_dimmer_step = dimmer_steps[dimmer_index];
   
@@ -165,10 +166,12 @@ void Dimmer::next_dimmer() {
   is_dimmed = false;     // set to true when the dimmer delay time has passed
 }
 
-// send the dimmer back to it's start position
+// start the dimmer is triggered with music starts
 void Dimmer::start(unsigned long current_ms) {
+  // reset our start timer for this move.
   dimmer_start_ms = current_ms;
   ms_last_update = current_ms;
+  ms_start_diff = 0;
   is_running = true; 
   Serial.print(F("Dimmer::start dimmer_name="));
   Serial.println(dimmer_name);
@@ -267,12 +270,14 @@ void Dimmer::update(unsigned long current_ms) {
     if (dimm_target == dimm_current) {
       Serial.println(F("DIMM TARGET REACHED"));
       is_dimmed = true; 
-      next_dimmer();
+      next_dimmer(current_ms);
       Serial.print(F("   NEW_DIMMER_STEP: "));
       current_dimmer_step->init_values();
       // if we looped around reset the dimmer clock
       if (dimmer_index == 0) {
-        start(current_ms);
+        if (is_running) {
+          start(current_ms);
+        }
       }
     }
   }
@@ -312,23 +317,23 @@ void Dimmer::status(PrintTimer *pt) {
   if (!pt->get_do_print()) {
     return;
   }
-  Serial.print(F("Dimmer_status:: dimmer_name: "));
+  Serial.print(F("Dimmer_status:: dimmer_name="));
   Serial.print(dimmer_name); 
-  Serial.print(F(", current_ms: "));
+  Serial.print(F(", current_ms="));
   Serial.print(pt->current_millis);
-  Serial.print(F(", dimm_target: "));
+  Serial.print(F(", dimm_target="));
   Serial.print(dimm_target);
-  Serial.print(F(", dimm_current: "));
+  Serial.print(F(", dimm_current="));
   Serial.print(dimm_current);
-  Serial.print(F(", pwm_current: "));
+  Serial.print(F(", pwm_current="));
   Serial.print(pwm_current);
-  Serial.print(F(", ms_switch_after: "));
+  Serial.print(F(", ms_switch_after="));
   Serial.print(ms_switch_after);
-  Serial.print(F(", ms_start_diff: "));
+  Serial.print(F(", ms_start_diff="));
   Serial.print(ms_start_diff);
-  Serial.print(F(", ms_last_update: "));
+  Serial.print(F(", ms_last_update="));
   Serial.print(ms_last_update);
-  Serial.print(F(", dimmer_start_ms: "));
+  Serial.print(F(", dimmer_start_ms="));
   Serial.println(dimmer_start_ms);
 
   Serial.print(F("    num_levels="));

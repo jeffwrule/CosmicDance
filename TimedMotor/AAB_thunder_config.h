@@ -22,10 +22,10 @@
 #define DANCER_INPUT_PIN    A4     // remote dancer input pin
 
 // speeds to run the different motors at 0-255
-#define THUNDER_ROLLERS_START 99  
+#define THUNDER_ROLLERS_START 191 
 #define THUNDER_ROLLERS_INCREMENT 25
 #define THUNDER_ROLLERS_INCREMENT_DELAY 0
-#define THUNDER_ROLLERS_SLOW 100
+#define THUNDER_ROLLERS_SLOW 190
 #define THUNDER_ROLLERS_FAST 255
 
 #define THUNDER_HAMMER_START 254

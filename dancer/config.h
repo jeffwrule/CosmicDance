@@ -15,7 +15,7 @@ String bool_tostr(bool input_bool);
 #define BEEP_VOLUME 100 
 
 // not implemented yet!
-#define FAKE_FOB_IS_DANCING false
+#define FAKE_FOB_IS_DANCING true
 
 // configured PINS
 #define PRIMARY_DEVICE_PIN A0         // pin to turn on the primary motor/device
@@ -32,7 +32,7 @@ String bool_tostr(bool input_bool);
 
 // Dancer Delay Configs
 #define PRE_DELAY_SECNDS  0   //  unsigned int dance_delay_seconds  number of seconds to delay between director/fob start and music start
-#define FOB_DELAY_SECONDS 30   //  unsigned int fob_delay_seconds    number of seconds to delay between plays when in fob mode
+#define FOB_DELAY_SECONDS 0   //  unsigned int fob_delay_seconds    number of seconds to delay between plays when in fob mode
 
 #define CHECK_IN_SECONDS 4    // how often to check in with the director when active (not on fob)
 

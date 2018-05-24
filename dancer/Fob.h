@@ -12,7 +12,7 @@ class Fob {
     
     Fob(unsigned short fob_pin) : 
       fob_pin(fob_pin),
-      always_be_dancing(false), 
+      always_be_dancing(FAKE_FOB_IS_DANCING), 
       // fob_was_pushed(false),
       fob_is_dancing(false) {
         pinMode(fob_pin, INPUT_PULLUP);

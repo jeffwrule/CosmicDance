@@ -1,5 +1,5 @@
 #ifndef PRINTTIMER_H
-#define PRINTETIMER_H
+#define PRINTTIMER_H
 
 // class to control print speed so we don't overwhelm the serial port
 class PrintTimer {
@@ -7,6 +7,7 @@ class PrintTimer {
   public:
     void    update();           // update if it is time to print
     void    print_now();        // override the counter and print now
+    void    print_off();        // turn off printing..
     boolean get_do_print();     // can we print
     void    init_values();      // inital values for the print timer
     void    status();           // dump the current status of the print timer
@@ -39,6 +40,12 @@ void PrintTimer::update() {
 void PrintTimer::print_now() {
   do_print = true;
 }
+
+// allow the sketch to override from time to time and call for a print
+void PrintTimer::print_off() {
+  do_print = false;
+}
+
 
 // retun the value of the do_print status
 boolean PrintTimer::get_do_print() {

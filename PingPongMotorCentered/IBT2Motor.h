@@ -7,11 +7,14 @@
 // IBT_2 motor
 //
 /////////////////////////////////////////////////////////// 
+
+
 class IBT2Motor: public GenericMotor {
   public:
     void stop();                // stop the motor by bring pwm down to 0
     void start();               // if current speed is less then start speed, make it start speed
     void run();                 // increment motor speed to max speed in SPEED_INCREMENT jumps over multiple calls, does nothing if motor is disabled
+    void reverse();
     void go_left();
     void go_right();
     boolean is_stopped();
@@ -21,7 +24,10 @@ class IBT2Motor: public GenericMotor {
     void disable();
     void status();
     int speed = 0;
-    String get_motor_name();
+    char *get_motor_name();
+    void set_target_speed(unsigned int new_target_speed);
+    unsigned int get_target_speed();
+    unsigned int get_max_speed();
 
     // p_motor_name                         name of this motor (for status messages)
     // m_speed_left                         max speed going left
@@ -41,7 +47,7 @@ class IBT2Motor: public GenericMotor {
     // p_jump_millis_duration2              amount of time to run at higher faster speed during jumpstart period 2, must be larger then p_jump_millis_duration1
     // p_jumpstart_speed2                   max speed to run during jumpstart2, should be less then or equal to p_jumpstart_speed1
     // p_max_time_to_limit_switch_seconds   max seconds we expect to reach opssite limit switch, allows us to reserver if motor is stuck
-    IBT2Motor(String p_motor_name, 
+    IBT2Motor(char *p_motor_name, 
         int m_speed_left, int m_speed_right,  
         int p_pwml, int p_pwmr, 
         int p_motor_start_speed, int p_speed_increment,
@@ -120,12 +126,12 @@ class IBT2Motor: public GenericMotor {
           alt_pwm_pin = pin_pwmr;
           motor_is_disabled = false,
           max_speed = 0;
-          disable(); 
+          enable(); 
           go_left(); 
        }
     
   private:
-    String motor_name;                    // name of this motor printed during status messages
+    const char *motor_name;                    // name of this motor printed during status messages
     int pin_pwml;                         // left pin
     int pin_pwmr;                         // right pin  
     int current_pwm_pin;                  // current_pin switches between the two above
@@ -164,7 +170,7 @@ class IBT2Motor: public GenericMotor {
     unsigned long reverse_delay_millis;   // number of milliseconds to delay when reversing
 };
 
-String IBT2Motor::get_motor_name() {return motor_name; }
+char *IBT2Motor::get_motor_name() {return motor_name; }
 
 // bring the motor down in a controlled manor
 void IBT2Motor::stop() {
@@ -181,7 +187,7 @@ void IBT2Motor::stop() {
     Serial.println(speed);
   #endif
 
-  // trim down the motor speed; if speed > 0
+  // trim down the motor speed; if speed > motor_start_speed
   for (int i=speed; i!=0; i--) {
     motor_was_running = true;
     analogWrite(current_pwm_pin, i);
@@ -278,12 +284,7 @@ void IBT2Motor::run() {
       
     }
     
-    if (do_print) {
-      Serial.print(F("IBT2Motor::run() speed="));
-      Serial.print(speed);
-      Serial.print(F(", max_speed="));
-      Serial.println(run_max_speed);
-    }  
+ 
     
     if (speed <= motor_start_speed) {
       millis_motor_start=millis();
@@ -327,6 +328,15 @@ void IBT2Motor::run() {
     Serial.println(F("IBT2Motor::run() end"));
   #endif
 }
+
+void IBT2Motor::reverse() {
+  if (current_direction() == 'l') {
+    go_right(); 
+  } else {
+    go_left();
+  }
+}
+
 
 // continues left if already going left, else stops and restart left
 void IBT2Motor::go_left() {
@@ -429,7 +439,39 @@ void IBT2Motor::status() {
   Serial.print(millis_since_start);
   Serial.print(F(", speed="));
   Serial.println(speed);  
+
 }
+
+// run the motor by just changing the speed
+void IBT2Motor::set_target_speed(unsigned int new_target_speed)
+{
+  // limit speed to max_speed
+  if (new_target_speed > max_speed) {
+    Serial.print(F("WARNING: IBT2Motor::set_target_speed speed request of "));
+    Serial.print(new_target_speed);
+    Serial.print(F(" exceeds max_speed; speed throttled"));
+    new_target_speed = max_speed;      
+  }
+  
+  Serial.print(F("HBridgeMotor::set_target_speed motor_name="));
+  Serial.print(motor_name);
+  Serial.print(F(", Speed="));
+  Serial.print(speed);
+  Serial.print(F(", old_target_speed="));
+  Serial.print(max_speed);
+  Serial.print(F(", new_target_speed="));
+  Serial.println(new_target_speed);
+
+  max_speed = new_target_speed;
+
+//  // make sure our direction pins are both enabled
+//  digitalWrite(pin_left, move_left);
+//  digitalWrite(pin_right, move_right);
+}
+
+unsigned int IBT2Motor::get_target_speed() { return max_speed; }
+
+unsigned int IBT2Motor::get_max_speed() { return max_speed; }
 
 ////////////////////// end IBT2Motor //////////////////////////
 

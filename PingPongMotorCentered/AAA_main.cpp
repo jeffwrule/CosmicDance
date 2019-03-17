@@ -5,7 +5,8 @@
 // HERE IS WHERE WE INCLUDE THE BBB_devince name include to give this script it personality //
 //////////////////////////////////////////////////////////////////////////////////////////////
 //#include "AAB_sitx2.h"
-#include "AAB_nostay.h"
+//#include "AAB_nostay.h"
+#include "AAC_earth.h"
 
 // watch for limits and request to enable/disable the motor
 void loop() {

@@ -192,10 +192,10 @@ void Dancer::next_move() {
       motor->go_right();
     }
   }
-  // we don't want to move until we have passed the delay check
-  motor->set_target_speed(0);
 }
 
+
+// detect remote dance changs...
 void Dancer::update() {
 
   int current_remote_status;
@@ -307,6 +307,7 @@ void Dancer::dance() {
       Serial.println(F(" DANCER STARTUP DELAY COMPLETE, starting to apply moves"));
       is_delaying = false;
       is_dancing = true;
+      // motor->start();
     }
   }
  

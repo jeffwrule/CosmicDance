@@ -76,7 +76,7 @@ class DanceMove {
     boolean delay_is_complete();            // has delay duration passed?
     boolean move_is_complete();             // has move seconds passed?
 
-    char move_direction;                    // direction to move the motor l,r (typically l=dow, r=up)
+    char move_direction;                    // direction to move the motor l,r (typically l=down, r=up)
     int  move_speed;                        // speed to move at 0-255 (pwm speed)
 
     unsigned long delay_amount_millis;      // total time to delay
@@ -160,6 +160,7 @@ void DanceMove::update(unsigned long current_millis) {
       is_delayed = true;
       is_moving = true;
       move_start_millis = current_millis;
+      
       Serial.print(F("DanceMove::dance  move_name="));
       Serial.print(move_name);
       Serial.println(F(" DELAY COMPLETE, now moving..."));

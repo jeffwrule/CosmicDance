@@ -4,6 +4,7 @@
 #include "PrintTimer.h"
 #include "Dimmer.h"
 #include "Dancer.h"
+#include "PWMPin.h"
 
 #include "AAB_nostay_config.h"
 
@@ -17,6 +18,8 @@ DimmerStep *notstay_steps[NUM_DIMMER_STATES];
 // create a list of all the dimmers to make the code easier to work with
 #define NUM_DIMMERS 1
 Dimmer *dimmer_list[NUM_DIMMERS];
+
+PWMPin *my_pin;
 
 Dancer *my_dancer;  
 
@@ -45,6 +48,7 @@ void setup()
             NOSTAY_DIMM_CHANGE_SECONDS_LONG, // dimm_duration_sec  The amount of time to take between start and end dimming
             true                             // wait is running
             );
+            
   notstay_steps[i++] = new DimmerStep(
             "hold_on",        // step_name          The name of this dimmer for debug
             NOSTAY_BRIGHT,    // dimm_target           The value between dimm_min/max where you want to end
@@ -52,6 +56,7 @@ void setup()
             0,                // dimm_duration_sec  The amount of time to take between start and end dimming
             true              // wait is running
              );
+             
    if (NUM_DIMMER_STATES != i) {
     Serial.print(F("ERROR: NUM_DIMMER_STATES != i,  NUM_DIMMER_STATES="));
     Serial.print(NUM_DIMMER_STATES);
@@ -59,10 +64,12 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin = new PWMPin(DANCER_PIN);
+
   i=0;
   dimmer_list[i++] = new Dimmer(
     "bookshelf",  // p_dimmer_name        The name of this dimmer for debug
-    PMW1,                   // p_pwm_pin            The pwm pin assigned to this dimmer
+    my_pin,                 // p_pwm_pin            The pwm pin assigned to this dimmer
     NOSTAY_DIMMER_MIN,      // p_dimm_min           The bottom setting on the dimmer scale
     NOSTAY_DIMMER_MAX,      // p_dimm_max           Full on value on the dimmer scale
     notstay_steps,          // dimmer_steps         list of DimmerStep(s) and delays to execute     
@@ -95,7 +102,7 @@ void setup()
     dimmer_list[i]->init_values();
   }
 
-  // print the dimmer status as we star
+  // print the dimmer status as we start
   print_timer->print_now();
 
   // print the dancer and dimmer status

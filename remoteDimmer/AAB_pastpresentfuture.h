@@ -4,6 +4,7 @@
 #include "PrintTimer.h"
 #include "Dimmer.h"
 #include "Dancer.h"
+#include "PWMPin.h"
 
 #include "AAB_pastpresentfuture_config.h"
 
@@ -33,7 +34,14 @@ DimmerStep *future_object_steps[NUM_DIMMER_STATES];
 // create a list of all the dimmers to make the code easier to work with
 #define NUM_DIMMERS 6
 Dimmer *dimmer_list[NUM_DIMMERS];
-Dancer *my_dancer;        
+Dancer *my_dancer;  
+
+PWMPin *my_pin1;      
+PWMPin *my_pin2;      
+PWMPin *my_pin3;      
+PWMPin *my_pin4;      
+PWMPin *my_pin5;      
+PWMPin *my_pin6;      
   
 void setup()
 {
@@ -91,11 +99,12 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin1 = new PWMPin(PWM2);
   j=0;
   // past pendulum dimmer
   dimmer_list[j++] = new Dimmer (
       "past_pend",          // p_dimmer_name
-      PMW2,                 // p_pwm_pin 
+      my_pin1,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       past_pend_steps,      // list of dimmer states
@@ -141,10 +150,12 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin2 = new PWMPin(PWM1);
+  
   // past object dimmer 
   dimmer_list[j++] = new Dimmer (
       "past_object",      // p_dimmer_name
-      PMW1,               // p_pwm_pin 
+      my_pin2,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       past_object_steps,  // list of dimmer states
@@ -194,10 +205,12 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin3 = new PWMPin(PWM4);
+  
   // present pendulum dimmer
   dimmer_list[j++] = new Dimmer (
       "present_pend",     // p_dimmer_name
-      PMW4,               // p_pwm_pin 
+      my_pin3,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       present_pend_steps, // list of dimmer states
@@ -242,10 +255,11 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin4 = new PWMPin(PWM3);
   // present object dimmer
   dimmer_list[j++] = new Dimmer (
       "present_object",     // p_dimmer_name
-      PMW3,                 // p_pwm_pin 
+      my_pin4,                 // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       present_object_steps,  // list of dimmer states
@@ -294,10 +308,11 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin5 = new PWMPin(PWM6);
   // future pendulum dimmer
   dimmer_list[j++] = new Dimmer (
       "future_pend",      // p_dimmer_name
-      PMW6,               // p_pwm_pin 
+      my_pin5,               // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       future_pend_steps,  // list of dimmer states
@@ -342,10 +357,11 @@ void setup()
     Serial.println(i);
    }
 
+  my_pin6 = new PWMPin(PWM5);
   // future object dimmer
   dimmer_list[j++] = new Dimmer (
       "future_object",      // p_dimmer_name
-      PMW5,                 // p_pwm_pin 
+      my_pin6,                 // p_pwm_pin 
       DIMMER_MIN,           // pmw level to represent dimmer off state
       DIMMER_MAX,           // pwm level to represent dimmer fully on state,
       future_object_steps,  // list of dimmer states

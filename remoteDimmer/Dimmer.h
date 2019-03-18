@@ -2,6 +2,7 @@
 #define DIMMER_H
 
 #include "DimmerStep.h"
+#include "PWM.h"
 
 //
 //  A dimmer has an initial value, which is set when the dimmer is first activated.
@@ -18,7 +19,7 @@ class Dimmer {
     const char* dimmer_name;                  // the name for this dimmed light source
     
   // p_dimmer_name        The name of this dimmer for debug
-  // p_pwm_pin            The pwm pin assigned to this dimmer
+  // p_pwm_pin            The pwm pin device assigned to this dimmer (generic pin, or shield pin, or others in the future)
   // dimmer_init_target   The initial pwm level for this dimmer when in steady state
   // dimmer_init_seconds  Number of seconds from *DIMMER START* (not the start of this step) to dealy before we adjust dimm level
   // dimmer_min           value to represent 0 PWM value (fully off)
@@ -26,21 +27,19 @@ class Dimmer {
   // dimmer_steps         list of DimmerStep(s) and delays to execute
   // num_dimmer_steps     number of steps in the list, we loop back to step 1 when we get to the end of the list or back to init values when music stops
   Dimmer( const char*     dimmer_name,          // dimmer_name          The name of this dimmer
-          unsigned short  pwm_pin,              // pwm_pin              The pwm pin used to adjust this dimmer
+          PWMDevice       *p_pwm_dev,              // pwm_pin              The pwm pin used to adjust this dimmer
           unsigned int    dimmer_min,           // dimmer_min           value to represent 0 PWM value (fully off)
           unsigned int    dimmer_max,           // dimmer_min           value to represent 0 PWM value (fully off)
           DimmerStep      **dimmer_steps,       // dimmer_steps         list of DimmerStep(s) and delays to execute
           unsigned int    num_dimmer_steps      // num_dimmer_steps     number of steps in the list, we loop back to step 1 when we get to the end of the list or back to init values when music stops
     ) :
     dimmer_name(dimmer_name),
-    pwm_pin(pwm_pin),
+    pwm_dev(p_pwm_dev),
     dimmer_min(dimmer_min),
     dimmer_max(dimmer_max),
     dimmer_steps(dimmer_steps),
     num_dimmer_steps(num_dimmer_steps)
     {   
-        pinMode(pwm_pin, OUTPUT);
-        analogWrite(pwm_pin, 0);
         last_target_level = 0;          // set current dimmer level to match pwm_pin level 
         dimm_target = 0;                // need to set this to get the correct level jump on init
         dimm_current = 0;               // the current dimmer step value
@@ -49,7 +48,7 @@ class Dimmer {
         // Calculate the R variable (only needs to be done once at setup)
         // from this article: https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
         total_levels = max(dimmer_min, dimmer_max) - min(dimmer_min, dimmer_max);
-        R = (total_levels * log10(2))/(log10(255));
+        R = (total_levels * log10(2))/(log10(pwm_dev->get_pwm_max()));
  
         // reset back to initial state
         reset(millis());
@@ -57,10 +56,10 @@ class Dimmer {
   
   private:
     // non-changing values
-    unsigned short  pwm_pin;                // which pin are we controlling, should be a pwm enabled pin
-    unsigned short  dimmer_min;               // the 0th dimmer step (100% off)
-    unsigned short  dimmer_max;               // the max dimmer stop (100% on)
-    double          R;                      // the graph value for this brightness interval;
+    PWMDevice       *pwm_dev;                // which pin are we controlling, should be a pwm enabled pin
+    unsigned short  dimmer_min;              // the 0th dimmer step (100% off)
+    unsigned short  dimmer_max;              // the max dimmer stop (100% on)
+    double          R;                       // the graph value for this brightness interval;
     unsigned int    total_levels;           // total number of steps between min_max
 
     // dimmer list info static info
@@ -197,13 +196,14 @@ void Dimmer::adjust_power(unsigned long current_ms) {
 
   pwm_new = pow (2, (dimm_current / R)) - 1;
   
-  // are we at the top of or dimming scale, override pwm to 255
+  // are we at the top of or dimming scale, override pwm to the max value for this pin type.
   if (dimm_current == dimmer_max) {
-    if (pwm_new != 255) {
+    if (pwm_new != pwm_dev->get_pwm_max()) {
       Serial.print(F("Dimmer::adjust_power() reached dimmer_max, power_curve_val="));
       Serial.print(pwm_new);
-      Serial.println(F(", overidding to pwm_new=255"));
-      pwm_new = 255; // somtimes the formula comes just shy of fully on, we don't want that 
+      Serial.print(F(", overidding to pwm_new="));
+      Serial.println(pwm_dev->get_pwm_max());
+      pwm_new = pwm_dev->get_pwm_max(); // somtimes the formula comes just shy of fully on, we don't want that 
     }
   } 
 
@@ -229,8 +229,7 @@ void Dimmer::adjust_power(unsigned long current_ms) {
   }
   
   pwm_current = pwm_new;
-  
-  analogWrite(pwm_pin, pwm_current);
+  pwm_dev->set_pwm_level(pwm_current);
 }
 
 // update new power levels as time passes
@@ -288,7 +287,7 @@ void Dimmer::init_values() {
   Serial.print(F("Dimmer_INIT:: dimmer_name="));
   Serial.print(dimmer_name);
   Serial.print(F(", pwm_pin="));
-  Serial.print(pwm_pin);
+  Serial.print(pwm_dev->get_pwm_pin());
   Serial.print(F(", dimmer_min="));
   Serial.print(dimmer_min);
   Serial.print(F(", dimmer_max="));
@@ -318,7 +317,9 @@ void Dimmer::status(PrintTimer *pt) {
     return;
   }
   Serial.print(F("Dimmer_status:: dimmer_name="));
-  Serial.print(dimmer_name); 
+  Serial.print(dimmer_name);
+  Serial.print(F(", dimmer_type="));
+  Serial.print(pwm_dev->get_pwm_type());
   Serial.print(F(", current_ms="));
   Serial.print(pt->current_millis);
   Serial.print(F(", dimm_target="));

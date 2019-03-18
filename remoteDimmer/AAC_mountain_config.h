@@ -1,0 +1,19 @@
+#ifndef MOUNTAIN_CONFIG_H
+#define MOUNTAIN_CONFIG_H
+
+#define PWM0  0
+#define PWM1  1
+#define PWM2  2
+
+#define DANCER_PIN A0
+
+#define MTN_DIMMER_MIN 0
+#define MTN_DIMMER_MAX 1000
+
+#define MTN_DIMM 392
+#define MTN_BRIGHT 1000
+
+#define MTN_DIMM_UP_CHANGE_SECONDS 60
+#define MTN_DIMM_DOWN_CHANGE_SECONDS 5
+
+#endif

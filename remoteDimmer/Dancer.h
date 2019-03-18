@@ -49,7 +49,7 @@ Dancer::init_values() {
   Serial.print(num_dimmers); 
   Serial.print(F(", ALWAYS_BE_DANCING="));
   Serial.println(bool_tostr(ALWAYS_BE_DANCING));
-  for (int i=1; i<num_dimmers; i++) {
+  for (int i=0; i<num_dimmers; i++) {
     Serial.print(F("Dimmer# "));
     Serial.print(i);
     Serial.print(F(", name="));

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 20011-2017 Bill Greiman
+ * Copyright (c) 2011-2018 Bill Greiman
  * This file is part of the SdFat library for SD memory cards.
  *
  * MIT License
@@ -99,7 +99,7 @@ void FatFile::dmpFile(print_t* pr, uint32_t pos, size_t n) {
 void FatFile::ls(print_t* pr, uint8_t flags, uint8_t indent) {
   FatFile file;
   rewind();
-  while (file.openNext(this, O_READ)) {
+  while (file.openNext(this, O_RDONLY)) {
     // indent for dir level
     if (!file.isHidden() || (flags & LS_A)) {
       for (uint8_t i = 0; i < indent; i++) {

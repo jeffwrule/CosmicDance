@@ -1,0 +1,56 @@
+DROP TABLE webapp2.tmp_cr_41;
+CREATE TABLE webapp2.tmp_cr_41 AS
+SELECT * FROM webapp2.clinical_report cr
+LEFT JOIN webapp2.workspace_object wso
+    ON wso.id = cr.wso_id
+WHERE wso.id IS NULL
+;
+
+-- cr's that were restored.
+SELECT * FROM tmp_wso_cr_missing;
+
+
+SELECT * FROM webapp2.clinical_report cr
+LEFT JOIN webapp2.workspace_object wso
+    ON wso.id = cr.wso_id
+INNER JOIN webapp2.tmp_wso_cr_missing t
+    ON t.id = cr.wso_id
+WHERE wso.id IS NULL
+;
+
+-- test cases
+CREATE TABLE tmp_cr_41_4_broken_tests AS
+SELECT * FROM tmp_cr_41 t
+WHERE t.genome_id IS  NULL;
+
+-- has genome
+CREATE TABLE tmp_cr_w_genome_37 AS
+SELECT * FROM tmp_cr_41 t
+WHERE t.genome_id IS not NULL;
+
+SELECT u.login, p_wso.*, t.* 
+FROM webapp2.tmp_cr_w_genome_37 t
+INNER JOIN webapp2.genomes g
+    ON g.id = t.genome_id
+INNER JOIN webapp2.projects p
+    ON p.wso_id = g.project_id
+INNER JOIN webapp2.workspace_object p_wso
+    ON p_wso.id = p.wso_id
+INNER JOIN webapp2.user u 
+    ON u.id = p_wso.modified_by
+;
+
+SELECT u.login,g_user.login, p.project_name, p_wso.workspace_id, t.*
+FROM webapp2.tmp_cr_w_genome_37 t
+INNER JOIN webapp2.genomes g
+    ON g.id = t.genome_id
+INNER JOIN webapp2.projects p
+    ON p.wso_id = g.project_id
+INNER JOIN webapp2.workspace_object p_wso
+    ON p_wso.id = p.wso_id
+INNER JOIN webapp2.user u 
+    ON u.id = p_wso.modified_by
+INNER JOIN webapp2.user g_user
+    ON g.uploaded_by = g_user.id
+
+;

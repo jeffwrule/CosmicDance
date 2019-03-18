@@ -4,6 +4,7 @@
  */
 #include <SPI.h>
 #include "SdFat.h"
+#include "sdios.h"
 
 // SD chip select pin
 const uint8_t chipSelect = SS;
@@ -45,7 +46,7 @@ void setup() {
     }
   }
   // create a file and write one line to the file
-  SdFile file("Name1.txt", O_WRITE | O_CREAT);
+  SdFile file("Name1.txt", O_WRONLY | O_CREAT);
   if (!file.isOpen()) {
     error("Name1.txt");
   }
@@ -91,7 +92,7 @@ void setup() {
   }
 
   // open file for append in new location and add a line
-  if (!file.open("dir2/DIR3/NAME3.txt", O_WRITE | O_APPEND)) {
+  if (!file.open("dir2/DIR3/NAME3.txt", O_WRONLY | O_APPEND)) {
     error("dir2/DIR3/NAME3.txt");
   }
   file.println("A line for dir2/DIR3/NAME3.txt");

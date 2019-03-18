@@ -1,3 +1,5 @@
+#include <FAB_LED.h>
+
 #ifndef AAB_ANTIMATTER_H
 #define AAB_ANTIMATTER_H
 
@@ -11,14 +13,26 @@ Nucleon *my_nucleon;
 
 #include <FAB_LED.h>
 
-//// Declare the LED protocol and the port
-sk6812b<D,6>  quark1;
-sk6812b<D,7>  quark2;
-sk6812b<B,0>  quark3;
-
 const uint8_t numPixels = QUARK_NUM_PIXELS;
 
-grbw  pixels[QUARK_NUM_PIXELS] = {};
+//// Declare the LED protocol and the port
+#ifdef SK6812B_LED
+sk6812b<D,6>  quark1;   // pin D6
+sk6812b<D,7>  quark2;   // pin D7
+sk6812b<B,0>  quark3;   // pin D8
+rgbw  pixels[QUARK_NUM_PIXELS] = {};
+#endif
+
+#ifdef WS2812B_LED
+ws2812b<D,6>  quark1;   // pin D6
+ws2812b<D,7>  quark2;   // pin D7
+ws2812b<B,4>  quark3;   // pin D12
+rgb  pixels[QUARK_NUM_PIXELS] = {};
+#endif
+
+
+// grbw  pixels[QUARK_NUM_PIXELS] = {};
+// rgb  pixels[QUARK_NUM_PIXELS] = {};
 
 void setup() {  
   
@@ -28,8 +42,15 @@ void setup() {
 
   print_timer->update();
   print_timer->print_now();
-  
+
+#ifdef SK6812B_LED
   my_nucleon = new Nucleon(print_timer, yellow, cyan, magenta, "YELLOW", "CYAN", "MAGENTA"); 
+#endif
+
+#ifdef WS2812B_LED
+  my_nucleon = new Nucleon(print_timer, red, green, blue, "RED", "GREEN", "BLUE"); 
+#endif
+
 
   // Turn on all the LEDs
   delay(10);
@@ -59,11 +80,10 @@ void Nucleon::setQuarkColourRgb(PrintTimer *pt, unsigned int quark) {
   for (int i=0; i<QUARK_NUM_PIXELS; i++) {
     pixels[i].r = quark_list[quark].current_color.r;
     pixels[i].g = quark_list[quark].current_color.g;
-    pixels[i].b = quark_list[quark].current_color.b; 
-//    pixels[i].r = 255;
-//    pixels[i].g = 255;
-//    pixels[i].b = 255; 
+    pixels[i].b = quark_list[quark].current_color.b;
+#ifdef SK6812B_LED 
     pixels[i].w = 0; 
+#endif
   }
 
   switch (quark) {

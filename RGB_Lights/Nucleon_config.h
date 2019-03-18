@@ -2,7 +2,8 @@
 #define NUCLEIO_CONFIG_H
 
 #define NUM_QUARKS 3
-#define NUM_COLORS = 3;
+
+#define INIT_DELAY_MS 8000
 
 // values for a single color
 struct color {
@@ -37,17 +38,20 @@ struct quark {
     long increment_r;                 // increment for the red channel
     long increment_g;                 // incrmeent for the green channel
     long increment_b;                 // increment for the blue channel
+    long increment_factor;            // percent increment factor
     };
 
 // values to control how quckly we are dimming from 0 to MAX_GRAY and back again
 struct dimm_cycle_t { 
         boolean  to_white_complete;         // did we finish dimming to white? (this is always first)
         boolean  to_color_complete;         // did we finish returning to a new color? (this completes the cycle)
+        boolean  inital_delay;              // one long delay at begenning of cycle;
         unsigned long dimm_duration_ms;     // total duration of the dimm down/up (half down half up)
         unsigned long dimm_start_ms;        // when did we start the current dimm
         unsigned long current_increment;    // number of increments for this run
         unsigned long ms_per_step;          // how long to wait between increments (for longer dimms)     
         unsigned long ms_last_step;         // when did we execute our last color change
+        unsigned long num_increments;        // increment number when half done
 };
 
 // average time per increment

@@ -43,6 +43,8 @@ void Nucleon::setQuarkColourRgb(PrintTimer *pt, unsigned int quark) {
     Serial.print(channel+2);
     Serial.print(F(", R="));
     Serial.print(quark_list[quark].current_color.r);
+//    Serial.print(F(", R_ADJUSTED="));
+//    Serial.print(red);
     Serial.print(F(", G="));
     Serial.print(quark_list[quark].current_color.g);
     Serial.print(F(", B="));

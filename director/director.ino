@@ -4,6 +4,8 @@
 #define SERIAL_SPEED 250000
 //#define isMega
 
+#define MOTION_ENABLED true
+
 
 const unsigned int all_dancers = 0xFFFF;      // this is the address we use when we want to send to all dancers
 
@@ -31,7 +33,11 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 #define PASTPRESENTFUTURE 0x42              // three clocks
 #define NOSTAY 0x44                         // no stay, small book shelf
 #define SITX2 0x46                          // SITX2, 2 chairs piece
-#define THUNDER 0x48                         // the thunder piano
+#define THUNDER 0x48                        // the thunder piano
+#define WATER 0x50                          // chinese american musuem, spring 2019
+#define MOUNTAIN 0x52                       // chinese american museum, spring 2019
+#define EARTH 0x54                          // chinese american museum, spring 2019 NOTE: xbee network PAN ID 7777 (not 7333)
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -69,8 +75,10 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 // unsigned int dance_order[]  = {HEAVENNEARTH};  // Studio Testing jan-2018
 //unsigned int dance_order[]  = { WHITEHOLE, GRAVITY_CG, LONGINGCLOUD, HEAVENNEARTH, all_dancers};  // National Theater Show Jan-2018
 //unsigned int dance_order[]  = {all_dancers};  // National Theater Show Jan-2018, test
-// unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
-unsigned int dance_order[]  = {SITX2, NOSTAY, PASTPRESENTFUTURE, THUNDER};  // March 2018 Asia Modern, DongHai Group Show
+//unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
+//unsigned int dance_order[]  = {SITX2, NOSTAY, PASTPRESENTFUTURE, THUNDER};  // March 2018 Asia Modern, DongHai Group Show
+// unsigned int dance_order[]  = {MOUNTAIN, WATER, EARTH};  // March 2018 Asia Modern, DongHai Group Show
+unsigned int dance_order[]  = {WATER};  // March 2018 Asia Modern, DongHai Group Show
 
 
                                
@@ -326,6 +334,9 @@ void setup() {
 void loop() {
     // protect against millis rollover
     if (start > millis()) {start = millis(); last_response = start; }
+
+    
+
     
   /*
    * start the next dancer 

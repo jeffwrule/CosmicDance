@@ -22,9 +22,9 @@ String bool_tostr(bool input_bool);
 
 // configured PINS
 #define PRIMARY_DEVICE_PIN A0         // pin to turn on the primary motor/device
-#define SECONDARY_DEVICE_PIN A1       // pint to turn on secondary motor/devce  
+#define SECONDARY_DEVICE_PIN A1       // pin to turn on secondary motor/devce  
 #define FOB_PIN   A3                  // Fob INPUT_PULLUP Pin
-#define SEAT_PIN A5
+#define SEAT_PIN A5                   // input pin, used by IS_SEAT_SWITCH=true mode
 
 // XBEE Constants
 #define XBEE_READ_PIN   5   

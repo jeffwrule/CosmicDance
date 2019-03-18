@@ -14,13 +14,17 @@ String bool_tostr(bool input_bool);
 #define NORMAL_VOLUME 12
 #define BEEP_VOLUME 100 
 
-// not implemented yet!
-#define FAKE_FOB_IS_DANCING true
+// set this to always be dancing
+#define FAKE_FOB_IS_DANCING false
+
+// set this true to make the dancer react to the seat switch, not the director or FOB
+#define IS_SEAT_SWITCH false            
 
 // configured PINS
 #define PRIMARY_DEVICE_PIN A0         // pin to turn on the primary motor/device
 #define SECONDARY_DEVICE_PIN A1       // pint to turn on secondary motor/devce  
 #define FOB_PIN   A3                  // Fob INPUT_PULLUP Pin
+#define SEAT_PIN A5
 
 // XBEE Constants
 #define XBEE_READ_PIN   5   

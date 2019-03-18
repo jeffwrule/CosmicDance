@@ -29,7 +29,10 @@ void setup() {
   Serial.println(F("Sketch=Dancer.ino"));
 
   print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
-  
+
+  // fob is getting an invalid reading sometimes, lets add a delay before we start to 
+  // help stop the erronous readings sometimes..
+  delay(500);
   my_fob = new Fob(FOB_PIN);                          // setup the fob
   
   my_xbee = new Xbee(XBEE_READ_PIN, XBEE_WRITE_PIN);  // seetup our xbee card

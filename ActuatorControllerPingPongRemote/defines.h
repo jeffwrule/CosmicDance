@@ -1,0 +1,14 @@
+
+#define PRINT_EVERY_MS 2000
+
+#define MIN_POSITION 0
+#define MAX_POSITION 1729
+#define HOME_POSITION 800
+
+#define POSITION_HOME   0
+#define POSITION_BOTTOM 0
+#define POSITION_TOP   1190
+#define POSITION_CENTER  490
+
+#define PWM_SPEED 26
+// #define PWM_SPEED 50

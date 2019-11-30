@@ -1,0 +1,22 @@
+
+#pragma once
+
+#define CMD_STOP	's'
+#define CMD_AUTO_K	'a'
+#define CMD_GO		'g'
+#define CMD_SET_P	'p'
+#define CMD_SET_I	'i'
+#define CMD_SET_D	'd'
+#define CMD_SET_K_FORWARD 'f'
+#define CMD_SET_K_REVERSE 'r'
+#define CMD_SAVE	'S'
+#define CMD_PRINT  'P'
+#define CMD_INFO  'I'
+#define CMD_LOAD	'L'
+#define CMD_PWR_MOV	'm'
+#define CMD_SPD_MOV	'M'
+#define CMD_POS_MOV 't'
+#define CMD_VERSION	'v'
+#define CMD_WDT_OFF 'w'
+#define CMD_WDT_ON	'W'
+#define	CMD_RESET 'R'

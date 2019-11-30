@@ -23,7 +23,7 @@
 #define IS_CHATTY True 
 
 //non-amplified star, time etc
-#define NORMAL_VOLUME 0          
+//#define NORMAL_VOLUME 0          
 // amplified most pieces
 #define NORMAL_VOLUME 12 
 

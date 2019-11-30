@@ -7,7 +7,7 @@ class Dancer {
   public:
     void status(boolean do_print);  // dump our current status 
     void update();                  // check for fob and director
-    void stop_all();                // stop all the devices and the dance
+    void stop_all(boolean do_fade=false);                // stop all the devices and the dance
     void start_dancing();           // start the dance sequence
 //    void reply_status();          // update the director with a dancing or fnished message (based on current dancing state)
 //    void signal_if_done();        // let the director know we finished
@@ -104,7 +104,7 @@ class Dancer {
     unsigned long dance_delay_millis;       // the amount of time to delay the start of the dance
     unsigned long dance_started_millis;     // what time the dance started (not the music play but the overall dance)
     
-    unsigned long fob_delay_millis;         // amout to delay between solo plays
+    unsigned long fob_delay_millis;         // amout to delay between fob plays
     unsigned long fob_delay_start_millis;   // when did the fob_delay start
 
     unsigned long checkin_millis;           // how long to delay between checkings (when dancing)
@@ -192,7 +192,7 @@ void Dancer::dance() {
     
     switch (current_direction) {
       case halt: 
-                      stop_all(); reset(); break;
+                      stop_all(true); reset(); break;
       case solo: 
                       dance_type = solo; start_dancing(); break;
       case ensembl: 
@@ -223,7 +223,7 @@ void Dancer::dance() {
     boolean mp3_started = mp3->mp3_play_track(current_track_name);
     if (!mp3_started) {
       Serial.println(F("ERROR: starting mp3, resetting"));
-      stop_all();
+      stop_all(false);
       reset();
       send_finished(); 
     }
@@ -239,8 +239,16 @@ void Dancer::dance() {
       is_play_complete = true;
       fob_delay_start_millis = pt->current_millis;
       if (!fob_is_dancing) { // don't halt the devices if we are in fob play mode; they only halt when the fob is turned off
-        stop_all();
+        stop_all(false);
         send_finished();
+      } else { // fob is dancing
+        if (STOP_BEFORE_FOB_DELAY) { // show we stop the devices during the fob_delay?
+          // stop the mechanical devices
+          Serial.println(F("Dancer::dance() STOP_BEFORE_FOB_DELAY=true, stopping all devices..."));
+          for (int i=0; i<num_devices; i++) {
+            d_list[i]->stop();
+          }
+        }
       }
     }
     
@@ -285,7 +293,7 @@ void Dancer::reset() {
 }
 
 // stop the music and motor
-void Dancer::stop_all() {
+void Dancer::stop_all(boolean do_fade=false) {
   
   #if defined IS_BRIEF
     Serial.println(F("stop_all begin..."));
@@ -296,7 +304,13 @@ void Dancer::stop_all() {
     d_list[i]->stop();
   }
   reset();                // clear our Dance state(s) back to not dancing
+  if (do_fade == true) {
+    mp3->mp3_fade(FADE_SECONDS);
+  }
   mp3->mp3_stop();            // stop the music
+  if (do_fade == true) {
+    mp3->mp3_normal_volume();
+  }
   
   #if defined IS_CHATTY
     Serial.println(F("stop_all end..."));
@@ -315,7 +329,7 @@ void Dancer::start_dancing() {
     Serial.println(num_dances);
   #endif
 
-  stop_all();
+  // stop_all(false);
   reset();
   is_dancing=true;
 
@@ -329,7 +343,8 @@ void Dancer::start_dancing() {
   dance_started_millis = pt->current_millis;
   last_checkin_millis = 0;
   send_dancing();
-  
+
+  // start the physical devices
   for (int i=0; i<num_devices; i++) {
     d_list[i]->start();
   }

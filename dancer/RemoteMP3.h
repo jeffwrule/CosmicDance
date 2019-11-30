@@ -6,7 +6,7 @@
 setup()
   Serial.println(F("MP3 is remote no MP3 card configured"));
 
-    Serial.println(F("Setting up solo_pin, ensembl_pin: OUTPUT, mp3_playing_pin: INPUT"));
+  Serial.println(F("Setting up solo_pin, ensembl_pin: OUTPUT, mp3_playing_pin: INPUT"));
   
   pinMode(solo_pin, OUTPUT);
   digitalWrite(solo_pin, LOW);

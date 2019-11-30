@@ -78,7 +78,7 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
 //unsigned int dance_order[]  = {SITX2, NOSTAY, PASTPRESENTFUTURE, THUNDER};  // March 2018 Asia Modern, DongHai Group Show
 // unsigned int dance_order[]  = {MOUNTAIN, WATER, EARTH};  // March 2018 Asia Modern, DongHai Group Show
-unsigned int dance_order[]  = {WATER};  // March 2018 Asia Modern, DongHai Group Show
+unsigned int dance_order[]  = {MOUNTAIN};  // March 2018 Asia Modern, DongHai Group Show
 
 
                                
@@ -416,4 +416,3 @@ void loop() {
     }
   }
 }
-

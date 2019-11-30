@@ -54,7 +54,7 @@ void setup() {
   my_dancer = new Dancer(
     print_timer, //  PrintTimer *pt                    time used by this dancer
     my_fob,             //  Fob *fob                          the fob used by this Dancer
-    my_director,       //  Director *director                the associated director structure
+    my_director,        //  Director *director                the associated director structure
     my_mp3,             //  GenericMP3 *mp3                   mp3 device (used to play musice)
     device_list,        //  GenericDevice *d_list             list of connected devices (pins)
     NUM_DEVICES,        //  unsigned int num_devices          number of devices in the list
@@ -71,6 +71,9 @@ void setup() {
   my_mp3->do_beep(200, 50);
   my_mp3->do_beep(200, 50);
   my_mp3->do_beep(200, 50);
+
+  Serial.print(F("STOP_BEFORE_FOB_DELAY="));
+  Serial.println(bool_tostr(STOP_BEFORE_FOB_DELAY));
     
   Serial.println(F("---------- End setup ----------"));
 }
@@ -112,4 +115,3 @@ void loop() {
   
 }
   
-

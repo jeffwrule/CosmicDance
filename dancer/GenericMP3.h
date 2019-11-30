@@ -6,6 +6,8 @@ class GenericMP3 {
 
   public:
     virtual void mp3_stop() =0;
+    virtual void mp3_fade(int fade_seconds) =0;
+    virtual void mp3_normal_volume() =0;
     virtual boolean mp3_play_track(const char *track_name) =0;
     virtual void mp3_set_volume(int volume) =0;
     virtual int mp3_is_playing() =0;

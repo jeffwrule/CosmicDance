@@ -68,7 +68,7 @@ void Fob::update() {
     seat_read1 = digitalRead(SEAT_PIN) == 0 ? false : true;    // 0 is resting state for seat, switch is normally closed so pulled low
     delay(10);
     seat_read2 = digitalRead(SEAT_PIN)  == 0 ? false : true;
-    delay(500);
+    delay(100);
     seat_read3 = digitalRead(SEAT_PIN)  == 0 ? false : true;
     if ( seat_read1 == seat_read2 && seat_read2 == seat_read3) {
       // we have a switched state

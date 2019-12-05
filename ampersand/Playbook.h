@@ -25,11 +25,12 @@ class Playbook {
 
     Light           **lights;               // list of lights with pins and level info
     uint8_t         num_lights;             // how many lights do we have  
-    InterruptDev    *position_dev;          // position interrupt, interrupts at 12,3,6,9 o'clock positions
+    InterruptDev    **positions;            // position interrupts, interrupts at 12,3,6,9 o'clock positions
+    uint8_t         num_positions;          // how many items in the positions list
     InterruptDev    *on_off_dev;            // push button on/off device
     Motor           *motor;                 // motor that rotates or not
     ZeroCrossDimmer *zdimmer;               // pointer to the zdimmer
-    uint32_t        motor_start_ignore_ms;  // amount of time during motor startup to ignore position interrupts, debounces sensor
+    uint8_t         skips_left;             // for a given wait for position step skip this many interrupts before stopping
     
     uint32_t      delay_pos_int_until_ms=0;   // don't accept new position interrupts until this absolute time
     boolean       delay_pos_waiting=false;    // are we in a wait state? (need this to be able to clear the interrupts after we are done
@@ -59,6 +60,9 @@ class Playbook {
     void run_inactive();               // start the device
     void adjust_dimmer();              // change the light levels
     void start_current_step();         // apply the config from cur_setp_list[cur_step_id] to our state machine to start it off
+    uint16_t get_sum_interrupts(InterruptDev **dev_list, uint8_t num_devs);     // return a some of all the position interrupts
+    uint8_t get_pin_states(InterruptDev **dev_list, uint8_t num_devs);     // return a some of all the position interrupts  
+    void position_display();            // loop through the current positions
 
   public:
   
@@ -68,20 +72,21 @@ class Playbook {
 
     Playbook(Light **lights,  
             uint8_t num_lights, 
-            InterruptDev *position_dev, 
+            InterruptDev **positions,
+            uint8_t      num_positions, 
             InterruptDev *on_off_dev, 
             Motor *motor,
-            ZeroCrossDimmer *zdimmer,
-            uint32_t motor_start_delay_ms) :
+            ZeroCrossDimmer *zdimmer) :
               lights(lights), 
               num_lights(num_lights), 
-              position_dev(position_dev), 
+              positions(positions),
+              num_positions(num_positions), 
               on_off_dev(on_off_dev), 
               motor(motor),
               zdimmer(zdimmer)
        {
             Serial.println(F("Playbook Constructor Starting"));
-            last_position_int = position_dev->get_num_interrupts();
+            last_position_int = get_sum_interrupts(positions, num_positions);
             last_on_off_int = on_off_dev->get_num_interrupts();
             cur_ms = millis();
             for (uint8_t i=0; i<num_lights; i++) {
@@ -92,6 +97,24 @@ class Playbook {
        }
 };
 
+// get the some of interrupts for all the devices in this list
+uint16_t Playbook::get_sum_interrupts(InterruptDev **dev_list, uint8_t num_devs) {
+  uint16_t int_sum = 0;
+  for (uint8_t i=0; i<num_devs; i++) {
+    int_sum += dev_list[i]->get_num_interrupts();
+  }
+  return(int_sum);
+}
+
+// are any of the pins really pushed right now
+uint8_t Playbook::get_pin_states(InterruptDev **dev_list, uint8_t num_devs) {
+  for (uint8_t i=0; i<num_devs; i++) {
+    if(dev_list[i]->get_pin_state() == INTERRUPT_DEV_ON) {
+      return(INTERRUPT_DEV_ON);
+    }
+  }
+  return(INTERRUPT_DEV_OFF);
+}
 
 // actively look for external inputs (stop start and position milestones).  
 // Then apply the appropriate next step
@@ -115,21 +138,43 @@ void Playbook::run() {
     // clear out old interrupts on our first pass after the delay is over
     if (delay_pos_waiting == true) {   
       delay_pos_waiting = false;
-      last_position_int = position_dev->get_num_interrupts();
+      last_position_int = get_sum_interrupts(positions, num_positions);     
     }
     
     // do we have new position interrupts
-    num_interrupts = position_dev->get_num_interrupts();
+    num_interrupts = get_sum_interrupts(positions, num_positions); 
     if (num_interrupts > last_position_int) {
-      new_position = true;
-      last_position_int = num_interrupts;
+      
+      // must find at least one pin currently pushed
+      if (get_pin_states(positions, num_positions) == INTERRUPT_DEV_ON) {
+        if (skips_left > 0) {
+          skips_left = skips_left-1;
+          Serial.print(F("\n\n\n"));
+          Serial.println(F("%%% SKIPPING INTERRUPT skips_left="));
+          Serial.println(skips_left);
+          Serial.print(F("\n\n\n"));
+        } else {
+          Serial.println(F("%%%% NEW INTERRUPT NEW INTERRUPT %%%"));
+          new_position = true;          
+        }
+      
+      } else {
+        position_display();
+        Serial.println(F("%%% FASLE POSITION INTERRUPT %%%"));
+      }
+      last_position_int = num_interrupts;   // always reset this when we have processed thorugh our options for new interrupts
     }
   } 
 
   // check for on_off_switch push
   num_interrupts = on_off_dev->get_num_interrupts();
   if (num_interrupts > last_on_off_int) {
-    new_on_off = true;
+    if (on_off_dev->get_pin_state() == INTERRUPT_DEV_ON) {
+      new_on_off = true;
+    } else {
+      on_off_dev->display();
+      Serial.println(F("%%% FASLE ON_OFF INTERRUPT %%%"));
+    }
     last_on_off_int = num_interrupts;
   }
 
@@ -190,8 +235,8 @@ void Playbook::start() {
   new_on_off = false;
   new_position = false;
   last_on_off_int = on_off_dev->get_num_interrupts();
-  last_position_int = position_dev->get_num_interrupts();
-
+  last_position_int=0;
+  last_position_int = get_sum_interrupts(positions, num_positions); 
   is_active = true;                       // we are processing active steps
   cur_step_list = active_steps;           // set a pointer to the active (not inactive) list of steps
   cur_step = cur_step_list;               // set a pointer to the current step
@@ -209,8 +254,8 @@ void Playbook::stop() {
   new_on_off = false;
   new_position = false;
   last_on_off_int = on_off_dev->get_num_interrupts();
-  last_position_int = position_dev->get_num_interrupts();
-  
+  last_position_int=0;
+  last_position_int = get_sum_interrupts(positions, num_positions); 
   is_active = false;                  // we are processing active steps
   cur_step_list = inactive_steps;     // this is a start, so we will be executing off the active_steps list
   cur_step = cur_step_list;          // this_step points to the first step in the current_step_list
@@ -242,6 +287,8 @@ void Playbook::activate_current_step() {
   cur_step_lights = cur_step->dimmers;     // set a pointer to the current list of light definitions
 
   dimm_cycle_end_ms = cur_ms + cur_step->dimm_length_ms;  // this is when each light should reach the end of it's cycle
+
+  skips_left = cur_step->num_skip_interrupts;
 
   // setup the next dimming delay time
   // dimm_delay_until_ms = cur_ms + cur_step->dimm_delay_ms;
@@ -311,12 +358,13 @@ void Playbook::display() {
   Serial.println(last_on_off_int);
   Serial.print(F("    is_active: "));
   Serial.println(is_active);
-  Serial.print(F(", motor_start_ignore_ms="));
-  Serial.print(motor_start_ignore_ms); 
+  Serial.println(F(""));
   for (uint8_t i=0; i<num_lights; i++) {
     lights[i]->display();
   }
-  position_dev->display();
+  for (uint8_t i=0; i<num_positions; i++) {
+    positions[i]->display();
+  }
   on_off_dev->display();
   motor->display();
   display_step(cur_step);
@@ -328,7 +376,13 @@ void Playbook::display() {
 /*
  * used to dump the configuration of the dimmer at setup time, helps validate the structure is correct. 
  */
- 
+
+void Playbook::position_display() {
+  for (uint8_t i=0; i<num_positions; i++) {
+    positions[i]->display();
+  }
+} 
+
 void Playbook::status(bool do_print=false) {
 
   if (cur_ms_wrap) last_status_ms = cur_ms;
@@ -345,32 +399,38 @@ void Playbook::status(bool do_print=false) {
   Serial.print(new_on_off);
   Serial.print(F(", on_of_dev_interrupts="));
   Serial.print(on_off_dev->get_num_interrupts());
-  Serial.print(F(", position_dev_interrupts="));
-  Serial.print(position_dev->get_num_interrupts());
+  Serial.print(F(", get_sum_interrupts(positions)="));
+  Serial.print(get_sum_interrupts(positions, num_positions));
+  Serial.print(F(", skips_left="));
+  Serial.print(skips_left);
   Serial.println(F(""));
 
   Serial.print(F("    cur_step->dimm_length_ms="));
-  Serial.print(cur_step->dimm_length_ms);
+  Serial.println(cur_step->dimm_length_ms);
   Serial.print(F("    delay_pos_int_until_ms="));
-  Serial.print(delay_pos_int_until_ms);
+  Serial.println(delay_pos_int_until_ms);
+  Serial.print(F("    pos_int_delay_left="));
+  Serial.println( cur_ms > delay_pos_int_until_ms > 0 ? 0 : delay_pos_int_until_ms - cur_ms);
   Serial.print(F("    delay_pos_waiting="));
-  Serial.print(delay_pos_waiting);
+  Serial.println(delay_pos_waiting);
   Serial.print(F("    timed_step_delay_until_ms="));
   Serial.print(timed_step_delay_until_ms);
-
+  Serial.print(F("    timed_step_delay_left="));
+  Serial.println(cur_ms > timed_step_delay_until_ms ? 0 : timed_step_delay_until_ms - cur_ms);
+  
   Serial.print(F("    cur_step info: step_id="));
   Serial.print(cur_step->step_id);
   Serial.print(F(", waiting_for="));
   Serial.println(WAIT_FOR_STRING[cur_step->waiting_for]);
 
-
   motor->display();
-  position_dev->display();
   on_off_dev->display();
+
   for (uint8_t i=0; i<num_lights; i++) {
     lights[i]->display();
   }
   zdimmer->display();
+  display_step(cur_step);
 }
 
 #endif

@@ -1,4 +1,4 @@
-// #include <TimerOne.h>
+#include <TimerOne.h>
 
 #define INTERRUPT_PIN 3
 class A {

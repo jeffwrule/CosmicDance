@@ -95,7 +95,8 @@ void ZeroCrossDimmer::refresh_triac() {
   clock_tick++;
 
   bool is_high = false;  // set to true when one or more triacs where set high 
-  bool high_gate[NUM_DIMMERS] = { false, false, false, false, false, false };
+//  bool high_gate[NUM_DIMMERS] = { false, false, false, false, false, false };
+  bool high_gate[NUM_DIMMERS] = { false,  };
 
   for (int i=0; i<num_dimmers; i++) {
     if (*levels[i] == clock_tick) {

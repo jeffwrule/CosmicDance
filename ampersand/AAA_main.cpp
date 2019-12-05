@@ -8,13 +8,14 @@
 
 
 // config info for this app
-uint8_t pin_list[NUM_DIMMERS] = { 6,7,8,9,10,11 };     // current pin mappings for each of the dimmers
+//uint8_t pin_list[NUM_DIMMERS] = { 6,7,8,9,10,11 };     // current pin mappings for each of the dimmers
+uint8_t pin_list[NUM_DIMMERS] = { 6, };     // current pin mappings for each of the dimmers
 uint32_t triac_lock_delay=5;                            // how long (micro seconds) does the triac on this board take to lock, typical 5-20us start with 5
 
 Light  *light_levels[NUM_LIGHT_LEVELS]; // how many physical light leves are we mapping to our dimmers
 Light  *lights[NUM_DIMMERS];            // the physical lights dimmer
-ZeroCrossDimmer *zdimmer;               // our active dimmer code
-InterruptDev *position_dev;             // interrupts when momentary switch is pushed 
+ZeroCrossDimmer *zdimmer;               // our active dimmer code 
+InterruptDev *position_dev_list[NUM_POSITION_PINS];
 InterruptDev *on_off_dev;               // interrupts when the on off button is pushed
 Motor *motor;                           // the dcmotor to stop and start as described in the playbook
 Playbook *play_list;                    // this feeds the dimmer with steps and watches inputs for changes
@@ -23,7 +24,8 @@ void setup() {
 
   // dump the config values
   Serial.begin(250000);
-  Serial.println(F("Hashtag: version: 2019-11-28 v1"));
+  Serial.println(F("Ampersand: version: 2019-11-28 v1"));
+
   Serial.print(F("NUM_DIMMERS: "));
   Serial.println(NUM_DIMMERS);
   Serial.print(F("ZERO_CROSS_PIN: "));
@@ -72,13 +74,21 @@ void setup() {
   
   zdimmer = new ZeroCrossDimmer(lights, NUM_DIMMERS, ZERO_CROSS_PIN,  NUM_DIMM_LEVELS, triac_lock_delay);
   zdimmer->display();
-  position_dev = new InterruptDev( POSITION_PIN, 500, true, RISING);
-  position_dev->display();
-  on_off_dev = new InterruptDev(ON_OFF_PIN, 500, true, RISING);
+
+//uint8_t position_pin_list[NUM_POSITION_PINS] = { A1, A1, A3, A3 };
+//uint8_t position_index_list[NUM_POSITION_PINS] = { 5, 6, 7, 8 };  
+//position_dev = new InterruptDev( POSITION_PIN, 500, true, RISING);
+//position_dev->display();
+  for (uint8_t i=0; i<NUM_POSITION_PINS; i++) {
+    position_dev_list[i] = new InterruptDev(position_index_list[i], position_pin_list[i], 500, true, FALLING);
+    position_dev_list[i]->display();  
+  }
+
+  on_off_dev = new InterruptDev(ON_OFF_PIN, ON_OFF_PIN, 500, true, FALLING);
   on_off_dev->display();
   motor = new Motor(MOTOR_PIN);
   motor->display();
-  play_list = new Playbook(lights, NUM_DIMMERS, position_dev, on_off_dev, motor, zdimmer, MOTOR_START_INTERRUPT_IGNORE_MS);
+  play_list = new Playbook(lights, NUM_DIMMERS, position_dev_list, NUM_POSITION_PINS, on_off_dev, motor, zdimmer);
   play_list->display();
 
   Serial.println(F("End Setup"));

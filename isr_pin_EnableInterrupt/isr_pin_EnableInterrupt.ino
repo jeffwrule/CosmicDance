@@ -1,9 +1,6 @@
+#include <EnableInterrupt.h>
 
-THIS IS THE OLD LIBRARY DO NOT USE: use EnableInterrupt library
-
-#include <PinChangeInterrupt.h>
-
-#define INTERRUPT_PIN 3
+#define INTERRUPT_PIN 4
 class A {
 
 public:
@@ -16,7 +13,8 @@ public:
   A() {
     A::isr_instance = this;
     pinMode(INTERRUPT_PIN, INPUT_PULLUP);
-    attachPCINT(digitalPinToPCINT(INTERRUPT_PIN), isr, RISING); 
+    enableInterrupt(INTERRUPT_PIN, isr, RISING);
+    // attachPCINT(digitalPinToPCINT(INTERRUPT_PIN), isr, RISING); 
   }
 
 };
@@ -48,9 +46,11 @@ void loop() {
 
   cur_ms = millis();
 
-  if (cur_ms - last_print_ms > 1000) {
+  if (cur_ms - last_print_ms > 300) {
     Serial.print(F("ticks: "));
-    Serial.println(my_a->ticks);
+    Serial.print(my_a->ticks);
+    Serial.print(F(", pin_state="));
+    Serial.println(digitalRead(INTERRUPT_PIN));
     last_print_ms = cur_ms;
   }
 }

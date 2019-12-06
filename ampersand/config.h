@@ -2,12 +2,15 @@
 #define CONFIG_H
 
 #include <arduino.h>
-
 #include <inttypes.h>
 
 // takes interrupt from dimmerboard everytime AC mains switches polarity
 #define ZERO_CROSS_PIN 2    
 // pin the gets interrupt when positions of the clock are passed  
+// pin attached to on off switch
+#define ON_OFF_PIN 4
+// pin attached to on off switch
+#define MOTOR_PIN 12
 
 /*
  * really the number of indexes to support 0-4 are for pins 
@@ -21,18 +24,10 @@
 uint8_t position_pin_list[NUM_POSITION_PINS] = { A0, A1, A2, A3 };
 uint8_t position_index_list[NUM_POSITION_PINS] = { 5, 6, 7, 8 };
 
-// position pin with single device
-#define POSITION_PIN 3
-// pin attached to on off switch
-#define ON_OFF_PIN 4
-// pin attached to on off switch
-#define MOTOR_PIN 12
 
 #define INTERRUPT_DEV_ON 0
 #define INTERRUPT_DEV_OFF 1
 
-#undef DEBUG
-#define DO_LOG
 
 // dimm units values, changing NUM_DIMM_LEVELS will drastically change the ON,LOW,HIGH and UNLIT values 
 // note: our variable can only trach 255 dimm_leves, this will break if you try something bigger b/c of variable overflow
@@ -58,17 +53,12 @@ uint8_t position_index_list[NUM_POSITION_PINS] = { 5, 6, 7, 8 };
 
 // time to wait when starting the motor before accepting new postion interrupts 
 // debounces the position sensor on restart
-#define MOTOR_START_INTERRUPT_IGNORE_MS 4000
+#define MOTOR_START_INTERRUPT_IGNORE_MS 2000
 
 bool      cur_ms_wrap=false;        // did cur_ms wrap around, we can use this in sub-routines to fix up ther local 'last' variables
 uint32_t  cur_ms;                   // a global snapshot of cur_ms at the start of each loop
 uint32_t  last_ms=0;                // the previous value of our call to ms, used to check for wrap around
 uint32_t  print_every_ms=10000;     // loggin should print messages after this many milliseconds
-
-enum WaitFor { duration, position, on_off };   // duration will wait a given time to next step, position will wait for position_interrupt
-                                               // on_off is used in things like stopped mode when we enter the next step when the button is pused
-static const char *WAIT_FOR_STRING[] = {
-    "duration", "position", "on_off" };
 
 #define IS_OSCELLATING true
 #define NOT_OSCELLATING false
@@ -79,9 +69,15 @@ static const char *WAIT_FOR_STRING[] = {
 #define LIGHTPREP_LEVEL1 1
 
 // how mnay physical dimmers are we driving
-// #define NUM_DIMMERS 6
 #define NUM_DIMMERS 1
 
+enum WaitFor { duration, position, on_off };   // duration will wait a given time to next step, position will wait for position_interrupt
+                                               // on_off is used in things like stopped mode when we enter the next step when the button is pused
+// index of strings into the WaitFor above, so you can print a status name
+static const char *WAIT_FOR_STRING[] = {
+    "duration", "position", "on_off" };
+
+// defines the stat stored state for a ligh bulb (dimmer) w/i a given step
 typedef struct LightPrep {
     uint32_t  target_level;         // this lights target level
     uint32_t  dimm_min;             // low end to dimm to
@@ -90,6 +86,8 @@ typedef struct LightPrep {
     bool      is_oscellating;       // are we cycling up and down on this light
 };
 
+// list of steps to execute, these will be applied to the current state machine in (Playbook) to effect 
+// the active ligth dimmers and behaviors
 typedef struct Step {
     uint8_t   step_id;                                // the step number for this step
     uint8_t   next_step_id;                           // which step to pay next
@@ -102,10 +100,10 @@ typedef struct Step {
     const LightPrep *dimmers[NUM_DIMMERS];            // dimmers[i] level will be applight to lights[i];
 };
 
+// forward references for global routines, routines defined in Playbook_steps.h
 void display_dimmer_states();
 void display_step(Step *s_ptr);
 void display_all_steps();
-
 
 
 #endif

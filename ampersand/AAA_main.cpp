@@ -30,8 +30,6 @@ void setup() {
   Serial.println(NUM_DIMMERS);
   Serial.print(F("ZERO_CROSS_PIN: "));
   Serial.println(ZERO_CROSS_PIN);
-  Serial.print(F("POSITION_PIN: "));
-  Serial.println(POSITION_PIN);
   Serial.print(F("ON_OFF_PIN: "));
   Serial.println(ON_OFF_PIN);
   Serial.print(F("MOTOR_PIN: "));

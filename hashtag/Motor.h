@@ -27,7 +27,11 @@ class Motor {
 
 void Motor::start() { 
       Serial.println(F("%%%% MOTOR STARTED %%%")); 
-      digitalWrite(pin, HIGH); 
+      #ifdef DISABLE_MOTOR
+        Serial.println(F("    %%% Motor Disabled %%%"));
+      #else=
+        digitalWrite(pin, HIGH);
+      #endif 
       digitalWrite(LED_BUILTIN, HIGH); active=true; 
       }
 

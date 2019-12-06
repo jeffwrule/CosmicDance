@@ -154,10 +154,9 @@ void Playbook::run() {
           Serial.println(skips_left);
           Serial.print(F("\n\n\n"));
         } else {
-          Serial.println(F("%%%% NEW INTERRUPT NEW INTERRUPT %%%"));
+          Serial.println(F("%%%% NEW POS INTERRUPT NEW POS INTERRUPT %%%"));
           new_position = true;          
         }
-      
       } else {
         position_display();
         Serial.println(F("%%% FASLE POSITION INTERRUPT %%%"));
@@ -425,8 +424,9 @@ void Playbook::status(bool do_print=false) {
 
   motor->display();
   on_off_dev->display();
+  // position devices display
   for (uint8_t i=0; i<num_positions; i++) {
-    p[i]->display();  
+    positions[i]->display();  
   }  
 
   for (uint8_t i=0; i<num_lights; i++) {

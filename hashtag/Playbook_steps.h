@@ -15,40 +15,40 @@ uint8_t active_dimmer_states[NUM_ACTIVE_STEPS][NUM_DIMMERS] = {
 };
 
 Step active_steps[NUM_ACTIVE_STEPS] = { 
-      { 0, 1, position, 0, true, DIMM_CYCLE_SHORT_MS, 0,
+      { 0, 1, position, 0, MOTOR_ON, DIMM_CYCLE_SHORT_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_MEDIUM, DIMM_UP, IS_OSCELLATING },
               },
         },
-      { 1, 2, duration, 40000, false, DIMM_CYCLE_SHORT_MS, 0,
+      { 1, 2, duration, 40000, MOTOR_OFF, DIMM_CYCLE_SHORT_MS, 0,
             {
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_HIGH, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_HIGH, DIMM_LEVEL_MEDIUM, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
               },
         },
-      { 2, 3, position, 0, true, DIMM_CYCLE_SHORT_MS, 0, 
+      { 2, 3, position, 0, MOTOR_ON, DIMM_CYCLE_SHORT_MS, 0, 
             {
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_MEDIUM, DIMM_UP, IS_OSCELLATING },
               },
         },
-      { 3, 4, duration, 40000, false, DIMM_CYCLE_SHORT_MS, 0,
+      { 3, 4, duration, 40000, MOTOR_OFF, DIMM_CYCLE_SHORT_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_HIGH, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_HIGH, DIMM_LEVEL_MEDIUM, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
               },
         },
-      { 4, 5, position, 0, false, DIMM_CYCLE_SHORT_MS, 0,
+      { 4, 5, position, 0, MOTOR_ON, DIMM_CYCLE_SHORT_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOW, DIMM_LEVEL_MEDIUM, DIMM_UP, IS_OSCELLATING },
               },
         },
-      { 5, 0, duration, 40000, false, DIMM_CYCLE_SHORT_MS, 0,
+      { 5, 0, duration, 40000, MOTOR_OFF, DIMM_CYCLE_SHORT_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_HIGH, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_HIGH, DIMM_LEVEL_LOW, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_HIGH, DIMM_LEVEL_MEDIUM, DIMM_LEVEL_HIGH, DIMM_UP, IS_OSCELLATING },
               },
         },
       };
@@ -66,34 +66,34 @@ uint8_t inactive_dimmer_states[NUM_INACTIVE_STEPS][NUM_DIMMERS] = {
 } ;
 
 Step inactive_steps[NUM_INACTIVE_STEPS] = { 
-      { 0, 1, position, 0, true, DIMM_CYCLE_LONG_MS, 0,
+      { 0, 1, position, 0, MOTOR_ON, DIMM_CYCLE_LONG_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_LOW, DIMM_LEVEL_OFF, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               }
         },
-    { 1, 2,  on_off, 0, false, DIMM_CYCLE_LONG_MS, 0,
+    { 1, 2,  duration, 40000, MOTOR_OFF, DIMM_CYCLE_LONG_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_LOW, DIMM_LEVEL_OFF, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               },
       },
-    { 2, 3,  on_off, 0, false, DIMM_CYCLE_LONG_MS, 0,
+    { 2, 3,  duration, 40000, MOTOR_OFF, DIMM_CYCLE_LONG_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_LOW, DIMM_LEVEL_OFF, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               },
       },
-    { 3, 4,  on_off, 0, false, DIMM_CYCLE_LONG_MS, 0,
+    { 3, 4,  duration, 40000, MOTOR_OFF, DIMM_CYCLE_LONG_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_LOW, DIMM_LEVEL_OFF, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               },
       },
-    { 4, 1,  on_off, 0, false, DIMM_CYCLE_LONG_MS, 0,
+    { 4, 1,  duration, 40000, MOTOR_OFF, DIMM_CYCLE_LONG_MS, 0,
             { 
               { DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_LEVEL_OFF, DIMM_DOWN, NOT_OSCELLATING },
-              { DIMM_LEVEL_LOW, DIMM_LEVEL_OFF, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
+              { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               },
       },};
 

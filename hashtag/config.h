@@ -10,7 +10,11 @@
 #define ON_OFF_PIN 4
 // pin attached to on off switch
 #define MOTOR_PIN 12
+// uncomment this to disable the motor
+// #define DISABLE_MOTOR 
 
+#define MOTOR_ON true
+#define MOTOR_OFF false
 
 // max input devices
 #define INTERRUPT_DEV_NUM_DEVICES 9
@@ -31,11 +35,11 @@ uint8_t position_index_list[NUM_POSITION_PINS] = { 5, };
 // note: our variable can only trach 255 dimm_leves, this will break if you try something bigger b/c of variable overflow
 #define NUM_DIMM_LEVELS 200
 #define DIMM_LEVEL_OFF NUM_DIMM_LEVELS
-#define DIMM_LEVEL_UNLIT 170
+#define DIMM_LEVEL_UNLIT 160
 #define DIMM_LEVEL_LOWEST 150
 #define DIMM_LEVEL_LOW 140
 #define DIMM_LEVEL_MEDIUM 120
-#define DIMM_LEVEL_HIGH 60
+#define DIMM_LEVEL_HIGH 40
 #define DIMM_LEVEL_ON 10
 
 // dim directions

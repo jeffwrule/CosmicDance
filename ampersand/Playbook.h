@@ -425,7 +425,11 @@ void Playbook::status(bool do_print=false) {
 
   motor->display();
   on_off_dev->display();
-
+  // position devices display
+  for (uint8_t i=0; i<num_positions; i++) {
+    positions[i]->display();  
+  }  
+  
   for (uint8_t i=0; i<num_lights; i++) {
     lights[i]->display();
   }

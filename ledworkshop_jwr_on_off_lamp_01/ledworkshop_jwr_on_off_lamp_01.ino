@@ -35,6 +35,7 @@ uint8_t to_color=0;
 
 #define DFMINI_RX 5
 #define DFMINI_TX 6
+#define DFMINI_VOLUME 30
 
 // music setup
 SoftwareSerial mySoftwareSerial(DFMINI_RX,DFMINI_TX); // RX, TX
@@ -46,9 +47,11 @@ void setup() {
   delay(3000); // sanity delay
   //Serial Port begin
   Serial.begin (9600);
+  Serial.println(F("LEDWorkshop_on_off_lamp 01"));
+
   //Define inputs and outputs
-//  pinMode(trigPin, OUTPUT);
-//  pinMode(echoPin, INPUT);
+  //  pinMode(trigPin, OUTPUT);
+  //  pinMode(echoPin, INPUT);
 
   pinMode(IR_PIN, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -85,7 +88,7 @@ void setup() {
   }
   Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(25);  //Set volume value. From 0 to 30
+  myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
   myDFPlayer.enableLoopAll(); //loop all mp3 files.
   myDFPlayer.play(1);  //Play the first mp3
   

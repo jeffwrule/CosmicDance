@@ -9,44 +9,45 @@
         Echo: Echo (OUTPUT) - Pin 12
         GND: GND
  */
+ 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 #include <FastLED.h>
+#include "config.h"
  
 //int trigPin = 11;    // Trigger
 //int echoPin = 12;    // Echo
 //long duration, cm, inches;
 
-#define IR_PIN 11
 
 boolean is_active = true;
 
-#define NUM_LEDS 60
-#define LED_PIN 10
-#define LED_TYPE WS2811
-#define COLOR_ORDER GRB
-
 CRGB leds[NUM_LEDS];
-
-#define NUM_COLORS 3
-CRGB colors[NUM_COLORS] = { CRGB::BlueViolet, CRGB::DarkRed, CRGB::Black };
-uint8_t to_color=0;
-
-#define DFMINI_RX 5
-#define DFMINI_TX 6
-#define DFMINI_VOLUME 30
 
 // music setup
 SoftwareSerial mySoftwareSerial(DFMINI_RX,DFMINI_TX); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 
- 
+//
+// LED COLOR SETUP
+//
+
+
+// set the initial and target color
+CRGBPalette16 currentPalette; // ( CRGB::Black);
+CRGBPalette16 targetPalette; // ( CRGB::SeaGreen);
+
+unsigned long color_count=0;
+bool target_reached=false;
+unsigned long color_change_start_ms=0;
+
 void setup() {
-  delay(3000); // sanity delay
+  delay(1000); // sanity delay
   //Serial Port begin
-  Serial.begin (9600);
+  Serial.begin(250000);
+  Serial.println();
   Serial.println(F("LEDWorkshop_on_off_lamp 00"));
 
   //Define inputs and outputs
@@ -58,39 +59,45 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
   is_active = true;
 
-  FastLED.addLeds<LED_TYPE,LED_PIN, COLOR_ORDER>(leds,NUM_LEDS);
-  FastLED.setBrightness(180);
-  to_color=1;
-  fill_solid(leds, NUM_LEDS, colors[0]);
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness( BRIGHTNESS );
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
   FastLED.show();
+  FastLED.delay(100);
+  for (uint8_t i=0; i<NUM_PALETTES; i++) { palette_list[i] =  CRGBPalette16(colors[i]); }
+  ChangeColorOverTime(0);
 
-  for (int i=0; i<NUM_COLORS; i++) {
-    Serial.print(F("Color: "));
-    Serial.print(i);
-    Serial.print(", ");
-    Serial.print(colors[i].r);
-    Serial.print(", ");
-    Serial.print(colors[i].g);
-    Serial.print(", ");
-    Serial.println(colors[i].b);
+  if (HAS_MUSIC) {
+    // setup communications with the MP3 card
+    mySoftwareSerial.begin(9600);
+    Serial.println();
+    Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+    if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+      Serial.println(F("Unable to begin:"));
+      Serial.println(F("1.Please recheck the connection!"));
+      Serial.println(F("2.Please insert the SD card!"));
+      while(true);
+    }
+    Serial.println(F("DFPlayer Mini online."));
+    myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
+    myDFPlayer.enableLoopAll(); //loop all mp3 files.
+    myDFPlayer.play(1);  //Play the first mp3    
+  } else {
+    Serial.println(F("Music Configured OUT!"));
   }
 
-  mySoftwareSerial.begin(9600);
 
+  // setup the LEDS
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness( BRIGHTNESS );
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  FastLED.show();
+  FastLED.delay(1000);
+  // create NUM_PALETTES palettes and assign them new color.
+  for (uint8_t i=0; i<NUM_PALETTES; i++) { palette_list[i] =  CRGBPalette16(colors[i]); }
+  // ChangeColorOverTime(0);
+  Serial.println(F("Setup complete"));
   Serial.println();
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
-
-  if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while(true);
-  }
-  Serial.println(F("DFPlayer Mini online."));
-
-  myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
-  myDFPlayer.enableLoopAll(); //loop all mp3 files.
-  myDFPlayer.play(1);  //Play the first mp3
   
 }
 
@@ -216,42 +223,6 @@ void test_on_off() {
       }
 }
 
-// Helper function that blends one uint8_t toward another by a given amount
-void nblendU8TowardU8( uint8_t& cur, const uint8_t target, uint8_t amount)
-{
-  if( cur == target) return;
-  
-  if( cur < target ) {
-    uint8_t delta = target - cur;
-    delta = scale8_video( delta, amount);
-    cur += delta;
-  } else {
-    uint8_t delta = cur - target;
-    delta = scale8_video( delta, amount);
-    cur -= delta;
-  }
-}
-
-// Blend one CRGB color toward another CRGB color by a given amount.
-// Blending is linear, and done in the RGB color space.
-// This function modifies 'cur' in place.
-CRGB fadeTowardColor( CRGB& cur, const CRGB& target, uint8_t amount)
-{
-  nblendU8TowardU8( cur.red,   target.red,   amount);
-  nblendU8TowardU8( cur.green, target.green, amount);
-  nblendU8TowardU8( cur.blue,  target.blue,  amount);
-  return cur;
-}
-
-// Fade an entire array of CRGBs toward a given background color by a given amount
-// This function modifies the pixel array in place.
-void fadeTowardColor( CRGB* L, uint16_t N, const CRGB& bgColor, uint8_t fadeAmount)
-{
-  for( uint16_t i = 0; i < N; i++) {
-    fadeTowardColor( L[i], bgColor, fadeAmount);
-  }
-}
-
 void flash_leds(uint16_t num_flashes) {
   static CRGB old = leds[5];
   int num_flash_leds;
@@ -274,7 +245,101 @@ void flash_leds(uint16_t num_flashes) {
   for (int i=0; i<num_flash_leds; i++) {
     leds[i] = old[i];
   }
+}
+
+
+void adjust_lights() {
+  static uint8_t startIndex = 0;
+
+  ChangeColorOverTime(HOLD_COLOR_MS);
+
+  EVERY_N_MILLISECONDS(  1000 / UPDATES_PER_SECOND ) {
+    nblendPaletteTowardPalette( currentPalette, targetPalette, MAX_CHANGES);
+    FillLEDsFromPaletteColors( startIndex); 
+    if (target_reached || (leds[0].r == targetPalette[0].r && leds[0].g == targetPalette[0].g && leds[0].b == targetPalette[0].b)) {
+      if (target_reached == false) {
+        Serial.print(F("%%% TARGET REACHED : "));
+        print_color_control();
+        Serial.print(F(", target_reached: "));
+        Serial.print(target_reached);
+        Serial.print(F(", color_count: "));
+        Serial.print(color_count);
+        Serial.print(F(", "));
+        Serial.println(millis() - color_change_start_ms); 
+        Serial.println();
+        target_reached = true;
+      }
+    } else {
+      color_count += 1;      
+    }
+  }
+  
+  // startIndex = startIndex + 1; /* motion speed */
   FastLED.show();
+  FastLED.delay(10);  
+}
+
+void printCRGB(CRGB input) {
+  Serial.print("0x");
+  for (int i=0; i<3; i++){
+    char tmp[3];
+    sprintf(tmp, "%02X", input[i]);
+    Serial.print(tmp);
+  }
+}
+
+void FillLEDsFromPaletteColors( uint8_t colorIndex)
+{
+  uint8_t brightness = 255;
+  
+  for( int i = 0; i < NUM_LEDS; i++, colorIndex++) {
+    leds[i] = ColorFromPalette( currentPalette, i, brightness);
+  }
+}
+
+void print_color_control() {
+  Serial.print(F("Curr Colors led: "));
+  printCRGB(leds[0]);
+  Serial.print(F(", curr: "));
+  printCRGB(currentPalette[0]);
+  Serial.print(F(", target: "));
+  printCRGB(targetPalette[0]);
+}
+
+void ChangeColorOverTime(unsigned long delay_ms) {
+  
+    static uint8_t palette_index=NUM_PALETTES;   // index into our list of ordered colors to change to
+    static unsigned long last_ms=0;   // milliseconds the last time we switched
+    unsigned long cur_ms = millis();  // current milliseconds
+
+    if (cur_ms < last_ms) last_ms=0;
+
+    if (cur_ms - last_ms >= delay_ms) {
+      Serial.print(F("%%%% Color Change: "));
+      Serial.print(F("cur_ms: "));
+      Serial.print(cur_ms);
+      Serial.print(F(", last_ms: "));
+      Serial.print(last_ms);
+      Serial.print(F(", diff: "));
+      Serial.print(last_ms - cur_ms);      
+      palette_index += 1;
+      palette_index = palette_index < NUM_PALETTES ? palette_index : 0;
+      if (palette_index >= NUM_PALETTES) {
+        palette_index = 0;
+      }
+      targetPalette = palette_list[palette_index];
+      last_ms=cur_ms;
+      color_count=0;
+      target_reached=false;
+      color_change_start_ms = cur_ms;
+      Serial.print(F("new color: "));
+      Serial.print(color_names[palette_index]);
+      Serial.print(F(", "));
+      print_color_control();
+      Serial.print(F(", target_reached: "));
+      Serial.print(target_reached);
+      Serial.println();    
+     }
 }
 
 void loop() {
@@ -291,58 +356,32 @@ void loop() {
       digitalWrite(LED_BUILTIN, HIGH);
       flash_leds(1);
       Serial.println(F("Light ON"));
-      myDFPlayer.play(1);   // play the first mp3 file on repeat
+      if (HAS_MUSIC) {
+        myDFPlayer.play(1);   // play the first mp3 file on repeat
+      }
     } else {
       digitalWrite(LED_BUILTIN, LOW);
       flash_leds(2);
       Serial.println(F("Light OFF"));
-      myDFPlayer.pause();   // play the first mp3 file on repeat      
+      if (HAS_MUSIC) {
+        myDFPlayer.pause();   // play the first mp3 file on repeat            
+      }
     }
     is_off=is_active;
   }
 
 
-  EVERY_N_MILLISECONDS(500) {
-    if (myDFPlayer.available()) {
-      printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
-    }
-  }
-  
-  if (!is_active) to_color=2;
-  
-  // fade all existing pixels toward bgColor by "5" (out of 255)
-  fadeTowardColor( leds, NUM_LEDS, colors[to_color], 10);
-
-//  i += 1;
-//  Serial.print(F("    Transition: "));
-//  Serial.print(i);
-//  Serial.print(F(", "));
-//  Serial.print(leds[0].r);
-//  Serial.print(F(", "));
-//  Serial.print(leds[0].g);
-//  Serial.print(F(", "));
-//  Serial.println(leds[0].b);
-        
-  if (is_active) {
-    // periodically set random pixel to a random color, to show the fading
-    EVERY_N_MILLISECONDS( 2000 ) {
-      if (leds[0] == colors[to_color]) {
-        Serial.println("Color Switch");
-        to_color += 1;
-        if (to_color >= NUM_COLORS-1) to_color=0;
-        Serial.print(to_color);
-        Serial.print(", ");
-        Serial.print(colors[to_color].r);
-        Serial.print(", ");
-        Serial.print(colors[to_color].g);
-        Serial.print(", ");
-        Serial.println(colors[to_color].b);
-        i=0;
+  if (HAS_MUSIC) {
+    EVERY_N_MILLISECONDS(500) {
+      if (myDFPlayer.available()) {
+        printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
       }
     }
   }
 
-  FastLED.show();
-  FastLED.delay(10);
+  // when system is active run the lights.
+  if (is_active) {
+      adjust_lights();
+  }
 
 }

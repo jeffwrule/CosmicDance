@@ -9,87 +9,68 @@
         Echo: Echo (OUTPUT) - Pin 12
         GND: GND
  */
+ 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 #include <FastLED.h>
+#include "config.h"
  
-//int trigPin = 11;    // Trigger
-//int echoPin = 12;    // Echo
-//long duration, cm, inches;
-
-#define IR_PIN 11
 
 boolean is_active = true;
-
-#define NUM_LEDS 60
-#define LED_PIN 10
-#define LED_TYPE WS2811
-#define COLOR_ORDER GRB
-
-CRGB leds[NUM_LEDS];
-
-#define NUM_COLORS 3
-CRGB colors[NUM_COLORS] = { CRGB::BlueViolet, CRGB::DarkRed, CRGB::Black };
-uint8_t to_color=0;
-
-#define DFMINI_RX 5
-#define DFMINI_TX 6
-#define DFMINI_VOLUME 30
 
 // music setup
 SoftwareSerial mySoftwareSerial(DFMINI_RX,DFMINI_TX); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 
- 
+
+unsigned long color_count=0;
+bool target_reached=false;
+bool color_reached=false;
+bool brightness_reached=false;
+unsigned long color_change_start_ms=0;
+
 void setup() {
-  delay(3000); // sanity delay
+  delay(1000); // sanity delay
   //Serial Port begin
-  Serial.begin (9600);
+  Serial.begin(250000);
+  Serial.println();
   Serial.println(F("LEDWorkshop_on_off_lamp 03"));
-  //Define inputs and outputs
-  //  pinMode(trigPin, OUTPUT);
-  //  pinMode(echoPin, INPUT);
+
 
   pinMode(IR_PIN, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   is_active = true;
 
-  FastLED.addLeds<LED_TYPE,LED_PIN, COLOR_ORDER>(leds,NUM_LEDS);
-  FastLED.setBrightness(180);
-  to_color=1;
-  fill_solid(leds, NUM_LEDS, colors[0]);
-  FastLED.show();
 
-  for (int i=0; i<NUM_COLORS; i++) {
-    Serial.print(F("Color: "));
-    Serial.print(i);
-    Serial.print(", ");
-    Serial.print(colors[i].r);
-    Serial.print(", ");
-    Serial.print(colors[i].g);
-    Serial.print(", ");
-    Serial.println(colors[i].b);
+  
+  if (HAS_MUSIC) {
+    // setup communications with the MP3 card
+    mySoftwareSerial.begin(9600);
+    Serial.println();
+    Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+    if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+      Serial.println(F("Unable to begin:"));
+      Serial.println(F("1.Please recheck the connection!"));
+      Serial.println(F("2.Please insert the SD card!"));
+      while(true);
+    }
+    Serial.println(F("DFPlayer Mini online."));
+    myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
+    myDFPlayer.enableLoopAll(); //loop all mp3 files.
+    myDFPlayer.play(1);  //Play the first mp3    
+  } else {
+    Serial.println(F("Music Configured OUT!"));
   }
 
-  mySoftwareSerial.begin(9600);
 
+  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness( BRIGHTNESS );
+  
+  Serial.println(F("Setup complete"));
   Serial.println();
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
-
-  if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while(true);
-  }
-  Serial.println(F("DFPlayer Mini online."));
-
-  myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
-  myDFPlayer.enableLoopAll(); //loop all mp3 files.
-  myDFPlayer.play(1);  //Play the first mp3
   
 }
 
@@ -149,49 +130,6 @@ void printDetail(uint8_t type, int value){
   }
 }
 
-// used with Sonic board
-//void test_on_off() {
-//
-//  static unsigned long last_ms=0;
-//  unsigned long cur_ms = millis();
-//  if (cur_ms < last_ms) last_ms = 0;
-//
-//  if (cur_ms - last_ms < 2000) return;
-//  
-//  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
-//  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-//  digitalWrite(trigPin, LOW);
-//  delayMicroseconds(5);
-//  digitalWrite(trigPin, HIGH);
-//  delayMicroseconds(10);
-//  digitalWrite(trigPin, LOW);
-// 
-//  // Read the signal from the sensor: a HIGH pulse whose
-//  // duration is the time (in microseconds) from the sending
-//  // of the ping to the reception of its echo off of an object.
-//  pinMode(echoPin, INPUT);
-//  duration = pulseIn(echoPin, HIGH);
-// 
-//  // Convert the time into a distance
-//  cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
-//  inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
-//  
-////  Serial.print(inches);
-////  Serial.print("in, ");
-////  Serial.print(cm);
-////  Serial.print("cm");
-////  Serial.println();
-//
-//  if (inches <= 20) {
-//    is_active = !is_active;
-//    last_ms = cur_ms;
-//    Serial.print(F("is_active triggered: "));
-//    Serial.print(is_active);
-//    Serial.print(F(", cm="));
-//    Serial.print(cm);
-//    Serial.println(F(""));
-//  }
-//}
 
 // routine for osoyoo IR device  (bump avoidance)
 void test_on_off() {
@@ -213,42 +151,6 @@ void test_on_off() {
       Serial.print(F(", num_reads=")); 
       Serial.println(num_reads);
       }
-}
-
-// Helper function that blends one uint8_t toward another by a given amount
-void nblendU8TowardU8( uint8_t& cur, const uint8_t target, uint8_t amount)
-{
-  if( cur == target) return;
-  
-  if( cur < target ) {
-    uint8_t delta = target - cur;
-    delta = scale8_video( delta, amount);
-    cur += delta;
-  } else {
-    uint8_t delta = cur - target;
-    delta = scale8_video( delta, amount);
-    cur -= delta;
-  }
-}
-
-// Blend one CRGB color toward another CRGB color by a given amount.
-// Blending is linear, and done in the RGB color space.
-// This function modifies 'cur' in place.
-CRGB fadeTowardColor( CRGB& cur, const CRGB& target, uint8_t amount)
-{
-  nblendU8TowardU8( cur.red,   target.red,   amount);
-  nblendU8TowardU8( cur.green, target.green, amount);
-  nblendU8TowardU8( cur.blue,  target.blue,  amount);
-  return cur;
-}
-
-// Fade an entire array of CRGBs toward a given background color by a given amount
-// This function modifies the pixel array in place.
-void fadeTowardColor( CRGB* L, uint16_t N, const CRGB& bgColor, uint8_t fadeAmount)
-{
-  for( uint16_t i = 0; i < N; i++) {
-    fadeTowardColor( L[i], bgColor, fadeAmount);
-  }
 }
 
 void flash_leds(uint16_t num_flashes) {
@@ -273,7 +175,91 @@ void flash_leds(uint16_t num_flashes) {
   for (int i=0; i<num_flash_leds; i++) {
     leds[i] = old[i];
   }
-  FastLED.show();
+}
+
+
+
+void printCRGB(CRGB input) {
+  Serial.print("0x");
+  for (int i=0; i<3; i++){
+    char tmp[3];
+    sprintf(tmp, "%02X", input[i]);
+    Serial.print(tmp);
+  }
+}
+
+
+// Fire2012 by Mark Kriegsman, July 2012
+// as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
+//// 
+// This basic one-dimensional 'fire' simulation works roughly as follows:
+// There's a underlying array of 'heat' cells, that model the temperature
+// at each point along the line.  Every cycle through the simulation, 
+// four steps are performed:
+//  1) All cells cool down a little bit, losing heat to the air
+//  2) The heat from each cell drifts 'up' and diffuses a little
+//  3) Sometimes randomly new 'sparks' of heat are added at the bottom
+//  4) The heat from each cell is rendered as a color into the leds array
+//     The heat-to-color mapping uses a black-body radiation approximation.
+//
+// Temperature is in arbitrary units from 0 (cold black) to 255 (white hot).
+//
+// This simulation scales it self a bit depending on NUM_LEDS; it should look
+// "OK" on anywhere from 20 to 100 LEDs without too much tweaking. 
+//
+// I recommend running this simulation at anywhere from 30-100 frames per second,
+// meaning an interframe delay of about 10-35 milliseconds.
+//
+// Looks best on a high-density LED setup (60+ pixels/meter).
+//
+//
+// There are two main parameters you can play with to control the look and
+// feel of your fire: COOLING (used in step 1 above), and SPARKING (used
+// in step 3 above).
+//
+// COOLING: How much does the air cool as it rises?
+// Less cooling = taller flames.  More cooling = shorter flames.
+// Default 50, suggested range 20-100 
+#define COOLING  55
+
+// SPARKING: What chance (out of 255) is there that a new spark will be lit?
+// Higher chance = more roaring fire.  Lower chance = more flickery fire.
+// Default 120, suggested range 50-200.
+#define SPARKING 120
+
+
+void Fire2012()
+{
+// Array of temperature readings at each simulation cell
+  static byte heat[NUM_LEDS];
+
+  // Step 1.  Cool down every cell a little
+    for( int i = 0; i < NUM_LEDS; i++) {
+      heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / NUM_LEDS) + 2));
+    }
+  
+    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+    for( int k= NUM_LEDS - 1; k >= 2; k--) {
+      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+    }
+    
+    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+    if( random8() < SPARKING ) {
+      int y = random8(7);
+      heat[y] = qadd8( heat[y], random8(160,255) );
+    }
+
+    // Step 4.  Map from heat cells to LED colors
+    for( int j = 0; j < NUM_LEDS; j++) {
+      CRGB color = HeatColor( heat[j]);
+      int pixelnumber;
+      if( gReverseDirection ) {
+        pixelnumber = (NUM_LEDS-1) - j;
+      } else {
+        pixelnumber = j;
+      }
+      leds[pixelnumber] = color;
+    }
 }
 
 void loop() {
@@ -290,58 +276,35 @@ void loop() {
       digitalWrite(LED_BUILTIN, HIGH);
       flash_leds(1);
       Serial.println(F("Light ON"));
-      myDFPlayer.play(1);   // play the first mp3 file on repeat
+      if (HAS_MUSIC) {
+        myDFPlayer.play(1);   // play the first mp3 file on repeat
+      }
     } else {
       digitalWrite(LED_BUILTIN, LOW);
       flash_leds(2);
       Serial.println(F("Light OFF"));
-      myDFPlayer.pause();   // play the first mp3 file on repeat      
+      if (HAS_MUSIC) {
+        myDFPlayer.pause();   // play the first mp3 file on repeat            
+      }
     }
     is_off=is_active;
   }
 
 
-  EVERY_N_MILLISECONDS(500) {
-    if (myDFPlayer.available()) {
-      printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
-    }
-  }
-  
-  if (!is_active) to_color=2;
-  
-  // fade all existing pixels toward bgColor by "5" (out of 255)
-  fadeTowardColor( leds, NUM_LEDS, colors[to_color], 10);
-
-//  i += 1;
-//  Serial.print(F("    Transition: "));
-//  Serial.print(i);
-//  Serial.print(F(", "));
-//  Serial.print(leds[0].r);
-//  Serial.print(F(", "));
-//  Serial.print(leds[0].g);
-//  Serial.print(F(", "));
-//  Serial.println(leds[0].b);
-        
-  if (is_active) {
-    // periodically set random pixel to a random color, to show the fading
-    EVERY_N_MILLISECONDS( 2000 ) {
-      if (leds[0] == colors[to_color]) {
-        Serial.println("Color Switch");
-        to_color += 1;
-        if (to_color >= NUM_COLORS-1) to_color=0;
-        Serial.print(to_color);
-        Serial.print(", ");
-        Serial.print(colors[to_color].r);
-        Serial.print(", ");
-        Serial.print(colors[to_color].g);
-        Serial.print(", ");
-        Serial.println(colors[to_color].b);
-        i=0;
+  if (HAS_MUSIC) {
+    EVERY_N_MILLISECONDS(500) {
+      if (myDFPlayer.available()) {
+        printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
       }
     }
   }
 
-  FastLED.show();
-  FastLED.delay(10);
+  // when system is active run the lights.
+  if (is_active) {
+        Fire2012(); // run simulation frame
+  }
+
+  FastLED.show(); // display this frame
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
 
 }

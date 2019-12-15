@@ -32,7 +32,7 @@
 #define HOLD_COLOR_MS 20000
 
 #define NUM_COLORS 4
-CRGB colors[NUM_COLORS] = {CRGB(CRGB::DimGrey), CRGB(CRGB::SkyBlue), CRGB(CRGB::SeaGreen), CRGB(CRGB::Black)};
+CRGB colors[NUM_COLORS] = {CRGB::DimGrey, CRGB::SkyBlue, CRGB::SeaGreen, CRGB::Black};
 const char *color_names[NUM_COLORS] = { "DimGrey", "SkyBlue", "SeaGreen", "Black" };
 const uint8_t color_brightness[NUM_COLORS] = { 20, 45, 45, 0 };
 

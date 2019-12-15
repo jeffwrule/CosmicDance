@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 #define LED_PIN     10
-#define NUM_LEDS    50
+#define NUM_LEDS    60
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
@@ -81,6 +81,8 @@ void ChangePalettePeriodically()
 {
     uint8_t secondHand = (millis() / 1000) % 60;
     static uint8_t lastSecond = 99;
+
+    secondHand = 15;
     
     if( lastSecond != secondHand) {
         lastSecond = secondHand;

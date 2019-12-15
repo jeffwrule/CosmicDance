@@ -1,8 +1,8 @@
 #include <FastLED.h>
 
 #define LED_PIN     10
-#define NUM_LEDS    150
-#define BRIGHTNESS  64
+#define NUM_LEDS    60
+#define BRIGHTNESS  255
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
@@ -31,27 +31,33 @@ CRGB leds[NUM_LEDS];
 CRGBPalette16 currentPalette;
 TBlendType    currentBlending;
 
-extern CRGBPalette16 myRedWhiteBluePalette;
+// extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
 
+// extern CRGBPalette16 myRedWhiteBluePalette;
+extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
+
+extern CRGBPalette16 myMountainLightPalette;
+extern const TProgmemPalette16 myMountainLightPalette_p PROGMEM;
 
 void setup() {
     delay( 3000 ); // power-up safety delay
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
     
-    currentPalette = RainbowColors_p;
+    currentPalette = myMountainLightPalette_p;
     currentBlending = LINEARBLEND;
 }
 
 
 void loop()
 {
-    ChangePalettePeriodically();
+//    ChangePalettePeriodically();
     
     static uint8_t startIndex = 0;
-    startIndex = startIndex + 1; /* motion speed */
-    
+    // startIndex = startIndex + 1; /* motion speed */
+
+-- EVERY_N_MILLISECONDS
     FillLEDsFromPaletteColors( startIndex);
     
     FastLED.show();
@@ -64,7 +70,8 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
     
     for( int i = 0; i < NUM_LEDS; i++) {
         leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness, currentBlending);
-        colorIndex += 3;
+//        colorIndex += 3;
+        colorIndex += 1;
     }
 }
 
@@ -81,6 +88,8 @@ void ChangePalettePeriodically()
 {
     uint8_t secondHand = (millis() / 1000) % 60;
     static uint8_t lastSecond = 99;
+
+    secondHand = 10;
     
     if( lastSecond != secondHand) {
         lastSecond = secondHand;
@@ -122,47 +131,31 @@ void SetupBlackAndWhiteStripedPalette()
     
 }
 
-// This function sets up a palette of purple and green stripes.
-void SetupPurpleAndGreenPalette()
-{
-    CRGB purple = CHSV( HUE_PURPLE, 255, 255);
-    CRGB green  = CHSV( HUE_GREEN, 255, 255);
-    CRGB black  = CRGB::Black;
-    
-    currentPalette = CRGBPalette16(
-                                   green,  green,  black,  black,
-                                   purple, purple, black,  black,
-                                   green,  green,  black,  black,
-                                   purple, purple, black,  black );
-}
 
 
-// This example shows how to set up a static color palette
-// which is stored in PROGMEM (flash), which is almost always more
-// plentiful than RAM.  A static PROGMEM palette like this
-// takes up 64 bytes of flash.
-const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
+
+
+const TProgmemPalette16 myMountainLightPalette_p PROGMEM =
 {
-    CRGB::Red,
-    CRGB::Gray, // 'white' is too bright compared to red and blue
-    CRGB::Blue,
-    CRGB::Black,
+    CRGB::DimGray,
+    CRGB::DimGray, // 'white' is too bright compared to red and blue
+    CRGB::DimGray,
+    CRGB::DimGray,
     
-    CRGB::Red,
-    CRGB::Gray,
-    CRGB::Blue,
-    CRGB::Black,
-    
-    CRGB::Red,
-    CRGB::Red,
-    CRGB::Gray,
-    CRGB::Gray,
-    CRGB::Blue,
-    CRGB::Blue,
-    CRGB::Black,
-    CRGB::Black
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue
 };
-
 
 
 // Additional notes on FastLED compact palettes:

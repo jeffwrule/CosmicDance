@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 #define LED_PIN     10
-#define NUM_LEDS    150
+#define NUM_LEDS    60
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
@@ -81,6 +81,8 @@ void ChangePalettePeriodically()
 {
     uint8_t secondHand = (millis() / 1000) % 60;
     static uint8_t lastSecond = 99;
+
+    secondHand = 10;
     
     if( lastSecond != secondHand) {
         lastSecond = secondHand;
@@ -163,6 +165,28 @@ const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
     CRGB::Black
 };
 
+
+const TProgmemPalette16 myMountainLight_p PROGMEM =
+{
+    CRGB::Gray,
+    CRGB::Gray, // 'white' is too bright compared to red and blue
+    CRGB::Gray,
+    CRGB::Gray,
+    
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+    CRGB::SeaGreen,
+
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue,
+    CRGB::SkyBlue
+};
 
 
 // Additional notes on FastLED compact palettes:

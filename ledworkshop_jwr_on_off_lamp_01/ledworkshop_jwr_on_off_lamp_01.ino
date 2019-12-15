@@ -52,8 +52,9 @@ void setup() {
   //Serial Port begin
   Serial.begin(250000);
   Serial.println();
-  Serial.println(F("LEDWorkshop_on_off_lamp 00"));
-
+  Serial.print(F("LEDWorkshop_on_off_lamp "));
+  Serial.println(SKETCH_ID);
+  
   //Define inputs and outputs
   //  pinMode(trigPin, OUTPUT);
   //  pinMode(echoPin, INPUT);

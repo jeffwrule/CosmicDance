@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define SKETCH_ID "00"
 
 #define IR_PIN 11
 

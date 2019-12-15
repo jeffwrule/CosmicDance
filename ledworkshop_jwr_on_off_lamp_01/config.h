@@ -34,6 +34,9 @@
 #define NUM_COLORS 4
 CRGB colors[NUM_COLORS] = {CRGB(CRGB::DimGrey), CRGB(CRGB::SkyBlue), CRGB(CRGB::SeaGreen), CRGB(CRGB::Black)};
 const char *color_names[NUM_COLORS] = { "DimGrey", "SkyBlue", "SeaGreen", "Black" };
+const uint8_t color_brightness[NUM_COLORS] = { 20, 45, 45, 0 };
+
+#define COLOR_BRIGHTNESS_CHANGE_RATE 1
 
 // how many colors will you fade between
 #define NUM_PALETTES 4

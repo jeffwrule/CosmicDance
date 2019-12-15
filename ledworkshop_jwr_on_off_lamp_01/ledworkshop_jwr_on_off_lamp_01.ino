@@ -36,11 +36,15 @@ void printDetail(uint8_t type, int value);
 
 
 // set the initial and target color
-CRGBPalette16 currentPalette; // ( CRGB::Black);
-CRGBPalette16 targetPalette; // ( CRGB::SeaGreen);
+CRGBPalette16 currentPalette; 
+CRGBPalette16 targetPalette;
+uint8_t current_brightness;
+uint8_t target_brightness;
 
 unsigned long color_count=0;
 bool target_reached=false;
+bool color_reached=false;
+bool brightness_reached=false;
 unsigned long color_change_start_ms=0;
 
 void setup() {
@@ -59,14 +63,16 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
   is_active = true;
 
+//  current_brightness = color_brightness[0];
+  target_brightness = current_brightness;
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness( BRIGHTNESS );
+  FastLED.setBrightness( current_brightness );
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   FastLED.show();
   FastLED.delay(100);
-  for (uint8_t i=0; i<NUM_PALETTES; i++) { palette_list[i] =  CRGBPalette16(colors[i]); }
+  for (uint8_t i=0; i<NUM_COLORS; i++) { palette_list[i] =  CRGBPalette16(colors[i]); }
   ChangeColorOverTime(0);
-
+  
   if (HAS_MUSIC) {
     // setup communications with the MP3 card
     mySoftwareSerial.begin(9600);
@@ -87,15 +93,6 @@ void setup() {
   }
 
 
-  // setup the LEDS
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness( BRIGHTNESS );
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
-  FastLED.show();
-  FastLED.delay(1000);
-  // create NUM_PALETTES palettes and assign them new color.
-  for (uint8_t i=0; i<NUM_PALETTES; i++) { palette_list[i] =  CRGBPalette16(colors[i]); }
-  // ChangeColorOverTime(0);
   Serial.println(F("Setup complete"));
   Serial.println();
   
@@ -247,6 +244,19 @@ void flash_leds(uint16_t num_flashes) {
   }
 }
 
+void adjust_brightness() {
+  static uint8_t new_level;
+  if (current_brightness == target_brightness) return;
+
+  if (current_brightness < target_brightness ) {
+    new_level = current_brightness + COLOR_BRIGHTNESS_CHANGE_RATE;
+    current_brightness = new_level < current_brightness ? 255 : new_level;
+  }  else {
+    new_level = current_brightness - COLOR_BRIGHTNESS_CHANGE_RATE;
+    current_brightness = new_level > current_brightness ? 0 : new_level;
+  }
+  FastLED.setBrightness( current_brightness );
+}
 
 void adjust_lights() {
   static uint8_t startIndex = 0;
@@ -254,11 +264,12 @@ void adjust_lights() {
   ChangeColorOverTime(HOLD_COLOR_MS);
 
   EVERY_N_MILLISECONDS(  1000 / UPDATES_PER_SECOND ) {
+    adjust_brightness();
     nblendPaletteTowardPalette( currentPalette, targetPalette, MAX_CHANGES);
     FillLEDsFromPaletteColors( startIndex); 
-    if (target_reached || (leds[0].r == targetPalette[0].r && leds[0].g == targetPalette[0].g && leds[0].b == targetPalette[0].b)) {
-      if (target_reached == false) {
-        Serial.print(F("%%% TARGET REACHED : "));
+    if (!target_reached) {
+      if (!color_reached && leds[0].r == targetPalette[0].r  && leds[0].g == targetPalette[0].g  && leds[0].b == targetPalette[0].b) {
+        Serial.print(F("%%% COLOR REACHED : "));
         print_color_control();
         Serial.print(F(", target_reached: "));
         Serial.print(target_reached);
@@ -267,11 +278,28 @@ void adjust_lights() {
         Serial.print(F(", "));
         Serial.println(millis() - color_change_start_ms); 
         Serial.println();
-        target_reached = true;
+        color_reached = true;        
       }
-    } else {
+      if (!brightness_reached && current_brightness == target_brightness) {
+        Serial.print(F("%%% BRIGHTNESS REACHED : "));
+        Serial.print(F(", current_brightness: "));
+        Serial.print(current_brightness);
+        Serial.print(F(", target_brightness: "));
+        Serial.print(target_brightness);
+        Serial.print(F(", diff: "));
+        Serial.println(millis() - color_change_start_ms); 
+        Serial.println();
+        brightness_reached = true;         
+      }
+
+      if (brightness_reached && color_reached) {
+        Serial.print(F("%%% TARGET REACHED: diff: "));  
+        Serial.println(millis() - color_change_start_ms); 
+        Serial.println();  
+        target_reached = true;    
+      }
       color_count += 1;      
-    }
+    } 
   }
   
   // startIndex = startIndex + 1; /* motion speed */
@@ -308,7 +336,7 @@ void print_color_control() {
 
 void ChangeColorOverTime(unsigned long delay_ms) {
   
-    static uint8_t palette_index=NUM_PALETTES;   // index into our list of ordered colors to change to
+    static uint8_t palette_index=NUM_COLORS;   // index into our list of ordered colors to change to
     static unsigned long last_ms=0;   // milliseconds the last time we switched
     unsigned long cur_ms = millis();  // current milliseconds
 
@@ -321,22 +349,34 @@ void ChangeColorOverTime(unsigned long delay_ms) {
       Serial.print(F(", last_ms: "));
       Serial.print(last_ms);
       Serial.print(F(", diff: "));
-      Serial.print(last_ms - cur_ms);      
+      Serial.println(last_ms - cur_ms);      
       palette_index += 1;
-      palette_index = palette_index < NUM_PALETTES ? palette_index : 0;
-      if (palette_index >= NUM_PALETTES) {
+      palette_index = palette_index < NUM_COLORS ? palette_index : 0;
+      if (palette_index >= NUM_COLORS) {
         palette_index = 0;
       }
       targetPalette = palette_list[palette_index];
+      target_brightness = color_brightness[palette_index];
       last_ms=cur_ms;
       color_count=0;
       target_reached=false;
+      color_reached=false;
+      brightness_reached=false;
       color_change_start_ms = cur_ms;
-      Serial.print(F("new color: "));
+      Serial.print(F("    new color: "));
       Serial.print(color_names[palette_index]);
       Serial.print(F(", "));
       print_color_control();
+      Serial.println();
+      Serial.print(F("    current_brightness: "));
+      Serial.print(current_brightness);
+      Serial.print(F(", target_brightness: "));
+      Serial.print(target_brightness);
       Serial.print(F(", target_reached: "));
+      Serial.print(target_reached);
+      Serial.print(F(", color_reached: "));
+      Serial.print(color_reached);
+      Serial.print(F(", color_reached: "));
       Serial.print(target_reached);
       Serial.println();    
      }

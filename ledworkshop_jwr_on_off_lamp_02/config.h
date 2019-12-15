@@ -32,11 +32,6 @@
 
 
 #define NUM_COLORS 2
-//CRGB colors[NUM_COLORS] = { CRGB::Coral  , CRGB::Coral };
-//const char *color_names[NUM_COLORS] = { "FloralWhite light", "FloralWhite Dark"};
-//CRGB colors[NUM_COLORS] = { CRGB::NavajoWhite  , CRGB::NavajoWhite };
-// CRGB colors[NUM_COLORS] = { CRGB::SaddleBrown  , CRGB::SaddleBrown };
-// CRGB colors[NUM_COLORS] = { CRGB::Yellow  , CRGB::Yellow };
 CRGB colors[NUM_COLORS] = { CRGB::Silver  , CRGB::Silver };
 const char *color_names[NUM_COLORS] = { "Silver light", "Silver Dark"};
 const uint8_t color_brightness[NUM_COLORS] = { 120, 20 };

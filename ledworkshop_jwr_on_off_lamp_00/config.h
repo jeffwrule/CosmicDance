@@ -8,7 +8,6 @@
 // LED PINS AND SIZE AND TYPE
 #define LED_PIN     10
 #define NUM_LEDS    90
-#define BRIGHTNESS  96
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
 
@@ -18,7 +17,6 @@
 #define DFMINI_VOLUME 20
 
 #define HAS_MUSIC true
-
 
 // Crossfade current palette slowly toward the target palette
 //
@@ -36,14 +34,15 @@
 // CRGB colors[NUM_COLORS] = {CRGB(CRGB::Grey), CRGB(CRGB::SkyBlue), CRGB(CRGB::SeaGreen), CRGB(CRGB::DarkGrey)};
 CRGB colors[NUM_COLORS] = { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::DarkGrey};
 const char *color_names[NUM_COLORS] = { "Red", "Green", "Blue", "DarkGrey" };
+const uint8_t color_brightness[NUM_COLORS] = { 120, 100, 80, 60 };
 
-// how many colors will you fade between
-#define NUM_PALETTES 4
-// arrage the palettes in order 
-CRGBPalette16 palette_list[NUM_PALETTES];
+// how many steps each call to color brightness changes the brightness
+#define COLOR_BRIGHTNESS_CHANGE_RATE 1
+
+// create a list of pallets to match the list of colors 
+CRGBPalette16 palette_list[NUM_COLORS];
 
 // how long to delay between light adjustments
 #define CHANGE_DELAY_MS 30
 #define UPDATES_PER_SECOND 50
-
 #endif

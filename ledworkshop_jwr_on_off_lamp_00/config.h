@@ -7,7 +7,7 @@
 
 // LED PINS AND SIZE AND TYPE
 #define LED_PIN     10
-#define NUM_LEDS    60
+#define NUM_LEDS    90
 #define BRIGHTNESS  96
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB

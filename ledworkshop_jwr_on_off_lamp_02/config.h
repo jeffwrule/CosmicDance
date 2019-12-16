@@ -31,7 +31,6 @@
 // wait this long before the next color change
 #define HOLD_COLOR_MS 20000
 
-
 #define NUM_COLORS 2
 CRGB colors[NUM_COLORS] = { CRGB::Silver  , CRGB::Silver };
 const char *color_names[NUM_COLORS] = { "Silver light", "Silver Dark"};
@@ -39,9 +38,7 @@ const uint8_t color_brightness[NUM_COLORS] = { 120, 20 };
 
 #define COLOR_BRIGHTNESS_CHANGE_RATE 1
 
-// how many colors will you fade between
-//#define NUM_PALETTES 2
-// arrage the palettes in order 
+// create a list of pallets to match the list of colors 
 CRGBPalette16 palette_list[NUM_COLORS];
 
 // how long to delay between light adjustments

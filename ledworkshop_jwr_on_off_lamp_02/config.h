@@ -18,7 +18,6 @@
 
 #define HAS_MUSIC true
 
-
 // Crossfade current palette slowly toward the target palette
 //
 // Each time that nblendPaletteTowardPalette is called, small changes

@@ -7,14 +7,14 @@
 
 // LED PINS AND SIZE AND TYPE
 #define LED_PIN     10
-#define NUM_LEDS    60
+#define NUM_LEDS    67
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
 
 // SOUND CONTROL PINS AND VOLUME
 #define DFMINI_RX 5
 #define DFMINI_TX 6
-#define DFMINI_VOLUME 20
+#define DFMINI_VOLUME 25
 
 #define HAS_MUSIC true
 

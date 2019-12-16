@@ -36,7 +36,7 @@
 #define NUM_COLORS 4
 CRGB colors[NUM_COLORS] = {CRGB::DimGrey, CRGB::SkyBlue, CRGB::SeaGreen, CRGB::Black};
 const char *color_names[NUM_COLORS] = { "DimGrey", "SkyBlue", "SeaGreen", "Black" };
-const uint8_t color_brightness[NUM_COLORS] = { 20, 45, 45, 0 };
+const uint8_t color_brightness[NUM_COLORS] = { 40, 90, 90, 0 };
 
 #define COLOR_BRIGHTNESS_CHANGE_RATE 1
 
@@ -47,6 +47,6 @@ CRGBPalette16 palette_list[NUM_PALETTES];
 
 // how long to delay between light adjustments
 #define CHANGE_DELAY_MS 30
-#define UPDATES_PER_SECOND 20
+#define UPDATES_PER_SECOND 10 
 
 #endif

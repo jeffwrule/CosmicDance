@@ -16,7 +16,7 @@
 // SOUND CONTROL PINS AND VOLUME
 #define DFMINI_RX 5
 #define DFMINI_TX 6
-#define DFMINI_VOLUME 20
+#define DFMINI_VOLUME 25
 
 #define HAS_MUSIC true
 

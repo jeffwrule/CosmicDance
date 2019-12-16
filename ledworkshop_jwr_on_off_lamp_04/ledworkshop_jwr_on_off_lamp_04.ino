@@ -86,13 +86,15 @@ void setup() {
       while(true);
     }
     Serial.println(F("DFPlayer Mini online."));
+    delay(100);
+    myDFPlayer.setTimeOut(500); //Set serial communictaion time out 500ms
     myDFPlayer.volume(DFMINI_VOLUME);  //Set volume value. From 0 to 30
-    myDFPlayer.enableLoopAll(); //loop all mp3 files.
-    myDFPlayer.play(1);  //Play the first mp3    
+    myDFPlayer.outputDevice(DFPLAYER_DEVICE_SD);
+    myDFPlayer.play(1);  //Play the first mp3 
+    myDFPlayer.enableLoop();   
   } else {
     Serial.println(F("Music Configured OUT!"));
   }
-
 
   Serial.println(F("Setup complete"));
   Serial.println();

@@ -7,6 +7,7 @@
 
 #include "GenericMP3.h"
 
+
 SdFat sd;
 
 #define SFMP3_MAX_VOLUME 0
@@ -34,7 +35,7 @@ class SparkFunMP3: public GenericMP3 {
     SparkFunMP3(unsigned int normal_volume, 
                 unsigned int beep_volume, 
                 uint8_t sd_sel, 
-                SPISettings spi_speed) : 
+                unsigned long spi_speed) : 
       normal_volume(normal_volume),
       beep_volume(beep_volume),
       sd_sel(sd_sel),
@@ -86,7 +87,7 @@ class SparkFunMP3: public GenericMP3 {
     unsigned int beep_volume;
     unsigned int current_volume=NORMAL_VOLUME;
     uint8_t sd_sel;
-    SPISettings spi_speed;
+    unsigned long spi_speed;
 };
 
 void SparkFunMP3::mp3_fade(int fade_seconds) {

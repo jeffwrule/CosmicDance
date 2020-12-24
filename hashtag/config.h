@@ -36,7 +36,9 @@ uint8_t position_index_list[NUM_POSITION_PINS] = { 5, };
 #define NUM_DIMM_LEVELS 200
 #define DIMM_LEVEL_OFF NUM_DIMM_LEVELS
 #define DIMM_LEVEL_UNLIT 160
+#define DIMM_LEVEL_LIKELY_UNLIT 155
 #define DIMM_LEVEL_LOWEST 150
+#define DIMM_LEVEL_LOWER 149
 #define DIMM_LEVEL_LOW 140
 #define DIMM_LEVEL_MEDIUM 120
 #define DIMM_LEVEL_HIGH 40
@@ -100,7 +102,7 @@ typedef struct Step {
     uint32_t  dimm_length_ms;                         // how long should this dimmer take to complete it's dimm up/down
     const uint8_t num_skip_interrupts;                // how many interrupts to skip before stopping
     const LightPrep dimmer_levels[NUM_LIGHT_LEVELS];  // the setups for each light
-    const LightPrep *dimmers[NUM_DIMMERS];            // dimmers[i] level will be applight to lights[i];
+    const LightPrep *dimmers[NUM_DIMMERS];            // dimmers[i] level will be applied to lights[i];
 };
 
 // forward references for global routines, routines defined in Playbook_steps.h

@@ -78,12 +78,12 @@ const unsigned int all_dancers = 0xFFFF;      // this is the address we use when
 //unsigned int dance_order[]  = {THUNDER};  // bench testing march 2018
 //unsigned int dance_order[]  = {SITX2, NOSTAY, PASTPRESENTFUTURE, THUNDER};  // March 2018 Asia Modern, DongHai Group Show
 // unsigned int dance_order[]  = {MOUNTAIN, WATER, EARTH};  // March 2018 Asia Modern, DongHai Group Show
-unsigned int dance_order[]  = {MOUNTAIN};  // March 2018 Asia Modern, DongHai Group Show
+unsigned int dance_order[]  = {EARTH};  // March 2018 Asia Modern, DongHai Group Show
 
 
                                
 unsigned int num_dancers = sizeof(dance_order) / sizeof(unsigned int);
-unsigned int timeout_seconds = 40;           // number of seconds to wait before skipping to next dancer
+unsigned int timeout_seconds = 40;             // number of seconds to wait before skipping to next dancer
 
 /*
  * transmit and recieve pins for the xbee.
@@ -103,7 +103,8 @@ const int m_ensembl_delay_seconds = 20;    // number of seconds to wait between 
 // const int l_solo_delay_seconds = 5;        // number of seconds to delay for a solo in long mode
 const int l_solo_delay_seconds = 14;        // Taiwan National Theater Show
 // const int l_ensembl_delay_seconds = 100;    // number of seconds to wait between ensemble play long mode
-const int l_ensembl_delay_seconds = 60;    // Spring 2018 Asia Modern
+// const int l_ensembl_delay_seconds = 60;    // Spring 2018 Asia Modern
+const int l_ensembl_delay_seconds = 80;    // Winter 2020 Mercury 20 solo show for earth, gives it enough time to reset after each run
 //const int l_ensembl_delay_seconds = 280;     // National Taiwan Theater setting Jan-2018
                                             // number of seconds to wait between ensemble play long mode, extra long to allow
                                             // two pieces that play longer 1.5 min extra, plus another 2 minutes after they finish
@@ -335,8 +336,7 @@ void loop() {
     // protect against millis rollover
     if (start > millis()) {start = millis(); last_response = start; }
 
-    
-
+    // return;  disable the director....
     
   /*
    * start the next dancer 

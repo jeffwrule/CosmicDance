@@ -453,7 +453,7 @@ void IBT2Motor::set_target_speed(unsigned int new_target_speed)
     new_target_speed = max_speed;      
   }
   
-  Serial.print(F("HBridgeMotor::set_target_speed motor_name="));
+  Serial.print(F("IBT2Motor::set_target_speed motor_name="));
   Serial.print(motor_name);
   Serial.print(F(", Speed="));
   Serial.print(speed);

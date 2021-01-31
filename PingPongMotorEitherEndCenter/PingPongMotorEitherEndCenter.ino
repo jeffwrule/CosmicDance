@@ -5,9 +5,9 @@ using namespace std;
 
 #define DEBUG = true
 //#define PRINT_EVER_NTH_ITTER 15000
-#define PRINT_EVER_NTH_ITTER 30000
+// #define PRINT_EVER_NTH_ITTER 30000
 
-// #define PRINT_EVER_NTH_ITTER 1
+#define PRINT_EVER_NTH_ITTER 1
 
 // because magnets are impprecise, add specific delays for different directions.
 // final delays for cloud gate build
@@ -25,16 +25,16 @@ using namespace std;
 //#define MOTOR_SPEED 200        // values between 0 (off) and 255 (fully on)  (testing speed)
 
 // heaven and earth
-#define MOTOR_SPEED_LEFT  40        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
-#define MOTOR_SPEED_RIGHT 40        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_LEFT  60        // GO DOWN: values between 0 (off) and 255 (fully on) This is for heaven and earth
+#define MOTOR_SPEED_RIGHT 60        // GO UP: values between 0 (off) and 255 (fully on) This is for heaven and earth
 #define MAX_SECONDS_TO_LIMIT_SWITCH 150 // max time we should ever expect to reach either limit switch
 
-#define MOTOR_JUMP_START_SPEED1 40       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define MOTOR_JUMP_START_SPEED1 70       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION1 100  // IBT_2 motor will run left (up) speed for this many seconds when starting left
-#define MOTOR_JUMP_START_SPEED2 40       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
+#define MOTOR_JUMP_START_SPEED2 60       // IBT_2 needs more power to get going (up) then the normal run speed (heaven and earth)
 #define JUMP_START_MILLIS_DURATION2 100  // IBT_2 motor will run left (up) speed for this many seconds when starting left
 
-#define MOTOR_START_SPEED  20       // low values don't produce movement must be lower then MOTOR_SPEED
+#define MOTOR_START_SPEED  20       // low values don't produce movement but values *MUST BE*  MOTOR_SPEED
 #define SPEED_INCREMENT 5            // amount to increment speed when starting....
 
 //#define STOP_DELAY         30    // milliseconds to delay between decrements in speed when stopping, typical setting

@@ -6,6 +6,8 @@
 #include "AAB_antimatter_config.h"
 #include "PrintTimer.h"
 #include "Nucleon.h"
+#include "Fob.h"
+#include "config.h"
 
 PrintTimer *print_timer = new PrintTimer(PRINT_AFTER_SECONDS);
 
@@ -34,10 +36,15 @@ rgb  pixels[QUARK_NUM_PIXELS] = {};
 // grbw  pixels[QUARK_NUM_PIXELS] = {};
 // rgb  pixels[QUARK_NUM_PIXELS] = {};
 
+Fob *fob;
+
+void updateColors(char r, char g, char b);    // forward decleration
+
+
 void setup() {  
   
   Serial.begin(SERIAL_SPEED);
-  Serial.println(F("Setup Begin Antimatter"));
+  Serial.println(F("Setup Begin Antimatter v2 2021-02-07"));
   delay(500);
 
   print_timer->update();
@@ -51,13 +58,25 @@ void setup() {
   my_nucleon = new Nucleon(print_timer, red, green, blue, "RED", "GREEN", "BLUE"); 
 #endif
 
+  updateColors(50,50,50);
+  quark1.clear(2 * numPixels);
+  quark1.clear(2 * numPixels);
+  delay(1000);
+  quark1.sendPixels(numPixels, pixels);
+  delay(1000);
+  quark1.clear(2 * numPixels);
+  delay(1000);
+  quark1.sendPixels(numPixels, pixels);
+  delay(1000);
+  quark1.clear(2 * numPixels);
+  delay(1000);
+  
+  fob = new Fob(FOB_PIN);
 
   // Turn on all the LEDs
   delay(10);
   Serial.println(F("Setup Complete"));
 }
-
-
 
 // set the given color for a box
 void Nucleon::setQuarkColourRgb(PrintTimer *pt, unsigned int quark) {
@@ -102,6 +121,88 @@ void Nucleon::setQuarkColourRgb(PrintTimer *pt, unsigned int quark) {
   if (!orig_print) pt->print_off();
   
  }
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+//
+// New code here to drive pixels when fob is off
+//
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+
+int cur_level=0;                      // when dimming this is the current level
+int dimm_increment=1;                 // either 1 or -1 depending on dimm up or dimm down
+  
+unsigned long last_ms = 0;            // milliseconds when we last updated 
+unsigned int off_delay_ms=10000;      // when we are at 0, make a longer delay
+// unsigned int max_brightness=150;      // approximately 60% bright
+// unsigned int increment_delay_ms=66;   // delay between updates, 80 * 256 will give us approximately 20 seconds up and down
+unsigned int max_brightness=30;         // out of 255
+unsigned int increment_delay_ms=333;     // should work out to about 10 seconds up and 10 seconds down
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Sets the array to specified color
+////////////////////////////////////////////////////////////////////////////////
+void updateColors(char r, char g, char b)
+{
+  for(int i = 0; i < numPixels; i++)
+  {
+    pixels[i].r = r;
+    pixels[i].g = g;
+    pixels[i].b = b;
+  }
+}
+
+void dimm_all(PrintTimer *pt) 
+{
+  if (cur_level == max_brightness) dimm_increment=-1;  // moving down
+  if (cur_level == 0) dimm_increment=1;     // moving up 
+  cur_level += dimm_increment;
+  updateColors(cur_level, cur_level, cur_level);
+  quark1.sendPixels(numPixels, pixels);
+  delay(2);
+  if (cur_level % 10 == 0 || cur_level == 0 or cur_level==max_brightness) {
+    Serial.print(F("New Dimm Level: "));
+    Serial.print(cur_level);
+    Serial.print(F(" last_ms: "));
+    Serial.println(last_ms);    
+  }
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief This method is automatically called repeatedly after setup() has run.
+/// It is the main loop.
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+void do_dimm_up_down(PrintTimer *pt)
+{
+
+  unsigned long cur_ms = pt->current_millis;
+
+  if (cur_ms < last_ms) last_ms=0;   // handle loop around of mills
+
+  switch (cur_level) {
+    case 0:   if (cur_ms > last_ms + off_delay_ms) {    // we delay much longer when we are off
+                  last_ms = cur_ms;
+                  dimm_all(pt);
+                  
+              } 
+              break;
+              
+    default:  if (cur_ms > last_ms + increment_delay_ms) {    // standard delay during the rest of the up/down cycle
+                  last_ms = cur_ms;
+                  dimm_all(pt);
+              }
+              break;
+    }
+}
+
 
 
 #endif

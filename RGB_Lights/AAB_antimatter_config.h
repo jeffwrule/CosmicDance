@@ -15,7 +15,11 @@
 #define NUM_FIBONOCCI 11
 unsigned int fibonicci_sequence[NUM_FIBONOCCI] = { 34000, 21000, 13000, 8000, 5000, 3000, 2000, 1000, 1000, 1000, 1000 };
 
-#define QUARK_NUM_PIXELS 40
+// orig antimater # pixels (reconfigured into time-machine up and time machine down
+// #define QUARK_NUM_PIXELS 40
+
+// New value for timeMachineDown (time machine downp)
+#define QUARK_NUM_PIXELS 132
 
 #define LED_UPDATE_DELAY 20
 
@@ -28,5 +32,8 @@ unsigned int fibonicci_sequence[NUM_FIBONOCCI] = { 34000, 21000, 13000, 8000, 50
 #define COLOR_FACTOR_COLOR "RED"
 #define COLOR_FACTOR 0.7
 #endif
+
+#define FOB_PIN 12
+#define HAS_FOB
 
 #endif

@@ -4,10 +4,10 @@
 char* bool_tostr(boolean input_bool);  /// forward declare bool_tostr;
 
 #define SERIAL_SPEED  250000
-#define PRINT_AFTER_SECONDS 1
+#define PRINT_AFTER_SECONDS 5
 
-#define IS_BRIEF True
-//#define IS_CHATTY True 
+#define IS_BRIEF true
+#define IS_CHATTY false 
 #define IS_VERBOSE false
 
 //#define ALWAYS_BE_DANCING false

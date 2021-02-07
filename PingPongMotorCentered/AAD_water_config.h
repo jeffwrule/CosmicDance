@@ -24,11 +24,11 @@
   #define M1_NEEDS_JUMP_RIGHT true
   #define M1_JUMP_DURATION 300
 
-  #define WATER_SPEED_DOWN 33      // right
-  #define WATER_SPEED_UP 33       // left
+  #define WATER_SPEED_DOWN 40      // right
+  #define WATER_SPEED_UP 40       // left
 
-  #define M1_MAX_SPEED_RIGHT 33    // up
-  #define M1_MAX_SPEED_LEFT 33    // down
+  #define M1_MAX_SPEED_RIGHT 40    // up
+  #define M1_MAX_SPEED_LEFT 40    // down
 
   #define M1_JUMP1_MILLS 500
   #define M1_JUMP2_MILLS 500

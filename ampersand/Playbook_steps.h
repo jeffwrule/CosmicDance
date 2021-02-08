@@ -16,7 +16,7 @@ Step active_steps[NUM_ACTIVE_STEPS] = {
               { DIMM_LEVEL_MEDIUM, DIMM_LEVEL_LOWEST, DIMM_LEVEL_MEDIUM, DIMM_DOWN, IS_OSCELLATING },
               },
         },
-      { 1, 0, duration, DIMM_CYCLE_SHORT_MS * 8, false, DIMM_CYCLE_SHORT_MS, 0,
+      { 1, 0, duration, DIMM_CYCLE_SHORT_MS * 8, true, DIMM_CYCLE_SHORT_MS, 0,
             {
               { DIMM_LEVEL_HIGH, DIMM_LEVEL_LOWEST, DIMM_LEVEL_HIGH, DIMM_DOWN, IS_OSCELLATING },
               },
@@ -33,7 +33,7 @@ uint8_t inactive_dimmer_states[NUM_INACTIVE_STEPS][NUM_DIMMERS] = {
 };
 
 Step inactive_steps[NUM_INACTIVE_STEPS] = { 
-      { 0, 1, position, 0, true, DIMM_CYCLE_NORMAL_MS, 0, 
+      { 0, 1, position, 0, false, DIMM_CYCLE_NORMAL_MS, 0, 
             { 
               { DIMM_LEVEL_LOW, DIMM_LEVEL_UNLIT, DIMM_LEVEL_LOW, DIMM_UP, IS_OSCELLATING },
               }

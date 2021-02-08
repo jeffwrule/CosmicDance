@@ -9,7 +9,7 @@
 
 // config info for this app
 //uint8_t pin_list[NUM_DIMMERS] = { 6,7,8,9,10,11 };     // current pin mappings for each of the dimmers
-uint8_t pin_list[NUM_DIMMERS] = { 6, };     // current pin mappings for each of the dimmers
+uint8_t pin_list[NUM_DIMMERS] = { 6, 7, };     // current pin mappings for each of the dimmers
 uint32_t triac_lock_delay=5;                            // how long (micro seconds) does the triac on this board take to lock, typical 5-20us start with 5
 
 Light  *light_levels[NUM_LIGHT_LEVELS]; // how many physical light leves are we mapping to our dimmers

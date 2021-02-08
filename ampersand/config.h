@@ -10,7 +10,7 @@
 // pin attached to on off switch
 #define ON_OFF_PIN 4
 // pin attached to on off switch
-#define MOTOR_PIN 12
+#define MOTOR_PIN 11
 
 /*
  * really the number of indexes to support 0-4 are for pins 
@@ -63,13 +63,13 @@ uint32_t  print_every_ms=10000;     // loggin should print messages after this m
 #define IS_OSCELLATING true
 #define NOT_OSCELLATING false
 
-// on of two arrays tracking the light level for the individual blubs
+// one of two arrays tracking the light level for the individual blubs
 #define NUM_LIGHT_LEVELS 1
 #define LIGHTPREP_LEVEL0 0
 #define LIGHTPREP_LEVEL1 1
 
 // how mnay physical dimmers are we driving
-#define NUM_DIMMERS 1
+#define NUM_DIMMERS 2
 
 enum WaitFor { duration, position, on_off };   // duration will wait a given time to next step, position will wait for position_interrupt
                                                // on_off is used in things like stopped mode when we enter the next step when the button is pused

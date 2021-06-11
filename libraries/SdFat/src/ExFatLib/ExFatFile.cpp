@@ -49,7 +49,7 @@ bool ExFatFile::contiguousRange(uint32_t* bgnSector, uint32_t* endSector) {
   return true;
 }
 //------------------------------------------------------------------------------
-void ExFatFile::fgetpos(fspos_t* pos) {
+void ExFatFile::fgetpos(fspos_t* pos) const {
   pos->position = m_curPosition;
   pos->cluster = m_curCluster;
 }
@@ -82,7 +82,7 @@ int ExFatFile::fgets(char* str, int num, char* delim) {
   return n;
 }
 //------------------------------------------------------------------------------
-uint32_t ExFatFile::firstSector() {
+uint32_t ExFatFile::firstSector() const {
   return m_firstCluster ? m_vol->clusterStartSector(m_firstCluster) : 0;
 }
 //------------------------------------------------------------------------------
@@ -156,10 +156,10 @@ size_t ExFatFile::getName(ExChar_t* name, size_t length) {
       goto fail;
     }
     for (uint8_t in = 0; in < 15; in++) {
-      if ((n + 1) >= length) {
+      uint16_t c = getLe16(dn->unicode + 2*in);
+      if (c == 0 || (n + 1) >= length) {
         goto done;
       }
-      uint16_t c = getLe16(dn->unicode + 2*in);
       name[n++] = sizeof(ExChar_t) > 1 || c < 0X7F ? c : '?';
     }
   }
@@ -170,6 +170,10 @@ size_t ExFatFile::getName(ExChar_t* name, size_t length) {
  fail:
   *name = 0;
   return 0;
+}
+//------------------------------------------------------------------------------
+bool ExFatFile::isBusy() {
+  return m_vol->isBusy();
 }
 //------------------------------------------------------------------------------
 bool ExFatFile::open(const ExChar_t* path, int oflag) {
@@ -647,16 +651,7 @@ int ExFatFile::read(void* buf, size_t count) {
         ns = maxNs;
       }
       n = ns << m_vol->bytesPerSectorShift();
-      // Check for cache sector in read range.
-      if (sector <= m_vol->dataCacheSector()
-          && m_vol->dataCacheSector() < (sector + ns)) {
-        // Flush cache if cache sector is in the range.
-        if (!m_vol->dataCacheSync()) {
-          DBG_FAIL_MACRO;
-          goto fail;
-        }
-      }
-      if (!m_vol->readSectors(sector, dst, ns)) {
+     if (!m_vol->cacheSafeRead(sector, dst, ns)) {
         DBG_FAIL_MACRO;
         goto fail;
       }
@@ -664,7 +659,7 @@ int ExFatFile::read(void* buf, size_t count) {
     } else {
       // read single sector
       n = m_vol->bytesPerSector();
-      if (!m_vol->readSector(sector, dst)) {
+      if (!m_vol->cacheSafeRead(sector, dst)) {
         DBG_FAIL_MACRO;
         goto fail;
       }

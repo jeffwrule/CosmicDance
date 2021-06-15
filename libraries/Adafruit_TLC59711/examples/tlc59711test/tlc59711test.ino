@@ -31,7 +31,11 @@ void setup() {
   Serial.begin(9600);
   
   Serial.println("TLC59711 test");
-  pinMode(10, OUTPUT);
+  
+  // Uncomment this line if using UNO/AVR since 10 has to be an output
+  // for hardware SPI to work
+  //pinMode(10, OUTPUT);
+
   tlc.begin();
   tlc.write();
 }
@@ -54,6 +58,19 @@ void colorWipe(uint16_t r, uint16_t g, uint16_t b, uint8_t wait) {
       tlc.setLED(i, r, g, b);
       tlc.write();
       delay(wait);
+  }
+}
+ 
+// Rainbow all LEDs at the same time, same color
+void rainbow(uint8_t wait) {
+  uint32_t i, j;
+
+  for(j=0; j<65535; j+=10) {
+    for(i=0; i<4*NUM_TLC59711; i++) {
+      Wheel(i, i+j & 65535);
+    }
+    tlc.write();
+    delay(wait);
   }
 }
 

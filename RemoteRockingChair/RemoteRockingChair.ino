@@ -34,31 +34,6 @@ long last_print_ms=0;
 #define PRINT_EVERY_MS 3000
 
 
-void setup() {
-
-  Serial.begin(250000);             // setup the interal serial port for debug messages
-  Serial.println("Start setup");
-  Serial.println("Codebase: RemoteRockingChair Jun-2021");
-  
-  // setup the soft serial port for xbee reads and writes
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-  pinMode(rocker_pin, OUTPUT);
-  digitalWrite(rocker_pin, LOW);
-  pinMode(signal_pin, INPUT);
-  
-   is_rocking = false;
-   rocking_started_ms = millis();
-   rocking_length_ms = 3000;
-   rock_interval_active = false;
-   rock_interval_started_ms = millis();
-   rock_interval_length_ms = ROCK_ON_INTERVAL_MS;
-     
-  is_dancing = false;
-  
-  Serial.println(F("End setup"));
-}
-
 /*
  * check the network to see if we any new directions 
  * from the director
@@ -93,8 +68,8 @@ void start_rocking() {
     // start rocking
     rocking_length_ms = random(START_ROCKING_MIN, START_ROCKING_MAX) * 1000;  // rock at least 10 seconds, but no more then 20
     is_rocking = true;
-    Serial.print("    start rocking: ");
-    Serial.println(rocking_length_ms);
+    Serial.print("    start rocking seconds: ");
+    Serial.println(rocking_length_ms/1000);
 }
 
 void stop_rocking() {
@@ -103,11 +78,11 @@ void stop_rocking() {
   digitalWrite(LED_BUILTIN, LOW);
   rocking_length_ms = random(STOP_ROCKING_MIN, STOP_ROCKING_MAX) * 1000;  // stop rocking for 5 seconds, but no more then 10 seconds
   is_rocking = false;
-  Serial.print("    stop rocking: ");
-  Serial.println(rocking_length_ms);
+  Serial.print("    stop rocking seconds: ");
+  Serial.println(rocking_length_ms/1000);
 }
 
-// turn the change on and off at the pre-determined intervals
+// turn the chair on and off at the pre-determined random intervals
 void rock_chair() {
   
   unsigned long cur_time = millis();
@@ -176,6 +151,7 @@ void status() {
     
 }
 
+// stash the current time in a global
 void update_millis() {
     long new_millis;
     new_millis = millis();
@@ -186,6 +162,31 @@ void update_millis() {
     } else {
         cur_millis = new_millis;
     }
+}
+
+void setup() {
+
+  Serial.begin(250000);             // setup the interal serial port for debug messages
+  Serial.println("Start setup");
+  Serial.println("Codebase: RemoteRockingChair Jun-2021");
+  
+  // setup the soft serial port for xbee reads and writes
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  pinMode(rocker_pin, OUTPUT);
+  digitalWrite(rocker_pin, LOW);
+  pinMode(signal_pin, INPUT);
+  
+   is_rocking = false;
+   rocking_started_ms = millis();
+   rocking_length_ms = 3000;
+   rock_interval_active = false;
+   rock_interval_started_ms = millis();
+   rock_interval_length_ms = ROCK_ON_INTERVAL_MS;
+     
+  is_dancing = false;
+  
+  Serial.println(F("End setup"));
 }
 
 // start and stop dancers, keep the show moving along....

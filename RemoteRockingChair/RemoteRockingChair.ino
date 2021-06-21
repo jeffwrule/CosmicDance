@@ -1,11 +1,14 @@
 #include <SoftwareSerial.h>
 
+#define PRINT_EVERY_MS 3000
+#define SERIAL_SPEED 250000
+
 #define IS_BRIEF True
 //#define IS_CHATTY True 
 
 
-const int signal_pin = A3;
-const int rocker_pin = A0;                 // pin to turn the electronics on and off
+const int signal_pin = A0;
+const int rocker_pin = A3;                 // pin to turn the electronics on and off
 
 
 // control the rocking chair
@@ -31,7 +34,6 @@ long is_dancing_last_change_ms=0;         // fix any bounce on this line
 
 long cur_millis=0;
 long last_print_ms=0;
-#define PRINT_EVERY_MS 3000
 
 
 /*
@@ -166,7 +168,7 @@ void update_millis() {
 
 void setup() {
 
-  Serial.begin(250000);             // setup the interal serial port for debug messages
+  Serial.begin(SERIAL_SPEED);             // setup the interal serial port for debug messages
   Serial.println("Start setup");
   Serial.println("Codebase: RemoteRockingChair Jun-2021");
   
@@ -175,6 +177,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);
   pinMode(rocker_pin, OUTPUT);
   digitalWrite(rocker_pin, LOW);
+  digitalWrite(signal_pin, LOW);
   pinMode(signal_pin, INPUT);
   
    is_rocking = false;

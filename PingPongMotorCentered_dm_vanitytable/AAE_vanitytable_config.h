@@ -27,15 +27,15 @@
   #define VTBL_SPEED_DOWN 255      // right
   #define VTBL_SPEED_UP 255       // left
 
-  #define M1_MAX_SPEED_RIGHT 255    // up
-  #define M1_MAX_SPEED_LEFT  255    // down
+  #define M1_MAX_SPEED_RIGHT 100    // up
+  #define M1_MAX_SPEED_LEFT  100    // down
 
   #define M1_JUMP1_MILLS 500
   #define M1_JUMP2_MILLS 500
   #define M1_JUMP_SPEED1 50
   #define M1_JUMP_SPEED2 40
 
-  #define MAX_SECONDS_TO_LIMIT_SWITCH 150
+  #define MAX_SECONDS_TO_LIMIT_SWITCH 160
 
 //////////////////////////////////////////
 ///// MOTOR 1 PINS

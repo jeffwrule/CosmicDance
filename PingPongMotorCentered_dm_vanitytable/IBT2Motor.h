@@ -80,7 +80,7 @@ class IBT2Motor: public GenericMotor {
           pinMode(pin_pwml, OUTPUT);
           digitalWrite(pin_pwml, 0);
           
-          max_time_to_limit_switch_millis = 1000 * p_max_time_to_limit_switch_seconds;   // number of milliseconds to have passed before we reset motor
+          max_time_to_limit_switch_millis = 1000L * p_max_time_to_limit_switch_seconds;   // number of milliseconds to have passed before we reset motor
           
           Serial.print(F("CONSTRUCTOR::IBT2Motor motor_name"));
           Serial.print(motor_name);

@@ -6,32 +6,33 @@
  * When either set of sensors is activated, the seat sends out a high signal on the seat_pin (to trigger a remote switch)
  * 
  */ 
-#include "analogWrite.h"
+// #include "analogWrite.h"
 
-#define distance_pin 25
-#define pressure_pin 34
-#define seat_pin 12
-#define seat_led 13
-#define pressure_led 15
-#define distance_led 26
+#define distance_pin 36
+#define distance_led 33
+#define pressure_pin 32
+#define pressure_led 13
+#define seat_pin 23
+#define seat_led 22
 #define NUM_READS 25
 #define PRINT_EVERY_MS 1000
 
-#define PRESSURE_CUTOFF 2000
+#define PRESSURE_CUTOFF 2500
 #define PRESSURE_OFF 0
 
 #define DISTANCE_CUTOFF 0.5
 #define DISTANCE_OFF 1
 #define DISTANCE_ON 0
 
-#define SEAT_OCCUPIED_PWM 220
+#define SEAT_OCCUPIED_PWM 255
 #define SEAT_EMPTY 0
-#define SHUTOFF_DELAY 2000
+#define SHUTOFF_DELAY 200
 #define OFF LOW
 #define ON HIGH
 
 int     distance_reads[NUM_READS];      // last NUM_READS distance readings
 int     pressure_reads[NUM_READS];      // last NUM_READS pressure readings
+int     max_pressure_read=0;           // during each print cycle
 int     read_index = 0;                 // current pointer into the sensor list of values
 long    index_loops;                    // number of times we have looped around the size of our index
 
@@ -49,32 +50,47 @@ void setup() {
     // put your setup code here, to run once:
     Serial.begin(115200);
 
-    Serial.println("Begin Setup DistanceSensorTest");
+    Serial.println("Begin Setup HeavenChairSensor Jul-06-2021");
 
-    pinMode(distance_pin, INPUT);               /* active low  */
+    pinMode(distance_pin, OUTPUT);               /* active low  */
     pinMode(pressure_pin, OUTPUT);               /* active high */
-    delay(100);
-    digitalWrite(pressure_pin, LOW);    
-    delay(100);     
-    pinMode(pressure_pin, INPUT);
-    delay(100);
-    // pinMode(seat_pin, OUTPUT);                  /* active low, output signal to heaven cdontroler */
-    pinMode(seat_led, OUTPUT);                  /* indicator light for seat off/on state */
+    pinMode(seat_pin, OUTPUT);                  /* active high */
+
+    digitalWrite(distance_pin, HIGH);           /* active low  */
+    digitalWrite(pressure_pin, LOW);            /* active high */
+    digitalWrite(seat_pin, LOW);                /* active high */    
+    
+    pinMode(distance_pin, INPUT);               /* active low  */
+    pinMode(pressure_pin, INPUT);               /* active high */
+    pinMode(seat_pin, OUTPUT);                  /* active high */
+    
+    pinMode(seat_led, OUTPUT);                  /* indicator light for seat occupied state */
     pinMode(pressure_led, OUTPUT);              /* indicator light for presure_led state */
     pinMode(distance_led, OUTPUT);              /* indicator light for distance_led state */
-        
-    // digitalWrite(seat_pin, seat_state);
-    // digitalWrite(distance_pin, distance_state);
-    // digitalWrite(pressure_pin, pressure_state);
     
-    for (int i=0; i<NUM_READS; i++) {
+    for (int i=0; i<NUM_READS; i++) {           // set of reads for each pin, to get average value */
         pressure_reads[i] = PRESSURE_OFF;
         distance_reads[i] = DISTANCE_OFF;
     }
 
-
-    Serial.print("LED Builtin: ");
-    Serial.println(LED_BUILTIN);
+    Serial.print("seat_pin/ah=");
+    Serial.print(seat_pin);
+    Serial.print(", pressure_pin/al=");
+    Serial.print(pressure_pin);
+    Serial.print(", distance_pin:/ah=");
+    Serial.print(distance_pin);
+    Serial.print(", seat_led=");
+    Serial.print(seat_led);
+    Serial.print(", pressure_led=");
+    Serial.print(pressure_led);
+    Serial.print(", distance_led=");
+    Serial.print(distance_led);
+    Serial.println("");
+    Serial.print("DISTANCE_CUTOFF=");
+    Serial.print(DISTANCE_CUTOFF);
+    Serial.print(", PRESSURE_CUTOFF=");
+    Serial.print(PRESSURE_CUTOFF);
+    Serial.println("");
     Serial.println("End Setup");
 
 }
@@ -86,6 +102,10 @@ void loop() {
     double distance_sum;
     double pressure_avg;
     double distance_avg;
+
+    pinMode(distance_pin, INPUT);               /* active low  */
+    pinMode(pressure_pin, INPUT);               /* active high */
+    pinMode(seat_pin, OUTPUT);                  /* active high */
 
     last_millis = cur_millis;
     cur_millis = millis();
@@ -107,17 +127,25 @@ void loop() {
 
     pressure_sum=0;
     distance_sum=0;
-    // Serial.print("    pressure Values: ");
+    // Serial.print("    distance Values: ");
     for (int i=0; i<NUM_READS; i++) {
         pressure_sum = pressure_sum + pressure_reads[i];
         distance_sum = distance_sum + distance_reads[i];
         // Serial.print(", ");
-        // Serial.print(pressure_reads[i]);
+        // Serial.print(distance_reads[i]);
     }
     // Serial.println("");
     
     distance_avg = distance_sum / NUM_READS;
     pressure_avg = pressure_sum / NUM_READS;
+
+    if (pressure_avg > max_pressure_read) {
+        max_pressure_read = pressure_avg;
+    }
+
+    /////// DEBUG DEBUG DEBUG
+    // overriding the distance average and always turning it off
+    // distance_avg = DISTANCE_OFF;
 
     if (cur_millis - last_print_ms > PRINT_EVERY_MS) {
         last_print_ms = cur_millis;
@@ -139,6 +167,8 @@ void loop() {
         Serial.print(pressure_avg);
         Serial.print(", pressure_sum=");
         Serial.print(pressure_sum);
+        Serial.print(", max_presure_read=");
+        Serial.print(max_pressure_read);
         
         Serial.print("\n    index_loops=");
         Serial.print(index_loops);
@@ -146,7 +176,7 @@ void loop() {
         Serial.print(last_occupied_ms);
         Serial.print(", in_delay: ");
         Serial.print(in_delay);
-        Serial.println("");   
+        Serial.println("");  
         }
 
 
@@ -163,8 +193,11 @@ void loop() {
     } else if (pressure_state != OFF) {
         Serial.println("\nPressure OFF %%%%%%%%%%");      
         pressure_state = OFF;
+        max_pressure_read=0; 
+
         digitalWrite(pressure_led, pressure_state); 
     }
+
 
     /*
      * Read and set distance flags
@@ -184,6 +217,8 @@ void loop() {
         }
     }
 
+
+
     if (cur_millis - last_occupied_ms < SHUTOFF_DELAY) {
         if (in_delay != true) {
             in_delay=true;
@@ -201,7 +236,8 @@ void loop() {
                 Serial.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
                 Serial.println("~~~~~~~~~~ SEAT ON ~~~~~~~~~~\n");      
                 seat_state = ON;
-                analogWrite(seat_pin, SEAT_OCCUPIED_PWM, 100, 8);
+                // analogWrite(seat_pin, SEAT_OCCUPIED_PWM, 100, 8);
+                digitalWrite(seat_pin, HIGH);
                 digitalWrite(seat_led, seat_state);
             }    
             last_occupied_ms = cur_millis;
@@ -210,7 +246,8 @@ void loop() {
                 Serial.println("\n%%%%%%%%%% SEAT OFF %%%%%%%%%%");      
                 Serial.println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
                 seat_state = OFF;
-                analogWrite(seat_pin, 0);
+                // analogWrite(seat_pin, 0);
+                digitalWrite(seat_pin, LOW);
                 digitalWrite(seat_led, seat_state);
             }
         }

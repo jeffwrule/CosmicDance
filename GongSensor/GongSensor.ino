@@ -11,6 +11,9 @@ volatile long false_interrupts = 0; // the number of times interrupt is called t
 volatile long emi_interrupts = 0;  // trigger when no valid read has happend, but digitalRead fails to see high value
 volatile int  last_analog_read = 0;  // check the value on the interrupt pin
 
+long    gongs_seen=0;                // how many recent gongs
+long    last_gong=0;             // first gong time in recent series
+
 //variables to keep track of the timing of recent interrupts
 volatile unsigned long last_button_ms = 0; 
 volatile boolean gong_activated = false;
@@ -21,7 +24,9 @@ boolean is_dancing=false;
 boolean last_is_dancing=false;
 boolean fob_on=false;
 int dance_requests=0;
+int stop_requests=0;
 int failed_dance_requests=0;
+int failed_stop_requests=0;
 
 // Replace with your network credentials
 const char *ssid     = "SDZone-immersion";
@@ -80,13 +85,6 @@ void start_dance() {
     Serial.println("\n>>>>>>>>>>>>>>>>>>>> Starting New Dance");    
 
     HTTPClient http;   
-
-    if (millis() < cur_millis) {
-        /* we wrapped around, reset all saved time stamps to a low value */
-        last_status_ms = 0;
-        last_button_ms = 0;
-    }
-    cur_millis=millis();
     
     http.begin("http://192.168.4.22:5000/dance");
     http.setConnectTimeout(CONNECT_TIMEOUT);
@@ -113,6 +111,44 @@ void start_dance() {
     }else{
     
         Serial.print("Error on sending dance PUT Request: ");
+        Serial.println(httpResponseCode);
+        error_blink();
+    }
+    
+    http.end();
+}
+
+void stop_dance() {
+
+    Serial.println("\n>>>>>>>>>>>>>>>>>>>> Stopping Dance");    
+
+    HTTPClient http;   
+    
+    http.begin("http://192.168.4.22:5000/stop");
+    http.setConnectTimeout(CONNECT_TIMEOUT);
+    int httpResponseCode = http.POST("");
+    
+    if(httpResponseCode>0){
+    
+        String response = http.getString();   
+        
+        // Serial.println(httpResponseCode);
+        // Serial.println(response); 
+
+        if (httpResponseCode != 200) {
+            Serial.print("http dance request failed, status=");
+            Serial.println(response);
+            Serial.print(", httpResponseCode=");
+            Serial.println(httpResponseCode);
+            failed_stop_requests += 1;
+        } else {
+            stop_requests += 1;        
+        }
+
+        
+    }else{
+    
+        Serial.print("Error on sending stop PUT Request: ");
         Serial.println(httpResponseCode);
         error_blink();
     }
@@ -179,6 +215,10 @@ void print_status() {
     Serial.print(dance_requests);
     Serial.print(", failed_dance_requestas: ");
     Serial.print(failed_dance_requests);
+    Serial.print(", stop_requests: ");
+    Serial.print(stop_requests);
+    Serial.print(", failed_stop_requestas: ");
+    Serial.print(failed_stop_requests);
     Serial.print(", hits: ");
     Serial.print(hits);
     Serial.print(", last_analog_read: ");
@@ -231,6 +271,22 @@ void loop() {
         } else {
             start_dance(); 
         }
+
+        // gong 5 times in 1.5 seconds to stop the device
+        if (cur_millis - last_gong > 2000) {
+            gongs_seen=0;
+            Serial.println("\n\nNew Gong series started...\n");
+        } 
+        last_gong=cur_millis;
+        gongs_seen += 1;
+        Serial.print("Gongs Seen=");
+        Serial.println(gongs_seen);
+        if (gongs_seen >= 5) {
+            stop_dance();
+            // reset the gong counter
+            gongs_seen=0;
+            last_gong=0;
+        }
     }
 
     get_status();
@@ -249,8 +305,12 @@ void increment() {
   //check to see if increment() was called in the last 250 milliseconds
   if (button_ms - last_button_ms > 250)
   {
-    last_analog_read=analogRead(GPIO_pin);
-    if (last_analog_read <= 100) {
+    int read_sum=0;
+    for (int i=0; i<10; i++) {
+        read_sum += analogRead(GPIO_pin);
+        delay(10);
+    }
+    if (last_analog_read <= 10) {
         Serial.print("Last Analog Read=");
         Serial.println(last_analog_read);
         gong_activated = true;

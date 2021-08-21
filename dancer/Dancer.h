@@ -144,24 +144,28 @@ void Dancer::update() {
     fob_is_dancing = true;
     current_direction = solo;
     has_new_direction = true;
-    mp3->do_beep(200, 50);
+    if (!fob->get_seat_switch()) {
+      mp3->do_beep(200, 50);
+    }    
     delay(1500); // stop the bouncy switch
   }
 
   // state change fob switched OFF
   if (fob_is_dancing && !fob->fob_is_dancing) {
-    Serial.print(F("Dancer::update() fob pushed, fob_is_dancing=false"));
+    Serial.println(F("Dancer::update() fob pushed, fob_is_dancing=false"));
     director->ignore_pending();
     fob_is_dancing = false;
     current_direction = halt;
     has_new_direction = true;
-    mp3->do_beep(200, 50);
-    mp3->do_beep(200, 50);
+    if (!fob->get_seat_switch()) {
+      mp3->do_beep(200, 50);
+      mp3->do_beep(200, 50);
+    }
     delay(1500); // stop the bouncy switch
   }
 
   // ignore direction when the fob is playing
-  if (!fob_is_dancing) {
+  if (!fob_is_dancing && !fob->get_seat_switch()) {
     // has something new arrived?
     if (director->has_new_direction()) {
       if (has_new_direction == false) {
@@ -241,7 +245,7 @@ void Dancer::dance() {
     }
     
     // checkin from time to time while dancing, and not on fob play mode
-    if (!fob_is_dancing) {
+    if (!fob_is_dancing && !fob->get_seat_switch()) {
       if (pt->current_millis - last_checkin_millis >= checkin_millis) {
         Serial.println(F("Dancer:dance() DANCER CHECKING IN..."));
         send_dancing();

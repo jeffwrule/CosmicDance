@@ -14,13 +14,17 @@ String bool_tostr(bool input_bool);
 #define NORMAL_VOLUME 12
 #define BEEP_VOLUME 100 
 
-// not implemented yet!
+// set this to always be dancing
 #define FAKE_FOB_IS_DANCING false
+
+// set this true to make the dancer react to the seat switch, not the director or FOB
+#define IS_SEAT_SWITCH false            
 
 // configured PINS
 #define PRIMARY_DEVICE_PIN A0         // pin to turn on the primary motor/device
 #define SECONDARY_DEVICE_PIN A1       // pint to turn on secondary motor/devce  
 #define FOB_PIN   A3                  // Fob INPUT_PULLUP Pin
+#define SEAT_PIN A5
 
 // XBEE Constants
 #define XBEE_READ_PIN   5   
@@ -32,7 +36,7 @@ String bool_tostr(bool input_bool);
 
 // Dancer Delay Configs
 #define PRE_DELAY_SECNDS  0   //  unsigned int dance_delay_seconds  number of seconds to delay between director/fob start and music start
-#define FOB_DELAY_SECONDS 30   //  unsigned int fob_delay_seconds    number of seconds to delay between plays when in fob mode
+#define FOB_DELAY_SECONDS 0   //  unsigned int fob_delay_seconds    number of seconds to delay between plays when in fob mode
 
 #define CHECK_IN_SECONDS 4    // how often to check in with the director when active (not on fob)
 

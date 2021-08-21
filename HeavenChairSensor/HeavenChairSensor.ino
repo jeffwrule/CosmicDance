@@ -51,6 +51,7 @@ boolean in_delay=false;     // Are we currently in a shutoff delay
 #define RESET_DELAY  30000
 // reset after 20 minutes
 #define RESET_AFTER_MINUTES  20
+#define RESET_AFTER_MINUTES  2
 long    reset_after_ms = RESET_AFTER_MINUTES * 60 * 1000;
 
 long    reset_start=0;        // track time when seat started

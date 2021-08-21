@@ -17,7 +17,7 @@
 #define NUM_READS 25
 #define PRINT_EVERY_MS 1000
 
-#define PRESSURE_CUTOFF 2500
+#define PRESSURE_CUTOFF 3800
 #define PRESSURE_OFF 0
 
 #define DISTANCE_CUTOFF 0.5
@@ -45,6 +45,17 @@ int     seat_state=OFF;             // track led state so we don't write to it s
 int     distance_state=OFF;         // distance no triggered
 int     pressure_state=OFF;         // presure not triggered
 boolean in_delay=false;     // Are we currently in a shutoff delay
+
+
+// turn off the input to the room for 30 seconds, to allow it it timeout and restart
+#define RESET_DELAY  30000
+// reset after 20 minutes
+#define RESET_AFTER_MINUTES  20
+long    reset_after_ms = RESET_AFTER_MINUTES * 60 * 1000;
+
+long    reset_start=0;        // track time when seat started
+
+
 
 void setup() {
     // put your setup code here, to run once:
@@ -241,6 +252,19 @@ void loop() {
                 digitalWrite(seat_led, seat_state);
             }    
             last_occupied_ms = cur_millis;
+
+            if (reset_start == 0 ) {
+                reset_start = cur_millis + reset_after_ms;
+            }
+            
+            if (cur_millis > reset_start) {
+                Serial.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+                Serial.println("~~~~~~~~~~~~ RESETTING AFTER LONG RUN ~~~~~~~~~~~~");
+                digitalWrite(seat_pin, LOW);
+                delay(RESET_DELAY);
+                digitalWrite(seat_pin, HIGH);
+                reset_start = 0;
+            }
     } else if (!in_delay) {    
             if (seat_state != OFF) {
                 Serial.println("\n%%%%%%%%%% SEAT OFF %%%%%%%%%%");      
@@ -249,6 +273,7 @@ void loop() {
                 // analogWrite(seat_pin, 0);
                 digitalWrite(seat_pin, LOW);
                 digitalWrite(seat_led, seat_state);
+                reset_start = 0;
             }
         }
 

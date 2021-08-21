@@ -5,7 +5,7 @@
 #define CONNECT_TIMEOUT 1000
     
 int ledPin = LED_BUILTIN; // LED is attached to digital pin 13
-int GPIO_pin = 13; // where our interrupt is going to be coming from.
+int GPIO_pin = 33; // where our interrupt is going to be coming from.
 volatile long hits = 0; // variable to be updated by the interrupt
 volatile long false_interrupts = 0; // the number of times interrupt is called to soon
 volatile long emi_interrupts = 0;  // trigger when no valid read has happend, but digitalRead fails to see high value
@@ -18,6 +18,7 @@ long    last_gong=0;             // first gong time in recent series
 volatile unsigned long last_button_ms = 0; 
 volatile boolean gong_activated = false;
 #define STARTUP_DELAY 25000
+#define STARTUP_DELAY 0
 volatile long startup_time=0;
 
 boolean is_dancing=false;
@@ -40,7 +41,15 @@ long last_status_ms=0;
 #define PRINT_INTERVAL 1000
 long last_print_ms=0;
 
-    
+#define NUM_VALUES 20
+#define GONG_CUTOFF 10
+#define BUTTON_DELAY_MS 750
+int  signal_values[NUM_VALUES];
+long signal_sum=0;
+int  signal_avg=0;
+int  signal_idx=0;
+
+long num_reads=0;
     
 void setup() {                
   Serial.begin(115200);  //turn on serial communication
@@ -48,6 +57,7 @@ void setup() {
   //enable interrupt 0 which uses pin 2
   //jump to the increment function on falling edge
   pinMode(ledPin, OUTPUT);
+  pinMode(GPIO_pin, INPUT);
 
 
   // Create a Wi-Fi network with ssid and password
@@ -62,11 +72,23 @@ void setup() {
   WiFi.softAPConfig (IPAddress(192,168,4,1), IPAddress(0,0,0,0), IPAddress(255,255,255,0));
   WiFi.softAP(ssid, password, 1, false, 8);
 
+  clear_values();
+
   IPAddress IP = WiFi.softAPIP();
   Serial.print("  IP address: ");
   Serial.println(IP);
   startup_time=millis();
   Serial.println("Setup Complete");
+}
+
+void clear_values() {
+
+  /* This is an active low signal, so lets artififally make it appear off or high */
+  /* the values stored here are from analogRead which returns a 16 bit value */
+  for (int i=0; i<NUM_VALUES; i++) {
+    signal_values[i]=0xffff;
+  }
+    
 }
 
 void error_blink() {
@@ -82,7 +104,11 @@ void error_blink() {
 
 void start_dance() {
 
-    Serial.println("\n>>>>>>>>>>>>>>>>>>>> Starting New Dance");    
+    Serial.println("\n>>>>>>>>>>>>>>>>>>>> Starting New Dance");   
+
+////// debug
+//delay(400);
+//return;
 
     HTTPClient http;   
     
@@ -211,22 +237,82 @@ void print_status() {
     Serial.print(is_dancing);
     Serial.print(", fob_on: ");
     Serial.print(fob_on);
-    Serial.print(", dance_requests: ");
-    Serial.print(dance_requests);
-    Serial.print(", failed_dance_requestas: ");
-    Serial.print(failed_dance_requests);
-    Serial.print(", stop_requests: ");
-    Serial.print(stop_requests);
-    Serial.print(", failed_stop_requestas: ");
-    Serial.print(failed_stop_requests);
+//    Serial.print(", dance_requests: ");
+//    Serial.print(dance_requests);
+//    Serial.print(", failed_dance_requestas: ");
+//    Serial.print(failed_dance_requests);
+//    Serial.print(", stop_requests: ");
+//    Serial.print(stop_requests);
+//    Serial.print(", failed_stop_requestas: ");
+//    Serial.print(failed_stop_requests);
     Serial.print(", hits: ");
-    Serial.print(hits);
-    Serial.print(", last_analog_read: ");
-    Serial.print(last_analog_read);    
-    Serial.print(", emi_interrupts: ");
-    Serial.print(emi_interrupts);    
-    Serial.print(", false_interrupts: ");
-    Serial.println(false_interrupts);
+    Serial.print(hits);    
+    Serial.print(", num_reads: ");
+    Serial.print(num_reads);
+    Serial.print(", signal_avg: ");
+    Serial.print(signal_avg);
+    long uptime_sec=(cur_millis - startup_time) / 1000;
+    if (uptime_sec == 0) { uptime_sec = 1; }
+    Serial.print(", reads_per_second: ");
+    Serial.print( num_reads / uptime_sec);
+    Serial.print(", seconds_running: ");
+    Serial.print( uptime_sec);
+
+//    Serial.print(", last_analog_read: ");
+//    Serial.print(last_analog_read);    
+//    Serial.print(", emi_interrupts: ");
+//    Serial.print(emi_interrupts);    
+//    Serial.print(", false_interrupts: ");
+//    Serial.print(false_interrupts);
+    Serial.print("\n");
+    
+}
+
+void read_next() {
+    long button_ms = millis();
+    boolean in_delay = false;
+    
+    in_delay = button_ms - last_button_ms <= BUTTON_DELAY_MS;
+
+    
+    signal_idx += 1;
+    if (signal_idx >= NUM_VALUES) {
+        signal_idx=0;
+    }
+
+    if (!in_delay) {
+        num_reads++;
+        signal_values[signal_idx] = analogRead(GPIO_pin);
+        // Serial.println(signal_values[signal_idx]);
+    }
+
+    signal_sum = 0;
+    for (int i=0; i<NUM_VALUES; i++) {
+        signal_sum += signal_values[signal_idx];
+    }
+
+    signal_avg = (int)(signal_sum / NUM_VALUES);
+
+//    if (signal_avg > 0) {
+//        Serial.print("Average is: ");
+//        Serial.print(signal_avg);
+//        Serial.print(", Values: ");
+//        for (int i=0; i<NUM_VALUES; i++) {
+//            Serial.print(", ");
+//            Serial.print(signal_values[i]);
+//        }
+//        Serial.print("\n");
+//    }
+
+    if (signal_avg <= GONG_CUTOFF) {
+
+        if (!in_delay)
+            hits++;
+            gong_activated = true;
+            last_button_ms = button_ms;
+            clear_values();
+            Serial.println("\n>>>>>>>>>>> GONG DETECTED >>>>>>>>>>>\n");
+        }
     
 }
     
@@ -234,8 +320,9 @@ void loop() {
 
     static boolean startup_delay_notified=false;
 
+
     pinMode(GPIO_pin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(GPIO_pin), increment, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(GPIO_pin), increment, FALLING);
 
     
 //    Serial.print("a=");
@@ -256,6 +343,8 @@ void loop() {
             Serial.println("\n\nStartup delay complete, now acceptting gongs!\n");
         }
     }
+
+    read_next();
 
     if (last_is_dancing != is_dancing) {
         Serial.print("\n<<<<<<<<<<<<<<<<<<<< Dancing Status Changed to: ");
@@ -295,31 +384,3 @@ void loop() {
   
 }
     
-// Interrupt service routine for interrupt 0
-void increment() {
-  long button_ms = millis();
-  if (button_ms - startup_time < STARTUP_DELAY) {
-    Serial.println("Skipping early interrupts until STARTUP_DELAY has passed");
-    return;
-  }
-  //check to see if increment() was called in the last 250 milliseconds
-  if (button_ms - last_button_ms > 250)
-  {
-    int read_sum=0;
-    for (int i=0; i<10; i++) {
-        read_sum += analogRead(GPIO_pin);
-        delay(10);
-    }
-    if (last_analog_read <= 10) {
-        Serial.print("Last Analog Read=");
-        Serial.println(last_analog_read);
-        gong_activated = true;
-        hits++;        
-        last_button_ms = button_ms;
-    } else {
-        emi_interrupts += 1;
-    }
-  } else {
-    false_interrupts++;
-  }
-}

@@ -17,9 +17,10 @@
 #define NUM_READS 25
 #define PRINT_EVERY_MS 1000
 
-#define PRESSURE_CUTOFF 3800
+#define PRESSURE_CUTOFF 1200
 #define PRESSURE_OFF 0
 
+#define DISTANCE_ENABLED false
 #define DISTANCE_CUTOFF 0.5
 #define DISTANCE_OFF 1
 #define DISTANCE_ON 0
@@ -51,7 +52,6 @@ boolean in_delay=false;     // Are we currently in a shutoff delay
 #define RESET_DELAY  30000
 // reset after 20 minutes
 #define RESET_AFTER_MINUTES  20
-#define RESET_AFTER_MINUTES  2
 long    reset_after_ms = RESET_AFTER_MINUTES * 60 * 1000;
 
 long    reset_start=0;        // track time when seat started
@@ -85,6 +85,8 @@ void setup() {
         distance_reads[i] = DISTANCE_OFF;
     }
 
+    Serial.print("Distance ENABLED: ");
+    Serial.println(DISTANCE_ENABLED);
     Serial.print("seat_pin/ah=");
     Serial.print(seat_pin);
     Serial.print(", pressure_pin/al=");
@@ -133,9 +135,10 @@ void loop() {
         index_loops++;
     }
 
-    // put your main code here, to run repeatedly:
     pressure_reads[read_index] = analogRead(pressure_pin);
-    distance_reads[read_index] = digitalRead(distance_pin);
+    if (DISTANCE_ENABLED) {
+      distance_reads[read_index] = digitalRead(distance_pin);    // disable distance pin
+    }
 
     pressure_sum=0;
     distance_sum=0;
@@ -155,10 +158,6 @@ void loop() {
         max_pressure_read = pressure_avg;
     }
 
-    /////// DEBUG DEBUG DEBUG
-    // overriding the distance average and always turning it off
-    // distance_avg = DISTANCE_OFF;
-
     if (cur_millis - last_print_ms > PRINT_EVERY_MS) {
         last_print_ms = cur_millis;
         Serial.print("Seat state: ");
@@ -170,9 +169,7 @@ void loop() {
         Serial.print(distance_avg);
         Serial.print(", distance sum: ");
         Serial.print(distance_sum);
-
-        
-                
+ 
         Serial.print("\n    pressure state: ");
         Serial.print(pressure_state);
         Serial.print(", pressure Avg: ");
@@ -181,6 +178,8 @@ void loop() {
         Serial.print(pressure_sum);
         Serial.print(", max_presure_read=");
         Serial.print(max_pressure_read);
+        Serial.print(", DISTANCE_ENABLED=");
+        Serial.print(DISTANCE_ENABLED);
         
         Serial.print("\n    index_loops=");
         Serial.print(index_loops);
@@ -197,13 +196,18 @@ void loop() {
      */
     if (pressure_avg >= PRESSURE_CUTOFF) {
         if (pressure_state != ON) {
-            Serial.println("\nPressure ON ~~~~~~~~~~");      
+            Serial.print("\nPressure ON: ");
+            Serial.print(pressure_avg);
+            Serial.println(" ~~~~~~~~~~");      
             pressure_state = ON;
             digitalWrite(pressure_led, pressure_state);        
         }
         last_occupied_ms=cur_millis;
     } else if (pressure_state != OFF) {
-        Serial.println("\nPressure OFF %%%%%%%%%%");      
+        Serial.print("\nPressure OFF: "); 
+        Serial.print(pressure_avg);
+        Serial.println(" %%%%%%%%%%");
+     
         pressure_state = OFF;
         max_pressure_read=0; 
 

@@ -1,42 +1,49 @@
 
-long start_time=0;
+#define PRINT_AFTER_MS 5000
+
+
 
 void setup() {
-    // put your setup code here, to run once:
-    Serial.begin(9600);
-    Serial.println("Setup Starting");
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.println("Setup Starting for: iterations_per_second");
+  
+  #ifdef ESP32
+    Serial.print("CPU Frequency is=");
+    Serial.print(getCpuFrequencyMhz()); //Get CPU clock
+    Serial.print("MHz");
+    Serial.println();
+  #endif
 
-    start_time=millis();
-      
+  Serial.println("Setup Complete");
 }
 
-#define PRINT_AFTER 5000
 
 void loop() {
-    // put your main code here, to run repeatedly:
+    static unsigned long next_print=PRINT_AFTER_MS;
+    static unsigned long iter_start_ms=0;
+    static unsigned long iters=0;
+    static double elapsed_sec=0;
 
-    long cur_ms=millis();
-    static long start_sample_ms=0;
-    static long next_print=0;
-    static long itters=0;
-    static long elapsed_sec=0;
+    unsigned long cur_ms=millis();
 
-    itters++;
-
-    elapsed_sec = (cur_ms - start_sample_ms) / 1000.0;
+    iters++;
      
     if (cur_ms >= next_print ) {
-        Serial.print("itters/second=");
-        Serial.print(itters/elapsed_sec);
-        Serial.print(", seconds=");
-        Serial.print(elapsed_sec);
-        Serial.print(", itters=");
-        Serial.print(itters);
-        Serial.print(", cur_ms=");
-        Serial.println(cur_ms);
-        start_sample_ms=cur_ms;
-        next_print = start_sample_ms + PRINT_AFTER;
-        itters=0;
-    }
 
+        elapsed_sec = (cur_ms - iter_start_ms) / 1000.0;
+        
+        #ifdef ESP32
+          Serial.print("loop() running on core="); Serial.print(xPortGetCoreID()); Serial.print(", ");
+        #endif
+        Serial.print("iters/second="); Serial.print(iters/elapsed_sec);
+        Serial.print(", elapsed_sec="); Serial.print(elapsed_sec);
+        Serial.print(", iters="); Serial.print(iters);
+        Serial.print(", iter_start_ms="); Serial.print(iter_start_ms);
+        Serial.print(", cur_ms="); Serial.print(cur_ms);
+        iter_start_ms=millis();
+        next_print = iter_start_ms + PRINT_AFTER_MS;   
+        iters=0; 
+        Serial.print(", next_print="); Serial.println(next_print);
+    }
 }

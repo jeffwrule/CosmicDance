@@ -15,17 +15,17 @@ const int rocker_pin = A3;                 // pin to turn the electronics on and
 boolean rock_interval_active;            // are we actively pulling rocker down...
 unsigned long rock_interval_started_ms;     // time when we last flipped the rocking on or off
 unsigned long rock_interval_length_ms;      // time to wait for the next rock interval
-#define  ROCK_ON_INTERVAL_MS 750            // rocking seems to work best when we are on slightly longer then off
+#define  ROCK_ON_INTERVAL_MS 1000            // rocking seems to work best when we are on slightly longer then off
 #define  ROCK_OFF_INTERVAL_MS  500          // time to wait for rocker to pull back when magnets are off
 
 boolean is_rocking;                      // we flip this on for random periods of time to create the illusions of a random cycle
 unsigned long rocking_started_ms;           // time when we last stop/started rocking
 unsigned long rocking_length_ms;            // how long will we rock on wait.
 
-#define START_ROCKING_MIN 1              // min seconds to rock
-#define START_ROCKING_MAX 6              // max seconds to rock
-#define STOP_ROCKING_MIN 10              // min seconds to not-rock
-#define STOP_ROCKING_MAX 20              // max seconds to rock
+#define START_ROCKING_MIN 10              // min seconds to rock
+#define START_ROCKING_MAX 10             // max seconds to rock
+#define STOP_ROCKING_MIN 1              // min seconds to not-rock
+#define STOP_ROCKING_MAX 1              // max seconds to rock
 
 
 boolean is_dancing = false;               // are we in dance mode? 

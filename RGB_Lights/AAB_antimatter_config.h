@@ -33,7 +33,7 @@ unsigned int fibonicci_sequence[NUM_FIBONOCCI] = { 34000, 21000, 13000, 8000, 50
 #define COLOR_FACTOR 0.7
 #endif
 
-#define FOB_PIN 12
-#define HAS_FOB
+//#define FOB_PIN 12
+//#define HAS_FOB
 
 #endif

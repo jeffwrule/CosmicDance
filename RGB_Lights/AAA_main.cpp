@@ -15,16 +15,21 @@ void loop()
   print_timer->update();
   // comment this out of you don't have a fob
 
-#ifdef HAS_FOB
-  fob->update();
-  if (!fob->fob_is_dancing) {
+  g_toggle_switch->update(print_timer->current_millis);
+  
+  /* off */
+  if (!g_toggle_switch->state()) {
+    /* make sure to immediately write the current low dimm state */
+    if (g_toggle_switch->state() != g_toggle_last_state) {
+      dimm_all(print_timer);
+      g_toggle_last_state=g_toggle_switch->state();
+    }
     do_dimm_up_down(print_timer);
-  } else {
-#endif
-  // update the lights
-  my_nucleon->update(print_timer);
-#ifdef HAS_FOB
+  } else { /* on */
+    if (g_toggle_switch->state() != g_toggle_last_state) {
+      g_toggle_last_state=g_toggle_switch->state();
+    }    // update the lights
+    my_nucleon->update(print_timer);
   }
-#endif
 
 }

@@ -170,7 +170,7 @@ void setup() {
 
   Serial.begin(SERIAL_SPEED);             // setup the interal serial port for debug messages
   Serial.println("Start setup");
-  Serial.println("Codebase: RemoteRockingChair Jun-2021");
+  Serial.println("Codebase: RemoteRockingChair Jan-2023");
   
   // setup the soft serial port for xbee reads and writes
   pinMode(LED_BUILTIN, OUTPUT);

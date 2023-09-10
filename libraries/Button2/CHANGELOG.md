@@ -1,33 +1,69 @@
 # Changelog
 
+**Note:** Unreleased changes are checked in but not part of an official release (available through the Arduino IDE or PlatfomIO) yet. This allows you to test WiP features and give feedback to them.
+
 ## Unreleased
 
-- **Note:** Unreleased changes are checked in but not part of an official release (available through the Arduino IDE or PlatfomIO) yet. This allows you to test WiP features and give feedback to them.
+## [2.2.4[] - 2023-06-22
+
+- `getNumberOfClicks()` now works inside a callback and after the `wait()`statement(s).
+- Refactored code in `Button2.cpp`
+
+## [2.2.3] - 2023-06-21
+
+- Included PR for issue [#54](https://github.com/LennartHennigs/Button2/issues/54)
+
+## [2.2.2] - 2022-12-16
+
+- Another stab at the bug [#46](https://github.com/LennartHennigs/Button2/issues/46)
+
+## [2.2.1] - 2022-12-16
+
+- Fixed bug [#46](https://github.com/LennartHennigs/Button2/issues/46) that in some instances long clicks are wrongly triggered
+
+## [2.2.0] - 2022-12-13
+
+- Refactored the main `loop()`
+- Rewrote click detection
+- Cleaned up the long press handling
+- Removed compiler switches – they made the code unreadable and they only saved a few bytes (could be a BREAKING CHANGE)
+- Added `byte getLongClickCount()` function
+- Updated the [LongpressHandler](https://github.com/LennartHennigs/Button2/blob/master/examples/LongpressHandler/LongpressHandler.ino) example
+- Defaults (x>3)-clicks to triple
+- Fixed bug with button ID
+
+## [2.1.0] - 2022-11-03
+
+- Removed the capacitive touch functionality out of main library. (BREAKING CHANGE). The constructor and `begin()` lost a parameter. Instead I provide a custom handler example for cap. touch [ESP32CapacitiveTouch.ino](https://github.com/LennartHennigs/Button2/blob/master/examples/ESP32CapacitiveTouch/ESP32CapacitiveTouch.ino). For reasons, see [#45](https://github.com/LennartHennigs/Button2/issues/45).
+- Added an ESP32 timer interrupt example [ESP32TimerInterrupt.ino](https://github.com/LennartHennigs/Button2/blob/master/examples/ESP32TimerInterrupt/ESP32TimerInterrupt.ino) based on [#43](https://github.com/LennartHennigs/Button2/issues/43).
+- Added compiler switches in `Button.h` to remove click detection code, as mentioned in [#44](https://github.com/LennartHennigs/Button2/issues/44).
+- Clarified the difference between the `setLongClickHandler` and the `setLongClickDetectedHandler` in the README and the [MultiHandler](https://github.com/LennartHennigs/Button2/blob/master/examples/MultiHandler/MultiHandler.ino) example as mentioned in [#41](https://github.com/LennartHennigs/Button2/issues/41). (The handler set via `setLongClickHandler` waits until you release the button, the second one is called as soon as the defined long-click time has passed.)
+- Made `byte _getState()` into a `const` function.
 
 ## [2.0.3] - 2022-05-26
 
-- Fixed bug with the button ID as pointed out by [Jon](https://github.com/mscreations) in [#39](https://github.com/LennartHennigs/Button2/pull/39)
+- Fixed bug with the button ID as pointed out by [Jon](https://github.com/mscreations) in [#39](https://github.com/LennartHennigs/Button2/pull/39).
 
 ## [2.0.2] - 2022-05-21
 
-- Added example for the [M5Stack Core2](https://github.com/LennartHennigs/Button2/blob/master/examples/M5StackCore2CustomHandler/M5StackCore2CustomHandler.ino) - showing how to add a custom handler for the touch buttons
+- Added example for the [M5Stack Core2](https://github.com/LennartHennigs/Button2/blob/master/examples/M5StackCore2CustomHandler/M5StackCore2CustomHandler.ino) - showing how to add a custom handler for the touch buttons.
 
 ## [2.0.1] - 2022-04-22
 
-- Fixed bug – `longclick_detected_counter` is not properly initalized as mentioned in [#37](https://github.com/LennartHennigs/Button2/pull/37)
+- Fixed bug – `longclick_detected_counter` is not properly initalized as mentioned in [#37](https://github.com/LennartHennigs/Button2/pull/37).
 
 ## [2.0.0] - 2022-04-04
 
 - House keeping
-  - Refactored `loop()` - cleaned up conditions, should be easier to understand now
-  - Renamed `getAttachedPin()`to `getPin()` (BREAKING CHANGE)
-  - Fixed a bug that the first click type was falsly returned by `getClickType()`
-- Possibility define your own "_getState" function for non standard buttons as suggested in [#32](https://github.com/LennartHennigs/Button2/issues/32)
-  - Refactored `isPressedRaw()` to also use `_getState()`
-  - Introduced a `VIRTUAL_PIN` constant – using it in the constructor or `begin()` will skip pin initalization
-  - Added `setButtonStateFunction(StateCallbackFunction f)` to assign your own "_getState" function
-  - Added [CustomButtonStateHandler.ino](https://github.com/LennartHennigs/Button2/blob/master/examples/CustomButtonStateHandler/CustomButtonStateHandler.ino) example
-- Improved click type handling
+  - Refactored `loop()` - cleaned up conditions, should be easier to understand now.
+  - Renamed `getAttachedPin()`to `getPin()` (BREAKING CHANGE).
+  - Fixed a bug that the first click type was falsly returned by `getClickType()`.
+- Possibility define your own "_getState" function for non standard buttons as suggested in [#32](https://github.com/LennartHennigs/Button2/issues/32).
+  - Refactored `isPressedRaw()` to also use `_getState()`.
+  - Introduced a `VIRTUAL_PIN` constant – using it in the constructor or `begin()` will skip pin initalization.
+  - Added `setButtonStateFunction(StateCallbackFunction f)` to assign your own "_getState" function.
+  - Added [CustomButtonStateHandler.ino](https://github.com/LennartHennigs/Button2/blob/master/examples/CustomButtonStateHandler/CustomButtonStateHandler.ino) example.
+- Improved click type handling.
   - Added `clickType`      and removed constants for determining the click type (BREAKING CHANGE)
   - Renamed `getClickType()` to `getType()` (BREAKING CHANGE)
   - Added `clickToString` function to print the `clickType` enum value

@@ -17,8 +17,9 @@ long    last_gong=0;             // first gong time in recent series
 //variables to keep track of the timing of recent interrupts
 volatile unsigned long last_button_ms = 0; 
 volatile boolean gong_activated = false;
-#define STARTUP_DELAY 25000
+// #define STARTUP_DELAY 25000
 #define STARTUP_DELAY 0
+#define GONG_DELAY 2000
 volatile long startup_time=0;
 
 boolean is_dancing=false;
@@ -106,9 +107,11 @@ void start_dance() {
 
     Serial.println("\n>>>>>>>>>>>>>>>>>>>> Starting New Dance");   
 
-////// debug
-//delay(400);
-//return;
+    // add a delay for effect between gong hit and sending the message
+    Serial.print("Delay before start: ");
+      Serial.print(GONG_DELAY);
+    Serial.println("");
+    delay(2000);
 
     HTTPClient http;   
     
